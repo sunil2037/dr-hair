@@ -355,10 +355,20 @@ class ProfileView extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Edit profile',
-            onPressed: () => context.push(RouteNames.updateProfile),
-            icon: const Icon(LucideIcons.pencil, color: AppColors.primary),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Sign in',
+                onPressed: () => context.push(RouteNames.signin),
+                icon: const Icon(LucideIcons.logIn, color: AppColors.primary),
+              ),
+              IconButton(
+                tooltip: 'Edit profile',
+                onPressed: () => context.push(RouteNames.updateProfile),
+                icon: const Icon(LucideIcons.pencil, color: AppColors.primary),
+              ),
+            ],
           ),
         ],
       ),

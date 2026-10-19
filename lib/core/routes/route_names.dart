@@ -2,6 +2,7 @@ class RouteNames {
   RouteNames._();
 
   static const String mainShell = '/';
+  static const String splash = '/splash';
   static const String home = '/home';
   static const String reviews = '/reviews';
   static const String hairTest = '/hair-test';

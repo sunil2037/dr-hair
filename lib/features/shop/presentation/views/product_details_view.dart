@@ -938,26 +938,16 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                           onPressed: () {
                             cubit.addToCart();
                             HapticFeedback.lightImpact();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                behavior: SnackBarBehavior.floating,
-                                backgroundColor: AppColors.primaryDark,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                content: Text(
-                                  'Added ${product.name} (${state.selectedSupplyPlan.title}) to cart (Demo)',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                action: SnackBarAction(
-                                  label: 'View Cart',
-                                  textColor: AppColors.starGold,
-                                  onPressed: () =>
-                                      context.push(RouteNames.cart),
-                                ),
-                              ),
-                            );
+                            final cartItem = <String, dynamic>{
+                              'title': product.name,
+                              'desc': state.selectedSupplyPlan.subtitle,
+                              'price': state.selectedSupplyPlan.price,
+                              'quantity': state.quantity,
+                              'image': product.images.isEmpty
+                                  ? ''
+                                  : product.images.first,
+                            };
+                            context.push(RouteNames.cart, extra: [cartItem]);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,

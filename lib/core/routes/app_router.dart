@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/views/otp_view.dart';
 import '../../features/auth/presentation/views/signin_view.dart';
+import '../../features/auth/presentation/views/splash_view.dart';
 import '../../features/hair_test/presentation/views/hair_test_view.dart';
 import '../../features/home/presentation/views/home_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
@@ -23,8 +24,12 @@ class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
-    initialLocation: RouteNames.mainShell,
+    initialLocation: RouteNames.splash,
     routes: [
+      GoRoute(
+        path: RouteNames.splash,
+        builder: (context, state) => const SplashView(),
+      ),
       // Persistent Bottom Navigation Shell via StatefulShellRoute (4 main tabs)
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -90,7 +95,10 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.cart,
-        builder: (context, state) => const CartView(),
+        builder: (context, state) {
+          final items = state.extra as List<Map<String, dynamic>>?;
+          return CartView(initialItems: items ?? const []);
+        },
       ),
       GoRoute(
         path: RouteNames.productDetails,

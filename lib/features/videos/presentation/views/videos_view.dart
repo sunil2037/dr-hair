@@ -666,7 +666,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w400,
                     height: 1.35,
                     shadows: [Shadow(color: Colors.black87, blurRadius: 4)],

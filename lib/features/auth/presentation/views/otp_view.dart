@@ -90,7 +90,7 @@ class _OtpViewState extends State<OtpView> {
               ),
               const SizedBox(height: 8),
               Text(
-                'We have sent a 6-digit code to\n${widget.identifier}',
+                'Verification for\n${widget.identifier}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
@@ -99,6 +99,25 @@ class _OtpViewState extends State<OtpView> {
                 ),
               ),
               const SizedBox(height: 36),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primary5,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.primary100),
+                ),
+                child: const Text(
+                  'OTP delivery and verification are not enabled yet. You can review this screen, but signing in will not complete until the authentication service is connected.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.secondaryDark,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
 
               // 6 OTP Digit Inputs
               Row(

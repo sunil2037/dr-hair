@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/routes/route_names.dart';
 
 class SigninView extends StatefulWidget {
   const SigninView({super.key});
@@ -26,13 +28,7 @@ class _SigninViewState extends State<SigninView> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'OTP delivery is not connected yet. Please try again later.',
-        ),
-      ),
-    );
+    context.push(RouteNames.otp, extra: identifier);
   }
 
   @override
@@ -49,7 +45,13 @@ class _SigninViewState extends State<SigninView> {
         title: const Text('Login'),
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(RouteNames.mainShell);
+            }
+          },
         ),
       ),
       body: SafeArea(
