@@ -7,37 +7,84 @@ class HairTestCubit extends Cubit<HairTestState> {
   final ImagePicker _imagePicker;
 
   HairTestCubit({ImagePicker? imagePicker})
-      : _imagePicker = imagePicker ?? ImagePicker(),
-        super(const HairTestState());
+    : _imagePicker = imagePicker ?? ImagePicker(),
+      super(const HairTestState());
 
   void nextStep() {
+    final validationMessage = _validationMessageForCurrentStep();
+    if (validationMessage != null) {
+      emit(state.copyWith(errorMessage: validationMessage));
+      return;
+    }
+
     if (state.currentStep < state.totalSteps - 1) {
-      emit(state.copyWith(currentStep: state.currentStep + 1));
+      emit(
+        state.copyWith(
+          currentStep: state.currentStep + 1,
+          clearErrorMessage: true,
+        ),
+      );
     } else {
-      emit(state.copyWith(isSubmitted: true));
+      emit(state.copyWith(isSubmitted: true, clearErrorMessage: true));
+    }
+  }
+
+  String? _validationMessageForCurrentStep() {
+    switch (state.currentStep) {
+      case 0:
+        return state.selectedGender == null
+            ? 'Choose an option to continue.'
+            : null;
+      case 1:
+        return state.primaryConcern == null
+            ? 'Choose your primary concern to continue.'
+            : null;
+      case 2:
+        return state.duration == null
+            ? 'Choose how long you have noticed hair fall.'
+            : null;
+      case 3:
+        return state.stressLevel == null
+            ? 'Choose a stress level to continue.'
+            : null;
+      case 4:
+        return [
+              'Front Hairline',
+              'Crown / Top',
+              'Side Profile / Temples',
+            ].every(state.hasPhoto)
+            ? null
+            : 'Add all three scalp photos before submitting.';
+      default:
+        return null;
     }
   }
 
   void prevStep() {
     if (state.currentStep > 0) {
-      emit(state.copyWith(currentStep: state.currentStep - 1));
+      emit(
+        state.copyWith(
+          currentStep: state.currentStep - 1,
+          clearErrorMessage: true,
+        ),
+      );
     }
   }
 
   void selectGender(String gender) {
-    emit(state.copyWith(selectedGender: gender));
+    emit(state.copyWith(selectedGender: gender, clearErrorMessage: true));
   }
 
   void selectPrimaryConcern(String concern) {
-    emit(state.copyWith(primaryConcern: concern));
+    emit(state.copyWith(primaryConcern: concern, clearErrorMessage: true));
   }
 
   void selectDuration(String duration) {
-    emit(state.copyWith(duration: duration));
+    emit(state.copyWith(duration: duration, clearErrorMessage: true));
   }
 
   void selectStressLevel(String level) {
-    emit(state.copyWith(stressLevel: level));
+    emit(state.copyWith(stressLevel: level, clearErrorMessage: true));
   }
 
   Future<void> pickPhoto({
@@ -56,12 +103,7 @@ class HairTestCubit extends Cubit<HairTestState> {
       if (pickedFile != null) {
         final updatedPhotos = Map<String, String>.from(state.photos);
         updatedPhotos[label] = pickedFile.path;
-        emit(
-          state.copyWith(
-            photos: updatedPhotos,
-            isPickingImage: false,
-          ),
-        );
+        emit(state.copyWith(photos: updatedPhotos, isPickingImage: false));
       } else {
         emit(state.copyWith(isPickingImage: false));
       }
@@ -69,7 +111,7 @@ class HairTestCubit extends Cubit<HairTestState> {
       emit(
         state.copyWith(
           isPickingImage: false,
-          errorMessage: 'Failed to pick image: $e',
+          errorMessage: 'Could not open the image picker. Please try again.',
         ),
       );
     }
@@ -78,7 +120,7 @@ class HairTestCubit extends Cubit<HairTestState> {
   void removePhoto(String label) {
     final updatedPhotos = Map<String, String>.from(state.photos);
     updatedPhotos.remove(label);
-    emit(state.copyWith(photos: updatedPhotos));
+    emit(state.copyWith(photos: updatedPhotos, clearErrorMessage: true));
   }
 
   void reset() {

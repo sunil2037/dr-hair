@@ -18,7 +18,6 @@ class _OtpViewState extends State<OtpView> {
     (_) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
-  bool _isVerifying = false;
 
   @override
   void dispose() {
@@ -32,19 +31,21 @@ class _OtpViewState extends State<OtpView> {
   }
 
   void _verifyOtp() {
-    setState(() => _isVerifying = true);
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!mounted) return;
-      setState(() => _isVerifying = false);
+    final code = _controllers.map((controller) => controller.text).join();
+    if (code.length != 6 || !RegExp(r'^\d{6}$').hasMatch(code)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: AppColors.success,
-          content: Text('Login verified successfully!'),
-        ),
+        const SnackBar(content: Text('Enter the complete 6-digit code.')),
       );
-      Navigator.pop(context);
-      Navigator.pop(context);
-    });
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'OTP verification is not connected yet. No login occurred.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -111,6 +112,7 @@ class _OtpViewState extends State<OtpView> {
                       focusNode: _focusNodes[index],
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
+                      autofillHints: const [AutofillHints.oneTimeCode],
                       maxLength: 1,
                       style: const TextStyle(
                         fontSize: 20,
@@ -151,7 +153,7 @@ class _OtpViewState extends State<OtpView> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isVerifying ? null : _verifyOtp,
+                  onPressed: _verifyOtp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -160,22 +162,10 @@ class _OtpViewState extends State<OtpView> {
                       borderRadius: BorderRadius.circular(28),
                     ),
                   ),
-                  child: _isVerifying
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Verify & Proceed',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                  child: const Text(
+                    'Verify & Proceed',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
 
@@ -184,7 +174,9 @@ class _OtpViewState extends State<OtpView> {
               TextButton(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('New OTP sent!')),
+                    const SnackBar(
+                      content: Text('OTP delivery is not connected yet.'),
+                    ),
                   );
                 },
                 child: const Text(

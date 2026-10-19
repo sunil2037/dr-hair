@@ -3,30 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('ProfileView renders patient card, clinical stats and drawer tabs',
-      (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ProfileView(),
-      ),
-    );
+  testWidgets('ProfileView renders patient details and available care flows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: ProfileView()));
 
     // Patient info
     expect(find.text('Yashveer Soni'), findsOneWidget);
     expect(find.text('Patient ID: DRH-2024-8849'), findsOneWidget);
-    expect(find.text('Month 3 / 6'), findsOneWidget);
-    expect(find.text('+38% Follicles'), findsOneWidget);
+    expect(find.text('The tools for your hair health journey'), findsOneWidget);
 
     // Key drawer sections present in profile
-    expect(find.text('Hair Test (AI Diagnostic Scan)'), findsOneWidget);
-    expect(find.text('Treatment Details & Regimen'), findsOneWidget);
-    expect(find.text('My Cart & Custom Formulations'), findsOneWidget);
-    expect(find.text('Patient Reviews & Clinical Proof'), findsOneWidget);
-    expect(find.text('About Dr.Hair Medical Practice'), findsOneWidget);
-    expect(find.text('Contact Us & Clinic Locations'), findsOneWidget);
-    expect(find.text('WhatsApp Clinical Concierge'), findsOneWidget);
-    expect(find.text('Edit Personal Information'), findsOneWidget);
-    expect(find.text('Sign In / Register New Patient'), findsOneWidget);
-    expect(find.text('Sign Out'), findsOneWidget);
+    expect(find.text('Treatment plan'), findsOneWidget);
+    expect(find.text('Daily routine'), findsOneWidget);
+    expect(find.text('Progress journal'), findsOneWidget);
+    expect(find.text('Nutrition guide'), findsOneWidget);
+    expect(find.text('Care reminders'), findsOneWidget);
+    expect(find.text('Talk to a hair coach'), findsOneWidget);
+    expect(find.text('My cart'), findsOneWidget);
+    expect(find.text('Orders & delivery'), findsOneWidget);
+    expect(find.text('Personal information'), findsOneWidget);
   });
 }

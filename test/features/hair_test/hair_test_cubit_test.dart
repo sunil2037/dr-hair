@@ -22,22 +22,29 @@ class _FakeImagePicker extends Fake implements ImagePicker {
 
 void main() {
   group('HairTestCubit', () {
-    test('initial state has correct default values', () {
+    test('initial state requires the user to provide answers', () {
       final cubit = HairTestCubit();
       expect(cubit.state.currentStep, 0);
       expect(cubit.state.totalSteps, 5);
-      expect(cubit.state.selectedGender, 'Male');
-      expect(cubit.state.primaryConcern, 'Crown Thinning');
-      expect(cubit.state.duration, '1 - 3 years');
-      expect(cubit.state.stressLevel, 'Moderate');
+      expect(cubit.state.selectedGender, isNull);
+      expect(cubit.state.primaryConcern, isNull);
+      expect(cubit.state.duration, isNull);
+      expect(cubit.state.stressLevel, isNull);
       expect(cubit.state.photos, isEmpty);
       expect(cubit.state.isSubmitted, false);
       cubit.close();
     });
 
-    test('step progression and previous work correctly', () {
-      final cubit = HairTestCubit();
+    test('step progression validates answers and required photos', () async {
+      final cubit = HairTestCubit(
+        imagePicker: _FakeImagePicker(fileToReturn: XFile('/tmp/scalp.jpg')),
+      );
 
+      cubit.nextStep();
+      expect(cubit.state.currentStep, 0);
+      expect(cubit.state.errorMessage, isNotNull);
+
+      cubit.selectGender('Male');
       cubit.nextStep();
       expect(cubit.state.currentStep, 1);
 
@@ -48,15 +55,29 @@ void main() {
       cubit.prevStep();
       expect(cubit.state.currentStep, 0);
 
-      // Advance to end and submit
+      // Each question must be answered before advancing.
+      cubit.nextStep(); // blocked at 0
+      cubit.selectGender('Male');
       cubit.nextStep(); // 1
+      cubit.selectPrimaryConcern('Crown Thinning');
       cubit.nextStep(); // 2
+      cubit.selectDuration('1 - 3 years');
       cubit.nextStep(); // 3
+      cubit.selectStressLevel('Moderate');
       cubit.nextStep(); // 4
       expect(cubit.state.currentStep, 4);
       expect(cubit.state.isSubmitted, false);
 
-      cubit.nextStep(); // submit
+      cubit.nextStep(); // blocked until all required photos are added
+      expect(cubit.state.isSubmitted, false);
+      for (final label in [
+        'Front Hairline',
+        'Crown / Top',
+        'Side Profile / Temples',
+      ]) {
+        await cubit.pickPhoto(label: label, source: ImageSource.gallery);
+      }
+      cubit.nextStep();
       expect(cubit.state.isSubmitted, true);
 
       cubit.close();
@@ -81,10 +102,15 @@ void main() {
     });
 
     test('pickPhoto adds photo path to state for specified label', () async {
-      final fakePicker = _FakeImagePicker(fileToReturn: XFile('/tmp/front.jpg'));
+      final fakePicker = _FakeImagePicker(
+        fileToReturn: XFile('/tmp/front.jpg'),
+      );
       final cubit = HairTestCubit(imagePicker: fakePicker);
 
-      await cubit.pickPhoto(label: 'Front Hairline', source: ImageSource.camera);
+      await cubit.pickPhoto(
+        label: 'Front Hairline',
+        source: ImageSource.camera,
+      );
 
       expect(cubit.state.hasPhoto('Front Hairline'), isTrue);
       expect(cubit.state.getPhoto('Front Hairline'), '/tmp/front.jpg');
@@ -103,7 +129,7 @@ void main() {
 
       cubit.reset();
       expect(cubit.state.currentStep, 0);
-      expect(cubit.state.selectedGender, 'Male');
+      expect(cubit.state.selectedGender, isNull);
       expect(cubit.state.isSubmitted, false);
 
       cubit.close();

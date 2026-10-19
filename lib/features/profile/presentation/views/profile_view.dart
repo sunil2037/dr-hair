@@ -102,7 +102,9 @@ class ProfileView extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           backgroundColor: AppColors.primary,
-                          content: Text('Logged out of session successfully'),
+                          content: Text(
+                            'Authentication is not connected, so no account session was changed.',
+                          ),
                           duration: Duration(seconds: 2),
                         ),
                       );

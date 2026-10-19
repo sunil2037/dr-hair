@@ -18,10 +18,7 @@ class HairTestView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (cubit != null) {
-      return BlocProvider.value(
-        value: cubit!,
-        child: const _HairTestContent(),
-      );
+      return BlocProvider.value(value: cubit!, child: const _HairTestContent());
     }
     return BlocProvider(
       create: (_) => HairTestCubit(),
@@ -93,8 +90,9 @@ class _HairTestContent extends StatelessWidget {
                     duration: motionDuration,
                     curve: Curves.easeOutCubic,
                     builder: (context, progress, child) {
-                      final int percent =
-                          (progress * 100).clamp(0, 100).toInt();
+                      final int percent = (progress * 100)
+                          .clamp(0, 100)
+                          .toInt();
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,8 +249,7 @@ class _HairTestContent extends StatelessWidget {
       case 0:
         return _buildOptionSelector(
           title: 'What is your biological gender?',
-          subtitle:
-              'Hair loss pathways differ significantly between male and female androgen sensitivity.',
+          subtitle: 'Hair loss pathways differ significantly between male and female androgen sensitivity.',
           options: const ['Male', 'Female'],
           selected: state.selectedGender,
           onSelected: (val) => cubit.selectGender(val),
@@ -274,8 +271,7 @@ class _HairTestContent extends StatelessWidget {
       case 2:
         return _buildOptionSelector(
           title: 'How long have you noticed hair fall?',
-          subtitle:
-              'Helps determine whether follicles are resting (telogen) or miniaturized.',
+          subtitle: 'Helps determine whether follicles are resting (telogen) or miniaturized.',
           options: const [
             'Less than 6 months',
             '6 - 12 months',
@@ -288,8 +284,7 @@ class _HairTestContent extends StatelessWidget {
       case 3:
         return _buildOptionSelector(
           title: 'What is your average daily stress level?',
-          subtitle:
-              'Cortisol elevation triggers vascular constriction around scalp capillaries.',
+          subtitle: 'Cortisol elevation triggers vascular constriction around scalp capillaries.',
           options: const [
             'Low / Manageable',
             'Moderate',
@@ -582,10 +577,7 @@ class _HairTestContent extends StatelessWidget {
                 subtitle: 'Open camera to capture your scalp',
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  cubit.pickPhoto(
-                    label: label,
-                    source: ImageSource.camera,
-                  );
+                  cubit.pickPhoto(label: label, source: ImageSource.camera);
                 },
               ),
               const SizedBox(height: 12),
@@ -596,10 +588,7 @@ class _HairTestContent extends StatelessWidget {
                 subtitle: 'Select an existing photo from library',
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  cubit.pickPhoto(
-                    label: label,
-                    source: ImageSource.gallery,
-                  );
+                  cubit.pickPhoto(label: label, source: ImageSource.gallery);
                 },
               ),
               if (hasExistingPhoto) ...[
@@ -825,7 +814,7 @@ class _HairTestContent extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               const Text(
-                'Assessment Submitted!',
+                'Assessment complete',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
@@ -834,7 +823,7 @@ class _HairTestContent extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Our dermatologists have received your responses & scalp photos. Your personalized clinical treatment plan will be ready under Treatment Details.',
+                'Your answers and scalp photos are saved for this session. They have not been sent to a dermatologist because assessment services are not connected yet.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,

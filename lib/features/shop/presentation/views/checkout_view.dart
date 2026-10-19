@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../../../core/constants/app_colors.dart';
 
 class CheckoutView extends StatefulWidget {
@@ -12,79 +13,18 @@ class CheckoutView extends StatefulWidget {
 }
 
 class _CheckoutViewState extends State<CheckoutView> {
-  bool _orderPlaced = false;
-
   void _handlePlaceOrder() {
-    setState(() => _orderPlaced = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Checkout is unavailable until address, order, and payment services are connected.',
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_orderPlaced) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    LucideIcons.circleCheck,
-                    color: AppColors.success,
-                    size: 58,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Order Placed Successfully!',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Order #DH-ORD-83920 confirmed. Our clinic pharmacy is preparing your treatment kit.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondaryDark,
-                    height: 1.45,
-                  ),
-                ),
-                const SizedBox(height: 36),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                    ),
-                    child: const Text('Back to Clinic',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -113,7 +53,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: _handlePlaceOrder,
                   child: const Text(
                     'Change',
                     style: TextStyle(
@@ -138,15 +78,14 @@ class _CheckoutViewState extends State<CheckoutView> {
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(LucideIcons.mapPin,
-                      color: AppColors.primary, size: 28),
+                  Icon(LucideIcons.mapPin, color: AppColors.primary, size: 28),
                   SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Yashveer Soni • Home',
+                          'Delivery address required',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -155,7 +94,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Flat 402, Royal Residency, Mansarovar, Jaipur, Rajasthan - 302020\nPhone: +91 98765 43210',
+                          'Add a saved address before placing an order.',
                           style: TextStyle(
                             fontSize: 13,
                             color: AppColors.secondaryDark,
@@ -191,8 +130,11 @@ class _CheckoutViewState extends State<CheckoutView> {
               ),
               child: const Row(
                 children: [
-                  Icon(LucideIcons.walletCards,
-                      color: AppColors.primary, size: 24),
+                  Icon(
+                    LucideIcons.walletCards,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
                   SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -207,7 +149,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                           ),
                         ),
                         Text(
-                          '100% Encrypted & Secure Clinical Checkout',
+                          'Payment provider connection required to continue',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.secondaryDark,
@@ -236,7 +178,11 @@ class _CheckoutViewState extends State<CheckoutView> {
                   const _SummaryRow('Express Delivery', 'FREE'),
                   const _SummaryRow('Doctor Review Fee', 'WAIVED'),
                   const Divider(color: AppColors.border, height: 20),
-                  _SummaryRow('Total Payable', '₹${widget.amount}', isTotal: true),
+                  _SummaryRow(
+                    'Total Payable',
+                    '₹${widget.amount}',
+                    isTotal: true,
+                  ),
                 ],
               ),
             ),
@@ -260,7 +206,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Place Order • ₹${widget.amount}',
+                      'Payment setup required • ₹${widget.amount}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,

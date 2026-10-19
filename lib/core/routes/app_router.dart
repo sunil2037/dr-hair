@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+
 import '../../features/auth/presentation/views/otp_view.dart';
 import '../../features/auth/presentation/views/signin_view.dart';
 import '../../features/hair_test/presentation/views/hair_test_view.dart';
@@ -7,6 +8,7 @@ import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/profile/presentation/views/update_profile_view.dart';
 import '../../features/reviews/presentation/views/reviews_view.dart';
 import '../../features/shell/presentation/views/main_shell_view.dart';
+import '../../features/shop/data/models/product_model.dart';
 import '../../features/shop/presentation/views/cart_view.dart';
 import '../../features/shop/presentation/views/checkout_view.dart';
 import '../../features/shop/presentation/views/product_details_view.dart';
@@ -92,13 +94,15 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.productDetails,
-        builder: (context, state) => const ProductDetailsView(),
+        builder: (context, state) {
+          final product = state.extra as ProductItem?;
+          return ProductDetailsView(initialProduct: product);
+        },
       ),
       GoRoute(
         path: RouteNames.checkout,
-        builder: (context, state) => CheckoutView(
-          amount: state.extra as int? ?? 2048,
-        ),
+        builder: (context, state) =>
+            CheckoutView(amount: state.extra as int? ?? 2048),
       ),
       GoRoute(
         path: RouteNames.signin,
@@ -119,12 +123,30 @@ class AppRouter {
         path: RouteNames.contact,
         builder: (context, state) => const ContactView(),
       ),
-      GoRoute(path: RouteNames.routine, builder: (context, state) => const RoutineTrackerView()),
-      GoRoute(path: RouteNames.progress, builder: (context, state) => const ProgressTrackingView()),
-      GoRoute(path: RouteNames.coachBooking, builder: (context, state) => const CoachBookingView()),
-      GoRoute(path: RouteNames.dietPlan, builder: (context, state) => const DietPlanView()),
-      GoRoute(path: RouteNames.reminders, builder: (context, state) => const RemindersView()),
-      GoRoute(path: RouteNames.orders, builder: (context, state) => const OrderTrackingView()),
+      GoRoute(
+        path: RouteNames.routine,
+        builder: (context, state) => const RoutineTrackerView(),
+      ),
+      GoRoute(
+        path: RouteNames.progress,
+        builder: (context, state) => const ProgressTrackingView(),
+      ),
+      GoRoute(
+        path: RouteNames.coachBooking,
+        builder: (context, state) => const CoachBookingView(),
+      ),
+      GoRoute(
+        path: RouteNames.dietPlan,
+        builder: (context, state) => const DietPlanView(),
+      ),
+      GoRoute(
+        path: RouteNames.reminders,
+        builder: (context, state) => const RemindersView(),
+      ),
+      GoRoute(
+        path: RouteNames.orders,
+        builder: (context, state) => const OrderTrackingView(),
+      ),
     ],
   );
 }

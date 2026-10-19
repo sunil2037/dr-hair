@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../widgets/medicine_card.dart';
 
 class HomeView extends StatelessWidget {
   final VoidCallback onStartHairTest;
@@ -49,27 +50,27 @@ class HomeView extends StatelessWidget {
           // 1. HERO SECTION
           _buildHeroSection(context),
 
-          const SizedBox(height: 24),
-
-          // 2. URGENT CARE CARD
-          _buildUrgentCareCard(),
-
-          const SizedBox(height: 24),
-
-          // 3. ANALYTICS & SOCIAL PROOF
-          _buildAnalyticsSection(),
-
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
 
           // 4. ESSENTIAL PRODUCTS
           _buildEssentialProducts(context),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
+
+          // 2. URGENT CARE CARD
+          _buildUrgentCareCard(),
+
+          const SizedBox(height: 20),
+
+          // 3. ANALYTICS & SOCIAL PROOF
+          _buildAnalyticsSection(),
+
+          const SizedBox(height: 20),
 
           // 5. BASED ON YOUR CONDITION
           _buildConditionBasedSection(context),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
 
           // 6. WHY TRUST DR. HAIR
           _buildWhyTrustDrHair(),
@@ -127,15 +128,27 @@ class HomeView extends StatelessWidget {
 
   // --- SECTION 1: HERO SECTION ---
   Widget _buildHeroSection(BuildContext context) {
-    final double screenHeight = MediaQuery.of(context).size.height;
+    final mediaQuery = MediaQuery.of(context);
+    final double screenHeight = mediaQuery.size.height;
+    final double screenWidth = mediaQuery.size.width;
+    final double topPadding = mediaQuery.padding.top + kToolbarHeight;
+    final double bannerHeight = (screenHeight * 0.4).clamp(
+      topPadding + 170.0,
+      390.0,
+    );
 
     return Column(
       children: [
         // Hero Image with Rounded Bottom using CustomCachedImage + Skeletonizer
         Container(
-          height: screenHeight * 0.45,
+          height: bannerHeight,
+          width: double.infinity,
           decoration: const BoxDecoration(
-            color: Color(0xffFEF3E2),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFF7ED), Color(0xFFFEF3E2)],
+            ),
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(36),
               bottomRight: Radius.circular(36),
@@ -148,134 +161,145 @@ class HomeView extends StatelessWidget {
             ),
             child: Stack(
               children: [
+                // Right-aligned model banner image
                 Positioned(
                   bottom: 0,
-                  right: 0,
+                  right: -65,
                   child: Image.asset(
-                    height: 220,
                     'assets/images/hair_bennar.png',
+                    height: (bannerHeight - topPadding).clamp(190.0, 250.0),
+                    fit: BoxFit.contain,
+                    alignment: Alignment.bottomRight,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
+                  ),
+                ),
 
-                    fit: BoxFit.cover,
+                // Left-aligned content (Badge, Headline, CTA)
+                Positioned(
+                  left: 16,
+                  top: topPadding - 15,
+                  bottom: 20,
+                  width: screenWidth * 0.55,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Clinically Approved Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryDark.withValues(
+                                alpha: 0.04,
+                              ),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/icons/StarRight.png',
+                              width: 12,
+                              height: 12,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                    LucideIcons.badgeCheck,
+                                    color: AppColors.primary,
+                                    size: 12,
+                                  ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Clinically Approved',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Impact Headline
+                      RichText(
+                        textAlign: TextAlign.left,
+                        text: const TextSpan(
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryDark,
+                            height: 1.25,
+                            letterSpacing: -0.3,
+                          ),
+                          children: [
+                            TextSpan(text: 'Your Journey to\n'),
+                            TextSpan(text: 'Thicker, '),
+                            TextSpan(
+                              text: 'Healthier',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            TextSpan(text: ' Hair\nStarts with Science'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // CTA Button
+                      SizedBox(
+                        height: 38,
+                        child: ElevatedButton(
+                          onPressed: onStartHairTest,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            elevation: 5,
+                            shadowColor: AppColors.primary.withValues(
+                              alpha: 0.35,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Free Hair Test',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(LucideIcons.arrowRight, size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-
-        // Hero Content
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-          child: Column(
-            children: [
-              // Badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary100,
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icons/StarRight.png',
-                      width: 16,
-                      height: 16,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        LucideIcons.badgeCheck,
-                        color: AppColors.primary,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Clinically Approved',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // Title
-              RichText(
-                textAlign: TextAlign.center,
-                text: const TextSpan(
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryDark,
-                    height: 1.2,
-                  ),
-                  children: [
-                    TextSpan(text: 'Your Journey to Thicker, '),
-                    TextSpan(
-                      text: 'Healthier',
-                      style: TextStyle(color: AppColors.primary),
-                    ),
-                    TextSpan(text: ' Hair Starts with Science'),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Subtitle
-              const Text(
-                'Personalized, doctor-backed restoration plans tailored to your unique scalp biology.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.secondaryDark,
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // CTA Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: onStartHairTest,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 8,
-                    shadowColor: AppColors.primary.withValues(alpha: 0.35),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Take Your Free Hair Test',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Icon(LucideIcons.arrowRight, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ],
@@ -547,154 +571,7 @@ class HomeView extends StatelessWidget {
 
   // --- SECTION 4: ESSENTIAL PRODUCTS ---
   Widget _buildEssentialProducts(BuildContext context) {
-    final products = [
-      {
-        'title': 'Follicle Revive Serum',
-        'desc': 'Reduces hair fall by 40%',
-        'price': '₹1,299',
-        'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=600',
-      },
-      {
-        'title': 'Biotin Growth Complex',
-        'desc': 'Strengthens hair roots & cortex',
-        'price': '₹999',
-        'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=600',
-      },
-      {
-        'title': 'Dandruff Scalp Detox',
-        'desc': 'Clinical grade anti-microbial care',
-        'price': '₹749',
-        'image': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=600',
-      },
-    ];
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Essential Products',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-              GestureDetector(
-                onTap: () => context.push(RouteNames.cart),
-                child: const Text(
-                  'See All',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 280,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            itemCount: products.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final item = products[index];
-              return GestureDetector(
-                onTap: () => context.push(RouteNames.productDetails),
-                child: Container(
-                  width: 220,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          item['image']!,
-                          height: 140,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                height: 140,
-                                width: double.infinity,
-                                color: AppColors.primary5,
-                                child: const Icon(
-                                  LucideIcons.pill,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        item['title']!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item['desc']!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondaryDark,
-                        ),
-                      ),
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            item['price']!,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              LucideIcons.plus,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
+    return const _EssentialProductsSection();
   }
 
   // --- SECTION 5: BASED ON YOUR CONDITION ---
@@ -1131,46 +1008,63 @@ class HomeView extends StatelessWidget {
   }) {
     return Container(
       width: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        image: DecorationImage(image: NetworkImage(image), fit: BoxFit.cover),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
-          ),
-        ),
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.white,
-              child: Icon(LucideIcons.play, color: AppColors.primary, size: 24),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(22)),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            image,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: AppColors.primary100,
+              child: const Icon(LucideIcons.imageOff, color: AppColors.primary),
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.8),
+                ],
               ),
             ),
-            Text(
-              subtitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.white,
+                  child: Icon(
+                    LucideIcons.play,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1407,7 +1301,7 @@ class HomeView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 140,
+          height: 156,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             scrollDirection: Axis.horizontal,
@@ -1502,6 +1396,15 @@ class HomeView extends StatelessWidget {
                               height: 180,
                               width: double.infinity,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    height: 180,
+                                    color: AppColors.primary5,
+                                    child: const Icon(
+                                      LucideIcons.imageOff,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
                             ),
                           ),
                           Positioned(
@@ -1543,6 +1446,15 @@ class HomeView extends StatelessWidget {
                               height: 180,
                               width: double.infinity,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    height: 180,
+                                    color: AppColors.primary5,
+                                    child: const Icon(
+                                      LucideIcons.imageOff,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
                             ),
                           ),
                           Positioned(
@@ -1805,6 +1717,231 @@ class HomeView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EssentialProductsSection extends StatefulWidget {
+  const _EssentialProductsSection();
+
+  @override
+  State<_EssentialProductsSection> createState() =>
+      _EssentialProductsSectionState();
+}
+
+class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
+  int _selectedFilterIndex = 0;
+  final List<String> _filters = const ['All', 'Dermatologist', 'Ayurveda'];
+
+  final List<Map<String, dynamic>> _medicines = const [
+    {
+      'title': 'Follicle Revive Serum',
+      'desc': 'Clinical Redensyl & Minoxidil 5%',
+      'price': '₹1,299',
+      'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=600',
+      'category': MedicineCategory.dermatologist,
+      'rating': 4.9,
+    },
+    {
+      'title': 'Biotin Growth Complex',
+      'desc': 'DHT blocker & keratin fortification',
+      'price': '₹999',
+      'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=600',
+      'category': MedicineCategory.dermatologist,
+      'rating': 4.8,
+    },
+    {
+      'title': 'Bhringraj Scalp Elixir',
+      'desc': 'Cold-pressed Ayurvedic root therapy',
+      'price': '₹849',
+      'image': 'https://images.unsplash.com/photo-1617897903246-719242758050?q=80&w=600',
+      'category': MedicineCategory.ayurveda,
+      'rating': 4.9,
+    },
+    {
+      'title': 'Dandruff Scalp Detox',
+      'desc': 'Ketoconazole 2% clinical wash',
+      'price': '₹749',
+      'image': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=600',
+      'category': MedicineCategory.dermatologist,
+      'rating': 4.7,
+    },
+    {
+      'title': 'Amla & Neem Hair Rasayan',
+      'desc': 'Ancient herbal follicle nourishment',
+      'price': '₹899',
+      'image': 'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?q=80&w=600',
+      'category': MedicineCategory.ayurveda,
+      'rating': 4.8,
+    },
+  ];
+
+  List<Map<String, dynamic>> get _filteredMedicines {
+    if (_selectedFilterIndex == 0) return _medicines;
+    final targetCategory = _selectedFilterIndex == 1
+        ? MedicineCategory.dermatologist
+        : MedicineCategory.ayurveda;
+    return _medicines.where((m) => m['category'] == targetCategory).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _filteredMedicines;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Essential Products',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Doctor-approved formulations & therapies',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () => context.push(RouteNames.cart),
+                child: const Text(
+                  'See All',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Filter Chips: All, Dermatologist, Ayurveda
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: List.generate(_filters.length, (index) {
+              final isSelected = _selectedFilterIndex == index;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedFilterIndex = index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.border,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.25,
+                                ),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (index == 1) ...[
+                          Icon(
+                            LucideIcons.stethoscope,
+                            size: 12,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.primary,
+                          ),
+                          const SizedBox(width: 5),
+                        ] else if (index == 2) ...[
+                          Icon(
+                            LucideIcons.leaf,
+                            size: 12,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.success,
+                          ),
+                          const SizedBox(width: 5),
+                        ],
+                        Text(
+                          _filters[index],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        // Medicines Horizontal List
+        SizedBox(
+          height: 275,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            scrollDirection: Axis.horizontal,
+            itemCount: filtered.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 14),
+            itemBuilder: (context, index) {
+              final item = filtered[index];
+              return MedicineCard(
+                title: item['title'] as String,
+                desc: item['desc'] as String,
+                price: item['price'] as String,
+                imageUrl: item['image'] as String,
+                category: item['category'] as MedicineCategory,
+                rating: (item['rating'] as num?)?.toDouble() ?? 4.8,
+                showAddToCart: false,
+                onTap: () => context.push(RouteNames.productDetails),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

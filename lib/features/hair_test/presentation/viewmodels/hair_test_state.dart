@@ -13,10 +13,10 @@ class HairTestState {
   const HairTestState({
     this.currentStep = 0,
     this.totalSteps = 5,
-    this.selectedGender = 'Male',
-    this.primaryConcern = 'Crown Thinning',
-    this.duration = '1 - 3 years',
-    this.stressLevel = 'Moderate',
+    this.selectedGender,
+    this.primaryConcern,
+    this.duration,
+    this.stressLevel,
     this.photos = const {},
     this.isSubmitted = false,
     this.isPickingImage = false,
@@ -34,6 +34,7 @@ class HairTestState {
     bool? isSubmitted,
     bool? isPickingImage,
     String? errorMessage,
+    bool clearErrorMessage = false,
   }) {
     return HairTestState(
       currentStep: currentStep ?? this.currentStep,
@@ -45,7 +46,9 @@ class HairTestState {
       photos: photos ?? this.photos,
       isSubmitted: isSubmitted ?? this.isSubmitted,
       isPickingImage: isPickingImage ?? this.isPickingImage,
-      errorMessage: errorMessage,
+      errorMessage: clearErrorMessage
+          ? null
+          : errorMessage ?? this.errorMessage,
     );
   }
 

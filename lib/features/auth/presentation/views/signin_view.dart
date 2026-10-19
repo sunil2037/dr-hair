@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:go_router/go_router.dart';
+
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/routes/route_names.dart';
 
 class SigninView extends StatefulWidget {
   const SigninView({super.key});
@@ -13,22 +12,27 @@ class SigninView extends StatefulWidget {
 
 class _SigninViewState extends State<SigninView> {
   final _phoneController = TextEditingController();
-  bool _isLoading = false;
 
   void _sendOtp() {
-    if (_phoneController.text.trim().isEmpty) {
+    final identifier = _phoneController.text.trim();
+    final isPhone = RegExp(r'^\+?[0-9]{10,15}$').hasMatch(identifier);
+    final isEmail = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(identifier);
+    if (!isPhone && !isEmail) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your phone number or email')),
+        const SnackBar(
+          content: Text('Enter a valid phone number or email address.'),
+        ),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      context.push(RouteNames.otp, extra: _phoneController.text.trim());
-    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'OTP delivery is not connected yet. Please try again later.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -110,10 +114,18 @@ class _SigninViewState extends State<SigninView> {
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [
+                  AutofillHints.telephoneNumber,
+                  AutofillHints.email,
+                ],
+                onSubmitted: (_) => _sendOtp(),
                 decoration: InputDecoration(
                   hintText: 'e.g. 9876543210 or name@domain.com',
-                  prefixIcon: const Icon(LucideIcons.userRound,
-                      color: AppColors.primary),
+                  prefixIcon: const Icon(
+                    LucideIcons.userRound,
+                    color: AppColors.primary,
+                  ),
                   filled: true,
                   fillColor: AppColors.primary5,
                   border: OutlineInputBorder(
@@ -126,8 +138,10 @@ class _SigninViewState extends State<SigninView> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide:
-                        const BorderSide(color: AppColors.primary, width: 2),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -138,7 +152,7 @@ class _SigninViewState extends State<SigninView> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _sendOtp,
+                  onPressed: _sendOtp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -147,22 +161,10 @@ class _SigninViewState extends State<SigninView> {
                       borderRadius: BorderRadius.circular(28),
                     ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Send Verification OTP',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                  child: const Text(
+                    'Send Verification OTP',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],

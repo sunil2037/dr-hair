@@ -530,18 +530,14 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                 duration: const Duration(milliseconds: 200),
                 opacity: _showPlayPauseOverlay || !v.isPlaying ? 1.0 : 0.0,
                 child: Container(
-                  width: 72,
-                  height: 72,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.55),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
                   ),
                   child: Icon(
-                    v.isPlaying ? LucideIcons.play : LucideIcons.pause,
+                    v.isPlaying ? LucideIcons.pause : LucideIcons.play,
                     color: Colors.white,
                     size: 36,
                   ),
@@ -716,19 +712,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.4),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-              boxShadow: const [
-                BoxShadow(color: Colors.black38, blurRadius: 6),
-              ],
-            ),
-            child: Icon(icon, color: iconColor, size: 23),
-          ),
+          Icon(icon, color: iconColor, size: 23),
           const SizedBox(height: 4),
           Text(
             label,

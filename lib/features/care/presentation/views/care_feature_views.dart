@@ -200,7 +200,6 @@ class CoachBookingView extends StatefulWidget {
 
 class _CoachBookingViewState extends State<CoachBookingView> {
   String? _slot;
-  bool _booked = false;
 
   @override
   Widget build(BuildContext context) => _CarePage(
@@ -231,25 +230,37 @@ class _CoachBookingViewState extends State<CoachBookingView> {
           ),
         ),
         const SizedBox(height: 10),
-        ...['11:00 AM', '2:30 PM', '5:00 PM'].map(
-          (s) => _card(
-            child: RadioListTile<String>(
-              contentPadding: EdgeInsets.zero,
-              value: s,
-              groupValue: _slot,
-              onChanged: (v) => setState(() => _slot = v),
-              title: Text(s),
-              subtitle: const Text('Phone call · 15 minutes'),
-            ),
+        RadioGroup<String>(
+          groupValue: _slot,
+          onChanged: (value) => setState(() => _slot = value),
+          child: Column(
+            children: [
+              ...['11:00 AM', '2:30 PM', '5:00 PM'].map(
+                (slot) => _card(
+                  child: RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    value: slot,
+                    title: Text(slot),
+                    subtitle: const Text('Phone call · 15 minutes'),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _slot == null || _booked
+            onPressed: _slot == null
                 ? null
-                : () => setState(() => _booked = true),
-            child: Text(_booked ? 'Call booked · $_slot' : 'Confirm booking'),
+                : () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Coach booking is unavailable until scheduling is connected.',
+                      ),
+                    ),
+                  ),
+            child: const Text('Request a call'),
           ),
         ),
       ],
@@ -391,70 +402,28 @@ class OrderTrackingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _CarePage(
     title: 'Orders & Delivery',
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Order #DH-ORD-83920',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              const Text('Placed 16 Oct 2026 · Estimated delivery 21 Oct'),
-              const Divider(height: 26),
-              ...[
-                'Order confirmed',
-                'Preparing your care kit',
-                'Handed to delivery partner',
-                'Delivered',
-              ].asMap().entries.map(
-                (e) => Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Row(
-                    children: [
-                      Icon(
-                        e.key < 2
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        color: e.key < 2
-                            ? AppColors.primary
-                            : AppColors.textMuted,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        e.value,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: e.key < 2
-                              ? AppColors.primaryDark
-                              : AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+    child: _card(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.receipt_long_outlined,
+            size: 40,
+            color: AppColors.primary,
           ),
-        ),
-        _card(
-          child: const Row(
-            children: [
-              Icon(Icons.local_shipping_outlined, color: AppColors.primary),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Tracking details will appear here once your order ships.',
-                  style: TextStyle(height: 1.4),
-                ),
-              ),
-            ],
+          const SizedBox(height: 12),
+          const Text(
+            'No orders yet',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          const Text(
+            'Your orders and delivery updates will appear here after checkout is connected.',
+            textAlign: TextAlign.center,
+            style: TextStyle(height: 1.4, color: AppColors.secondaryDark),
+          ),
+        ],
+      ),
     ),
   );
 }

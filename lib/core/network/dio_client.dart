@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+
 import '../constants/api_endpoints.dart';
 import 'failure.dart';
 
@@ -6,29 +7,23 @@ class DioClient {
   late final Dio dio;
 
   DioClient({Dio? customDio}) {
-    dio = customDio ??
+    dio =
+        customDio ??
         Dio(
           BaseOptions(
             baseUrl: ApiEndpoints.baseUrl,
-            connectTimeout: const Duration(milliseconds: ApiEndpoints.connectTimeout),
-            receiveTimeout: const Duration(milliseconds: ApiEndpoints.receiveTimeout),
+            connectTimeout: const Duration(
+              milliseconds: ApiEndpoints.connectTimeout,
+            ),
+            receiveTimeout: const Duration(
+              milliseconds: ApiEndpoints.receiveTimeout,
+            ),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
           ),
         );
-
-    dio.interceptors.add(
-      LogInterceptor(
-        request: true,
-        requestHeader: true,
-        requestBody: true,
-        responseHeader: false,
-        responseBody: true,
-        error: true,
-      ),
-    );
   }
 
   static Failure handleError(dynamic error) {

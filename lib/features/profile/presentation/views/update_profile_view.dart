@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../../../core/constants/app_colors.dart';
 
 class UpdateProfileView extends StatefulWidget {
@@ -14,7 +15,6 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  bool _isSaving = false;
 
   @override
   void initState() {
@@ -34,18 +34,13 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
 
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isSaving = true);
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (!mounted) return;
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: AppColors.success,
-            content: Text('Profile updated successfully!'),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Profile changes were not saved because the profile service is not connected.',
           ),
-        );
-        Navigator.pop(context);
-      });
+        ),
+      );
     }
   }
 
@@ -94,8 +89,11 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(LucideIcons.camera,
-                            color: Colors.white, size: 16),
+                        child: const Icon(
+                          LucideIcons.camera,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ],
@@ -140,7 +138,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveProfile,
+                  onPressed: _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -149,22 +147,10 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                       borderRadius: BorderRadius.circular(28),
                     ),
                   ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Save Changes',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                  child: const Text(
+                    'Save Changes',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],
