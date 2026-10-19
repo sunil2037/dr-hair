@@ -75,15 +75,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Logo with soft frosted background when transparent for high legibility
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: (1.0 - progress) * 0.85),
-              borderRadius: BorderRadius.circular(14),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+
             child: Image.asset(
               'assets/images/icon.png',
-              height: 34,
+              height: 38,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => const Text(
                 'Dr.Hair',
@@ -102,46 +99,29 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (showWhatsApp)
-                Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(
-                      alpha: (1.0 - progress) * 0.85,
-                    ),
-                    shape: BoxShape.circle,
+                IconButton(
+                  onPressed: _launchWhatsapp,
+                  icon: const Icon(
+                    LucideIcons.messageCircle,
+                    color: AppColors.whatsapp,
+                    size: 24,
                   ),
-                  child: IconButton(
-                    onPressed: _launchWhatsapp,
-                    icon: const Icon(
-                      LucideIcons.messageCircle,
-                      color: AppColors.whatsapp,
-                      size: 24,
-                    ),
-                    tooltip: 'WhatsApp Consultation',
-                    splashRadius: 20,
-                  ),
+                  tooltip: 'WhatsApp Consultation',
+                  splashRadius: 20,
                 ),
               if (showCart)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(
-                      alpha: (1.0 - progress) * 0.85,
-                    ),
-                    shape: BoxShape.circle,
+                IconButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    context.push(RouteNames.cart);
+                  },
+                  icon: const Icon(
+                    LucideIcons.shoppingBag,
+                    color: AppColors.primary,
+                    size: 22,
                   ),
-                  child: IconButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      context.push(RouteNames.cart);
-                    },
-                    icon: const Icon(
-                      LucideIcons.shoppingBag,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                    tooltip: 'Shopping Cart',
-                    splashRadius: 22,
-                  ),
+                  tooltip: 'Shopping Cart',
+                  splashRadius: 22,
                 ),
 
               if (extraActions != null) ...?extraActions,

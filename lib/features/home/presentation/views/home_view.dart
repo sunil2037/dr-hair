@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/widgets/custom_cached_image.dart';
 
 class HomeView extends StatelessWidget {
   final VoidCallback onStartHairTest;
@@ -42,7 +41,7 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,24 +132,33 @@ class HomeView extends StatelessWidget {
     return Column(
       children: [
         // Hero Image with Rounded Bottom using CustomCachedImage + Skeletonizer
-        CustomCachedImage(
-          imageUrl: 'https://iaaps.net/wp-content/uploads/2025/07/Hair-Transplant-Safety-IAAPS-01.jpg',
-          height: screenHeight * 0.40,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          customBorderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(36),
-            bottomRight: Radius.circular(36),
+        Container(
+          height: screenHeight * 0.45,
+          decoration: const BoxDecoration(
+            color: Color(0xffFEF3E2),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(36),
+              bottomRight: Radius.circular(36),
+            ),
           ),
-          errorWidget: Container(
-            height: screenHeight * 0.40,
-            decoration: const BoxDecoration(gradient: AppColors.navyGradient),
-            child: const Center(
-              child: Icon(
-                LucideIcons.stethoscope,
-                color: Colors.white,
-                size: 60,
-              ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(36),
+              bottomRight: Radius.circular(36),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Image.asset(
+                    height: 220,
+                    'assets/images/hair_bennar.png',
+
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -204,10 +212,10 @@ class HomeView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 text: const TextSpan(
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primaryDark,
-                    height: 1.25,
+                    height: 1.2,
                   ),
                   children: [
                     TextSpan(text: 'Your Journey to Thicker, '),

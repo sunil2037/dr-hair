@@ -31,17 +31,20 @@ class _MainShellViewState extends State<MainShellView> {
   Widget build(BuildContext context) {
     final int currentTab = widget.navigationShell.currentIndex;
     final bool isHomeTab = currentTab == 0;
+    final bool isVideosTab = currentTab == 2;
     // Transition from transparent (0.0) to solid white (1.0) over the first 80px of scrolling
     final double scrollProgress =
         isHomeTab ? (_homeScrollOffset / 80.0).clamp(0.0, 1.0) : 1.0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isVideosTab ? Colors.black : AppColors.background,
       extendBody: true,
       extendBodyBehindAppBar: isHomeTab,
-      appBar: CustomAppBar(
-        scrollProgress: scrollProgress,
-      ),
+      appBar: isVideosTab
+          ? null
+          : CustomAppBar(
+              scrollProgress: scrollProgress,
+            ),
       // Screen body naturally fills the available viewport above the bottom nav bar
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
