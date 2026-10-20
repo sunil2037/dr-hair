@@ -1,10 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/custom_cached_image.dart';
+import '../../../../core/widgets/photo_source_bottom_sheet.dart';
+import '../../../auth/presentation/viewmodels/auth_cubit.dart';
 
 class UpdateProfileView extends StatefulWidget {
-  const UpdateProfileView({super.key});
+  final ImagePicker? imagePicker;
+
+  const UpdateProfileView({super.key, this.imagePicker});
 
   @override
   State<UpdateProfileView> createState() => _UpdateProfileViewState();
@@ -12,16 +22,30 @@ class UpdateProfileView extends StatefulWidget {
 
 class _UpdateProfileViewState extends State<UpdateProfileView> {
   final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
 
+  String? _selectedImagePath;
+  bool _isPhotoRemoved = false;
+  bool _isSaving = false;
+
+  static const String _defaultAvatarUrl =
+      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400';
+
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: 'Yashveer Soni');
+    final authUser = context.read<AuthCubit?>()?.state.user;
+    _nameController = TextEditingController(
+      text: authUser?.name ?? 'Yashveer Soni',
+    );
     _emailController = TextEditingController(text: 'yashveer@example.com');
-    _phoneController = TextEditingController(text: '+91 98765 43210');
+    _phoneController = TextEditingController(
+      text: authUser?.emailOrPhone ?? '+91 98765 43210',
+    );
+    _selectedImagePath = authUser?.photoUrl;
   }
 
   @override
@@ -32,16 +56,155 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
     super.dispose();
   }
 
+  Future<void> _pickProfilePhoto() async {
+    HapticFeedback.selectionClick();
+    await PhotoSourceBottomSheet.show(
+      context,
+      title: 'Profile Photo',
+      subtitle: 'Choose a photo for your Dr.Hair patient profile',
+      cameraSubtitle: 'Take a new profile photo with your camera',
+      gallerySubtitle: 'Choose an existing photo from your library',
+      removeTitle: 'Remove Profile Photo',
+      removeSubtitle: 'Clear current photo and use default avatar',
+      hasExistingPhoto: _selectedImagePath != null || !_isPhotoRemoved,
+      onSelectSource: (source) async {
+        try {
+          final picker = widget.imagePicker ?? ImagePicker();
+          final XFile? image = await picker.pickImage(
+            source: source,
+            maxWidth: 1024,
+            maxHeight: 1024,
+            imageQuality: 85,
+          );
+          if (image != null && mounted) {
+            setState(() {
+              _selectedImagePath = image.path;
+              _isPhotoRemoved = false;
+            });
+            HapticFeedback.lightImpact();
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 2),
+                  content: Text('Profile photo updated'),
+                ),
+              );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: Text('Could not access photo: $e'),
+              ),
+            );
+          }
+        }
+      },
+      onRemovePhoto: () {
+        setState(() {
+          _selectedImagePath = null;
+          _isPhotoRemoved = true;
+        });
+        HapticFeedback.lightImpact();
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+              content: Text('Profile photo removed'),
+            ),
+          );
+      },
+    );
+  }
+
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Profile changes were not saved because the profile service is not connected.',
+      setState(() => _isSaving = true);
+      final authCubit = context.read<AuthCubit?>();
+      authCubit?.updateProfile(
+        name: _nameController.text.trim(),
+        emailOrPhone: _phoneController.text.trim(),
+        photoUrl: _selectedImagePath,
+        clearPhoto: _isPhotoRemoved,
+      );
+
+      HapticFeedback.mediumImpact();
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.primaryDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+            content: const Text('Profile changes saved successfully!'),
           ),
+        );
+
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Widget _buildAvatarImage() {
+    if (_selectedImagePath != null && _selectedImagePath!.isNotEmpty) {
+      if (_selectedImagePath!.startsWith('http')) {
+        return ClipOval(
+          child: CustomCachedImage(
+            imageUrl: _selectedImagePath!,
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+            borderRadius: 50,
+          ),
+        );
+      }
+      return ClipOval(
+        child: Image.file(
+          File(_selectedImagePath!),
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildPlaceholderAvatar(),
         ),
       );
     }
+
+    if (!_isPhotoRemoved) {
+      return ClipOval(
+        child: CustomCachedImage(
+          imageUrl: _defaultAvatarUrl,
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+          borderRadius: 50,
+        ),
+      );
+    }
+
+    return _buildPlaceholderAvatar();
+  }
+
+  Widget _buildPlaceholderAvatar() {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: const BoxDecoration(
+        color: AppColors.primary5,
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(
+        LucideIcons.userRound,
+        size: 46,
+        color: AppColors.primary,
+      ),
+    );
   }
 
   @override
@@ -50,7 +213,12 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Edit Profile'),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.primaryDark,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(LucideIcons.arrowLeft),
           onPressed: () => Navigator.pop(context),
         ),
@@ -62,50 +230,73 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Avatar
+              // Interactive Avatar
               Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary, width: 3),
-                        image: const DecorationImage(
-                          image: NetworkImage(
-                            'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400',
+                child: Semantics(
+                  label: 'Change profile photo',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: _pickProfilePhoto,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 104,
+                          height: 104,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          fit: BoxFit.cover,
+                          child: _buildAvatarImage(),
                         ),
-                      ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              LucideIcons.camera,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.camera,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Change Profile Photo',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+              GestureDetector(
+                onTap: _pickProfilePhoto,
+                child: const Text(
+                  'Change Profile Photo',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
 
@@ -138,19 +329,37 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saveProfile,
+                  onPressed: _isSaving ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.primary.withValues(
+                      alpha: 0.5,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
                   ),
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -182,7 +391,9 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           controller: controller,
           keyboardType: keyboardType,
           validator: (value) =>
-              value == null || value.isEmpty ? 'This field is required' : null,
+              value == null || value.trim().isEmpty
+                  ? 'This field is required'
+                  : null,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
             filled: true,

@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
+import '../viewmodels/cart_cubit.dart';
 import '../viewmodels/product_details_cubit.dart';
 import '../viewmodels/product_details_state.dart';
 
@@ -148,6 +149,9 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
         final cubit = context.read<ProductDetailsCubit>();
         final product = state.product;
         final suggestions = ProductItem.getSuggestedProducts(product.id);
+        final heroHeight = (MediaQuery.sizeOf(context).height * 0.36)
+            .clamp(240.0, 320.0)
+            .toDouble();
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -210,12 +214,12 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                   ),
                   const SizedBox(width: 6),
                   Semantics(
-                    label: 'View cart',
+                    label: 'Notifications',
                     button: true,
                     child: _buildHeaderIconButton(
-                      icon: LucideIcons.shoppingBag,
-                      tooltip: 'Cart',
-                      onTap: () => context.push(RouteNames.cart),
+                      icon: LucideIcons.bell,
+                      tooltip: 'Notifications',
+                      onTap: () => context.push(RouteNames.notifications),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -230,7 +234,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                     children: [
                       // Image PageView with Tap to Zoom
                       SizedBox(
-                        height: 310,
+                        height: heroHeight,
                         child: Stack(
                           children: [
                             Semantics(
@@ -816,175 +820,304 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
             ],
           ),
 
-          // Sticky Bottom Purchase Bar (Safe Area protected, zero overflow)
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Colors.white,
-              border: const Border(
-                top: BorderSide(color: AppColors.border, width: 1.0),
+          // Purchase action stays compact until the selected product is in the cart.
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: const Border(top: BorderSide(color: AppColors.border)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -3),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    // Plan Summary & Savings
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${state.selectedSupplyPlan.title} Plan',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          Text(
-                            'Save ₹${state.totalSavings}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.success,
-                            ),
-                          ),
-                        ],
+              child: Builder(
+                builder: (context) {
+                  final cart = context.read<CartCubit?>();
+                  Widget buildBottomBar(
+                    BuildContext barContext, [
+                    CartState? cartState,
+                  ]) {
+                    final cartQuantity =
+                        cart?.quantityFor(
+                          product.id,
+                          state.selectedSupplyPlan.title,
+                        ) ??
+                        0;
+                    final quantity = cartQuantity > 0
+                        ? cartQuantity
+                        : state.quantity;
+                    final isInCart =
+                        cartQuantity > 0 || (cart == null && state.isAddedToCart);
+                    final total = state.currentUnitPrice * quantity;
+                    final reduceMotion = MediaQuery.disableAnimationsOf(barContext);
+                    return AnimatedSwitcher(
+                      duration: reduceMotion
+                          ? Duration.zero
+                          : const Duration(milliseconds: 260),
+                      reverseDuration: reduceMotion
+                          ? Duration.zero
+                          : const Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.12),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(width: 6),
-
-                    // Quantity Stepper (Accessible >= 44 touch targets)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Semantics(
-                            label: 'Decrease quantity',
-                            button: true,
-                            child: IconButton(
-                              icon: const Icon(LucideIcons.minus, size: 14),
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                              onPressed: state.quantity > 1
-                                  ? () => cubit.decrementQuantity()
-                                  : null,
-                            ),
-                          ),
-                          Text(
-                            '${state.quantity}',
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          Semantics(
-                            label: 'Increase quantity',
-                            button: true,
-                            child: IconButton(
-                              icon: const Icon(LucideIcons.plus, size: 14),
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                              onPressed: () => cubit.incrementQuantity(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Add to Cart Button (Flexible text avoids flex overflow)
-                    Expanded(
-                      flex: 5,
-                      child: Semantics(
-                        label: 'Add to cart, total ₹${state.totalPrice}',
-                        button: true,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            cubit.addToCart();
-                            HapticFeedback.lightImpact();
-                            final cartItem = <String, dynamic>{
-                              'title': product.name,
-                              'desc': state.selectedSupplyPlan.subtitle,
-                              'price': state.selectedSupplyPlan.price,
-                              'quantity': state.quantity,
-                              'image': product.images.isEmpty
-                                  ? ''
-                                  : product.images.first,
-                            };
-                            context.push(RouteNames.cart, extra: [cartItem]);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(LucideIcons.shoppingBag, size: 16),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  'Add',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.1,
+                      child: isInCart
+                          ? Row(
+                              key: const ValueKey('product-added-controls'),
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '₹$total',
+                                        style: const TextStyle(
+                                          color: AppColors.primaryDark,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      Text(
+                                        '$quantity × ${state.selectedSupplyPlan.title} plan',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.secondaryDark,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        tooltip: quantity <= 1
+                                            ? 'Remove from cart'
+                                            : 'Decrease quantity',
+                                        onPressed: () {
+                                          if (quantity <= 1) {
+                                            final lineId = CartCubit.lineId(
+                                              product.id,
+                                              state.selectedSupplyPlan.title,
+                                            );
+                                            cart?.remove(lineId);
+                                            cubit.removeFromCart();
+                                            HapticFeedback.lightImpact();
+                                            ScaffoldMessenger.of(context)
+                                              ..hideCurrentSnackBar()
+                                              ..showSnackBar(
+                                                SnackBar(
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  backgroundColor:
+                                                      AppColors.primaryDark,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(12),
+                                                  ),
+                                                  duration: const Duration(
+                                                    seconds: 2,
+                                                  ),
+                                                  content: Text(
+                                                    'Removed ${product.name} from cart',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              );
+                                          } else {
+                                            final next = quantity - 1;
+                                            cubit.setQuantity(next);
+                                            cart?.setQuantity(
+                                              CartCubit.lineId(
+                                                product.id,
+                                                state
+                                                    .selectedSupplyPlan
+                                                    .title,
+                                              ),
+                                              next,
+                                            );
+                                            HapticFeedback.selectionClick();
+                                          }
+                                        },
+                                        icon: Icon(
+                                          quantity <= 1
+                                              ? LucideIcons.trash2
+                                              : LucideIcons.minus,
+                                          size: 16,
+                                          color: quantity <= 1
+                                              ? AppColors.danger
+                                              : AppColors.primaryDark,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 42,
+                                          minHeight: 42,
+                                        ),
+                                      ),
+                                      AnimatedSwitcher(
+                                        duration: reduceMotion
+                                            ? Duration.zero
+                                            : const Duration(milliseconds: 160),
+                                        transitionBuilder: (child, animation) =>
+                                            ScaleTransition(
+                                              scale: animation,
+                                              child: child,
+                                            ),
+                                        child: Text(
+                                          '$quantity',
+                                          key: ValueKey(quantity),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.primaryDark,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Increase quantity',
+                                        onPressed: quantity >= 10
+                                            ? null
+                                            : () {
+                                                final next = quantity + 1;
+                                                cubit.setQuantity(next);
+                                                cart?.setQuantity(
+                                                  CartCubit.lineId(
+                                                    product.id,
+                                                    state
+                                                        .selectedSupplyPlan
+                                                        .title,
+                                                  ),
+                                                  next,
+                                                );
+                                                HapticFeedback.selectionClick();
+                                              },
+                                        icon: const Icon(
+                                          LucideIcons.plus,
+                                          size: 16,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 42,
+                                          minHeight: 42,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                FilledButton.icon(
+                                  onPressed: () {
+                                    HapticFeedback.lightImpact();
+                                    context.push(RouteNames.cart);
+                                  },
+                                  icon: const Icon(
+                                    LucideIcons.shoppingCart,
+                                    size: 17,
+                                  ),
+                                  label: const Text('View'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(92, 46),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : SizedBox(
+                              key: const ValueKey('add-product-button'),
+                              width: double.infinity,
+                              height: 50,
+                              child: FilledButton.icon(
+                                onPressed: product.inStock
+                                    ? () {
+                                        cart?.addProduct(
+                                          product: product,
+                                          plan: state.selectedSupplyPlan,
+                                          quantity: state.quantity,
+                                        );
+                                        cubit.addToCart();
+                                        HapticFeedback.lightImpact();
+                                        ScaffoldMessenger.of(context)
+                                          ..hideCurrentSnackBar()
+                                          ..showSnackBar(
+                                            SnackBar(
+                                              behavior: SnackBarBehavior.floating,
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                              content: const Text(
+                                                'Added to your cart',
+                                              ),
+                                            ),
+                                          );
+                                      }
+                                    : null,
+                                icon: const Icon(
+                                  LucideIcons.shoppingCart,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  product.inStock
+                                      ? 'Add to cart · ₹${state.totalPrice}'
+                                      : 'Currently unavailable',
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor: AppColors.border,
+                                  minimumSize: const Size.fromHeight(50),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                            ),
+                    );
+                  }
+
+                  if (cart != null) {
+                    return BlocBuilder<CartCubit, CartState>(
+                      bloc: cart,
+                      builder: buildBottomBar,
+                    );
+                  }
+                  return buildBottomBar(context);
+                },
               ),
             ),
           ),

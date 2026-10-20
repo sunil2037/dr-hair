@@ -57,6 +57,17 @@ void main() {
       expect(cubit.state.quantity, 1);
     });
 
+    test('removeFromCart resets isAddedToCart and resets quantity to 1', () {
+      cubit.addToCart();
+      cubit.incrementQuantity();
+      expect(cubit.state.isAddedToCart, true);
+      expect(cubit.state.quantity, 2);
+
+      cubit.removeFromCart();
+      expect(cubit.state.isAddedToCart, false);
+      expect(cubit.state.quantity, 1);
+    });
+
     test('toggleFavorite toggles favorite state', () {
       expect(cubit.state.isFavorite, false);
       cubit.toggleFavorite();
@@ -102,19 +113,34 @@ void main() {
         expect(find.text('6 Months'), findsOneWidget);
 
         // Verify initial Add button
-        expect(find.text('Add'), findsOneWidget);
+        expect(find.textContaining('Add to cart'), findsOneWidget);
 
         // Switch to 1 Month plan (price = 1299)
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -200));
         await tester.pumpAndSettle();
         await tester.tap(find.text('1 Month'));
         await tester.pumpAndSettle();
-        expect(find.text('Add'), findsOneWidget);
+        expect(find.textContaining('Add to cart · ₹1299'), findsOneWidget);
+
+        // Add to cart to show quantity controls
+        await tester.tap(find.textContaining('Add to cart'));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('product-added-controls')), findsOneWidget);
 
         // Increment quantity (+ button)
         await tester.tap(find.byIcon(LucideIcons.plus));
         await tester.pumpAndSettle();
-        expect(find.text('Add'), findsOneWidget);
+        expect(find.text('2'), findsWidgets);
+
+        // Decrement quantity (- button)
+        await tester.tap(find.byIcon(LucideIcons.minus));
+        await tester.pumpAndSettle();
+        expect(find.text('1'), findsWidgets);
+
+        // Remove item from cart by tapping minus button on quantity 1 (trash icon)
+        await tester.tap(find.byIcon(LucideIcons.trash2));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Add to cart'), findsOneWidget);
 
         // Verify tabs
         await tester.ensureVisible(find.text('Benefits'));
@@ -251,8 +277,14 @@ void main() {
         await tester.pumpWidget(const MaterialApp(home: ProductDetailsView()));
 
         // Purchase button should be visible without any overflow
-        expect(find.text('Add'), findsOneWidget);
-        expect(find.byIcon(LucideIcons.minus), findsOneWidget);
+        expect(find.textContaining('Add to cart'), findsOneWidget);
+
+        // Tap Add to cart to show quantity controls and View button
+        await tester.tap(find.textContaining('Add to cart'));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('product-added-controls')), findsOneWidget);
+        expect(find.text('View'), findsOneWidget);
+        expect(find.byIcon(LucideIcons.trash2), findsOneWidget);
         expect(find.byIcon(LucideIcons.plus), findsOneWidget);
       },
     );
@@ -278,7 +310,7 @@ void main() {
           find.text('DHT Blocker & Keratin Fortification Oral Supplements'),
           findsOneWidget,
         );
-        expect(find.text('Add'), findsOneWidget);
+        expect(find.textContaining('Add to cart'), findsOneWidget);
         expect(find.text('₹2499'), findsWidgets);
       },
     );

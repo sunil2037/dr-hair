@@ -6,11 +6,75 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../widgets/medicine_card.dart';
+import '../widgets/real_transformations_section.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   final VoidCallback onStartHairTest;
 
   const HomeView({super.key, required this.onStartHairTest});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView>
+    with SingleTickerProviderStateMixin {
+  static const int _sectionCount = 15;
+  late final AnimationController _entranceController;
+  late final List<Animation<double>> _sectionOpacity;
+  late final List<Animation<Offset>> _sectionPosition;
+  bool _motionConfigured = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1150),
+    );
+
+    _sectionOpacity = List.generate(_sectionCount, (index) {
+      final start = (index * 0.04).clamp(0.0, 0.55);
+      final end = (start + 0.30).clamp(0.0, 1.0);
+      return CurvedAnimation(
+        parent: _entranceController,
+        curve: Interval(start, end, curve: Curves.easeOutCubic),
+      );
+    });
+    _sectionPosition = _sectionOpacity
+        .map(
+          (opacity) => Tween<Offset>(
+            begin: const Offset(0, 0.035),
+            end: Offset.zero,
+          ).animate(opacity),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_motionConfigured) return;
+    _motionConfigured = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _entranceController.value = 1;
+    } else {
+      _entranceController.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
+  }
+
+  Widget _revealSection(int index, Widget child) {
+    return FadeTransition(
+      opacity: _sectionOpacity[index],
+      child: SlideTransition(position: _sectionPosition[index], child: child),
+    );
+  }
 
   Future<void> _launchWhatsapp() async {
     const phoneNumber = '918058056789';
@@ -42,85 +106,85 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      physics: AlwaysScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. HERO SECTION
-          _buildHeroSection(context),
+          _revealSection(0, _buildHeroSection(context)),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // 4. ESSENTIAL PRODUCTS
-          _buildEssentialProducts(context),
+          _revealSection(1, _buildEssentialProducts(context)),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // 2. URGENT CARE CARD
-          _buildUrgentCareCard(),
+          _revealSection(2, _buildUrgentCareCard()),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // 3. ANALYTICS & SOCIAL PROOF
-          _buildAnalyticsSection(),
+          _revealSection(3, _buildAnalyticsSection()),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // 5. BASED ON YOUR CONDITION
-          _buildConditionBasedSection(context),
+          _revealSection(4, _buildConditionBasedSection(context)),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // 6. WHY TRUST DR. HAIR
-          _buildWhyTrustDrHair(),
+          _revealSection(5, _buildWhyTrustDrHair()),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 7. RESTORATION JOURNEY (TIMELINE)
-          _buildRestorationJourney(),
+          _revealSection(6, _buildRestorationJourney()),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 8. PATIENT VIDEO STORIES CAROUSEL
-          _buildVideoStories(context),
+          _revealSection(7, _buildVideoStories(context)),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 9. START HAIR TEST CTA BANNER
-          _buildCtaBanner(),
+          _revealSection(8, _buildCtaBanner()),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 10. REVIEWS & TESTIMONIALS
-          _buildReviewsSection(context),
+          _revealSection(9, _buildReviewsSection(context)),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 11. EXPERT TIPS
-          _buildExpertTips(),
+          _revealSection(10, _buildExpertTips()),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 12. REAL TRANSFORMATIONS (BEFORE / AFTER)
-          _buildRealTransformations(),
+          _revealSection(11, _buildRealTransformations()),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 13. FREQUENTLY ASKED QUESTIONS
-          _buildFaqSection(),
+          _revealSection(12, _buildFaqSection()),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // 14. CERTIFICATIONS
-          _buildCertifications(),
+          _revealSection(13, _buildCertifications()),
 
           const SizedBox(height: 24),
 
           // 15. CLINIC LOCATION
-          _buildLocationSection(),
+          _revealSection(14, _buildLocationSection()),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -164,7 +228,7 @@ class HomeView extends StatelessWidget {
                 // Right-aligned model banner image
                 Positioned(
                   bottom: 0,
-                  right: -65,
+                  right: -80,
                   child: Image.asset(
                     'assets/images/hair_bennar.png',
                     height: (bannerHeight - topPadding).clamp(190.0, 250.0),
@@ -177,13 +241,13 @@ class HomeView extends StatelessWidget {
 
                 // Left-aligned content (Badge, Headline, CTA)
                 Positioned(
-                  left: 16,
-                  top: topPadding - 15,
+                  left: 20,
+                  top: topPadding - 30,
                   bottom: 20,
-                  width: screenWidth * 0.55,
+                  width: screenWidth * 0.47,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Clinically Approved Badge
                       Container(
@@ -211,7 +275,7 @@ class HomeView extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Image.asset(
-                              'assets/icons/StarRight.png',
+                              'assets/icons/ApprovedIcon.png',
                               width: 12,
                               height: 12,
                               errorBuilder: (context, error, stackTrace) =>
@@ -234,13 +298,13 @@ class HomeView extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 15),
                       // Impact Headline
                       RichText(
                         textAlign: TextAlign.left,
                         text: const TextSpan(
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: AppColors.primaryDark,
                             height: 1.25,
@@ -260,12 +324,12 @@ class HomeView extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 15),
                       // CTA Button
                       SizedBox(
                         height: 38,
                         child: ElevatedButton(
-                          onPressed: onStartHairTest,
+                          onPressed: widget.onStartHairTest,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -386,7 +450,7 @@ class HomeView extends StatelessWidget {
   // --- SECTION 3: ANALYTICS & SOCIAL PROOF ---
   Widget _buildAnalyticsSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -445,7 +509,7 @@ class HomeView extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppColors.primary5,
                       borderRadius: BorderRadius.circular(12),
@@ -456,7 +520,7 @@ class HomeView extends StatelessWidget {
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -486,7 +550,7 @@ class HomeView extends StatelessWidget {
                       const Text(
                         'Google Ratings • 10,000+ Reviews',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 10,
                           color: AppColors.secondaryDark,
                           fontWeight: FontWeight.w500,
                         ),
@@ -559,7 +623,7 @@ class HomeView extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               color: AppColors.secondaryDark,
               fontWeight: FontWeight.w500,
             ),
@@ -576,12 +640,12 @@ class HomeView extends StatelessWidget {
 
   // --- SECTION 5: BASED ON YOUR CONDITION ---
   Widget _buildConditionBasedSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Text(
             'Based on Your Condition',
             style: TextStyle(
               fontSize: 18,
@@ -589,115 +653,117 @@ class HomeView extends StatelessWidget {
               color: AppColors.primaryDark,
             ),
           ),
-          const SizedBox(height: 14),
+        ),
+        const SizedBox(height: 14),
 
-          // Pills
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('Hair Fall', true),
-                const SizedBox(width: 8),
-                _buildFilterChip('Dandruff', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('Thinning', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('Crown Balding', false),
-              ],
-            ),
+        // Pills
+        SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildFilterChip('Hair Fall', true),
+              const SizedBox(width: 8),
+              _buildFilterChip('Dandruff', false),
+              const SizedBox(width: 8),
+              _buildFilterChip('Thinning', false),
+              const SizedBox(width: 8),
+              _buildFilterChip('Crown Balding', false),
+            ],
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
 
-          // Recommendation Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
+        // Recommendation Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
+                  width: 75,
+                  height: 75,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
                     width: 75,
                     height: 75,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 75,
-                      height: 75,
-                      color: AppColors.primary5,
-                      child: const Icon(
-                        LucideIcons.package,
-                        color: AppColors.primary,
-                        size: 28,
-                      ),
+                    color: AppColors.primary5,
+                    child: const Icon(
+                      LucideIcons.package,
+                      color: AppColors.primary,
+                      size: 28,
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Anti-Fall Concentrate',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                        ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Anti-Fall Concentrate',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDark,
                       ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'Targeted scalp treatment for crown thinning.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondaryDark,
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Targeted scalp treatment for crown thinning.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryDark,
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            '₹1,499',
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '₹1,499',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary5,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            '★ Recommended',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.primary,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary5,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              '★ Recommended',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -769,6 +835,7 @@ class HomeView extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: trustPoints.length,
+            padding: EdgeInsets.zero,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 14,
@@ -1105,7 +1172,7 @@ class HomeView extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: onStartHairTest,
+              onPressed: widget.onStartHairTest,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.primary,
@@ -1352,178 +1419,7 @@ class HomeView extends StatelessWidget {
 
   // --- SECTION 12: REAL TRANSFORMATIONS (BEFORE / AFTER) ---
   Widget _buildRealTransformations() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Real Transformations',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    // Before
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                            ),
-                            child: Image.network(
-                              'https://images.unsplash.com/photo-1774979517558-a9dfa07cf8d0?q=80&w=400',
-                              height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                    height: 180,
-                                    color: AppColors.primary5,
-                                    child: const Icon(
-                                      LucideIcons.imageOff,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 10,
-                            left: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.7),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'BEFORE',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    // After
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(24),
-                            ),
-                            child: Image.network(
-                              'https://images.unsplash.com/photo-1775126964224-99c03c0e439c?q=80&w=400',
-                              height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                    height: 180,
-                                    color: AppColors.primary5,
-                                    child: const Icon(
-                                      LucideIcons.imageOff,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 10,
-                            right: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'AFTER',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'CASE ID: #4820',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.secondaryDark,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary100,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Text(
-                          '3 Months Result',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const RealTransformationsSection();
   }
 
   // --- SECTION 13: FAQS ---
@@ -1650,71 +1546,172 @@ class HomeView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        height: 320,
-        width: double.infinity,
         decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(28),
-          image: const DecorationImage(
-            image: AssetImage('assets/icons/MapImage.png'),
-            fit: BoxFit.cover,
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryDark.withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            color: Colors.white.withValues(alpha: 0.88),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-                ),
-                child: const Icon(
-                  LucideIcons.mapPin,
-                  color: AppColors.primary,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                'Dr. Hair Clinical Centre\nMansarovar, Jaipur, Rajasthan\nsupport@drhair.health',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryDark,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: _launchMaps,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Interactive Map Preview
+            GestureDetector(
+              onTap: _launchMaps,
+              child: Stack(
+                children: [
+                  Image.asset(
+                    'assets/images/DrHairLocation.png',
+                    height: 190,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.12),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.20),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                icon: const Icon(LucideIcons.map, size: 18),
-                label: const Text(
-                  'View on Google Maps',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
+                  Positioned(
+                    top: 14,
+                    right: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.94),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.externalLink,
+                            size: 13,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Open Map',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // Clinic Information & Actions
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary5,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.primary100),
+                        ),
+                        child: const Icon(
+                          LucideIcons.mapPin,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dr. Hair Clinical Centre',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Mansarovar, Jaipur, Rajasthan\nsupport@drhair.health',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.secondaryDark,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: _launchMaps,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      icon: const Icon(LucideIcons.map, size: 16),
+                      label: const Text(
+                        'View on Google Maps',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

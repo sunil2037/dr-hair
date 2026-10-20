@@ -11,6 +11,7 @@ class RouteNames {
   static const String updateProfile = '/update-profile';
   static const String treatmentDetails = '/treatment-details';
   static const String cart = '/cart';
+  static const String notifications = '/notifications';
   static const String productDetails = '/product-details';
   static const String checkout = '/checkout';
   static const String signin = '/signin';

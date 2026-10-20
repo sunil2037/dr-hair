@@ -34,6 +34,13 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
     }
   }
 
+  void setQuantity(int quantity) {
+    final next = quantity.clamp(1, 10).toInt();
+    if (next != state.quantity) {
+      emit(state.copyWith(quantity: next));
+    }
+  }
+
   void toggleFavorite() {
     emit(state.copyWith(isFavorite: !state.isFavorite));
   }
@@ -44,6 +51,10 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
 
   void addToCart() {
     emit(state.copyWith(isAddedToCart: true));
+  }
+
+  void removeFromCart() {
+    emit(state.copyWith(isAddedToCart: false, quantity: 1));
   }
 
   void setFullscreen(bool isOpen) {

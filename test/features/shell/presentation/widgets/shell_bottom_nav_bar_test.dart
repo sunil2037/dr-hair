@@ -31,4 +31,57 @@ void main() {
     await tester.tap(find.byTooltip('AI Hair Analysis'));
     expect(actionPressed, true);
   });
+
+  testWidgets('renders and handles taps on cart summary bar', (tester) async {
+    int cartPressedCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: ShellBottomNavBar(
+              currentIndex: 0,
+              cartItemCount: 2,
+              cartSubtotal: 1499,
+              onTabSelected: (_) {},
+              onCartPressed: () => cartPressedCount++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Ensure cart bar renders
+    expect(find.byKey(const ValueKey('cart-summary')), findsOneWidget);
+    expect(find.text('2 items · ₹1499'), findsOneWidget);
+    expect(find.text('Tap to review & checkout'), findsOneWidget);
+    expect(find.text('View Cart'), findsOneWidget);
+
+    // Tap View Cart button directly
+    await tester.tap(find.text('View Cart'));
+    expect(cartPressedCount, 1);
+
+    // Tap somewhere else on the cart bar
+    await tester.tap(find.text('2 items · ₹1499'));
+    expect(cartPressedCount, 2);
+  });
+
+  testWidgets('hides cart summary bar when cart is empty', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: ShellBottomNavBar(
+              currentIndex: 0,
+              cartItemCount: 0,
+              onTabSelected: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('cart-summary')), findsNothing);
+    expect(find.byKey(const ValueKey('cart-summary-hidden')), findsOneWidget);
+  });
 }

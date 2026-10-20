@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +10,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/custom_cached_image.dart';
+import '../../../auth/domain/models/user_model.dart';
+import '../../../auth/presentation/viewmodels/auth_cubit.dart';
+import '../../../auth/presentation/viewmodels/auth_state.dart';
+import '../../../shop/presentation/viewmodels/cart_cubit.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -26,6 +34,9 @@ class ProfileView extends StatelessWidget {
   void _showSignOutDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
+
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (modalContext) => Container(
@@ -99,15 +110,16 @@ class ProfileView extends StatelessWidget {
                     foregroundColor: Colors.white,
                     onPressed: () {
                       Navigator.pop(modalContext);
+                      final authCubit = context.read<AuthCubit?>();
+                      authCubit?.signOut();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           backgroundColor: AppColors.primary,
-                          content: Text(
-                            'Authentication is not connected, so no account session was changed.',
-                          ),
+                          content: Text('Signed out successfully.'),
                           duration: Duration(seconds: 2),
                         ),
                       );
+                      context.go(RouteNames.signin);
                     },
                   ),
                 ),
@@ -196,13 +208,24 @@ class ProfileView extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               _buildGroupedCard([
-                _ProfileMenuTile(
-                  icon: LucideIcons.shoppingBag,
-                  iconColor: const Color(0xFF0284C7),
-                  iconBgColor: const Color(0xFFF0F9FF),
-                  title: 'My cart',
-                  subtitle: 'Review products in your cart',
-                  onTap: () => context.push(RouteNames.cart),
+                Builder(
+                  builder: (context) {
+                    final cart = context.read<CartCubit?>();
+                    Widget tile(int itemCount) => _ProfileMenuTile(
+                      icon: LucideIcons.shoppingBag,
+                      iconColor: const Color(0xFF0284C7),
+                      iconBgColor: const Color(0xFFF0F9FF),
+                      title: 'My cart',
+                      subtitle: itemCount == 0
+                          ? 'Your cart is empty'
+                          : '$itemCount ${itemCount == 1 ? 'item' : 'items'} ready to review',
+                      onTap: () => context.push(RouteNames.cart),
+                    );
+                    if (cart == null) return tile(0);
+                    return BlocBuilder<CartCubit, CartState>(
+                      builder: (context, state) => tile(state.itemCount),
+                    );
+                  },
                 ),
                 _ProfileMenuTile(
                   icon: LucideIcons.packageCheck,
@@ -316,63 +339,105 @@ class ProfileView extends StatelessWidget {
   }
 
   Widget _buildPatientCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primary5,
-            child: Icon(LucideIcons.userRound, color: AppColors.primary),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final authCubit = context.read<AuthCubit?>();
+
+    Widget buildCard(UserModel? user) {
+      final name = user?.name.isNotEmpty == true ? user!.name : 'Yashveer Soni';
+      final patientId =
+          user?.patientId.isNotEmpty == true ? user!.patientId : 'DRH-2024-8849';
+      final photoUrl = user?.photoUrl;
+
+      Widget avatarWidget;
+      if (photoUrl != null && photoUrl.isNotEmpty) {
+        if (photoUrl.startsWith('http')) {
+          avatarWidget = ClipOval(
+            child: CustomCachedImage(
+              imageUrl: photoUrl,
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+            ),
+          );
+        } else {
+          avatarWidget = ClipOval(
+            child: Image.file(
+              File(photoUrl),
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const CircleAvatar(
+                radius: 28,
+                backgroundColor: AppColors.primary5,
+                child: Icon(LucideIcons.userRound, color: AppColors.primary),
+              ),
+            ),
+          );
+        }
+      } else {
+        avatarWidget = const CircleAvatar(
+          radius: 28,
+          backgroundColor: AppColors.primary5,
+          child: Icon(LucideIcons.userRound, color: AppColors.primary),
+        );
+      }
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            avatarWidget,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Patient ID: $patientId',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.secondaryDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Yashveer Soni',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Patient ID: DRH-2024-8849',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.secondaryDark,
-                  ),
+                IconButton(
+                  tooltip: 'Edit profile',
+                  onPressed: () => context.push(RouteNames.updateProfile),
+                  icon: const Icon(LucideIcons.pencil, color: AppColors.primary),
                 ),
               ],
             ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: 'Sign in',
-                onPressed: () => context.push(RouteNames.signin),
-                icon: const Icon(LucideIcons.logIn, color: AppColors.primary),
-              ),
-              IconButton(
-                tooltip: 'Edit profile',
-                onPressed: () => context.push(RouteNames.updateProfile),
-                icon: const Icon(LucideIcons.pencil, color: AppColors.primary),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    }
+
+    if (authCubit != null) {
+      return BlocBuilder<AuthCubit, AuthState>(
+        bloc: authCubit,
+        builder: (context, state) => buildCard(state.user),
+      );
+    }
+    return buildCard(null);
   }
 }
 

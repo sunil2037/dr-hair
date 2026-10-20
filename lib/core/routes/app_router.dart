@@ -1,6 +1,5 @@
 import 'package:go_router/go_router.dart';
 
-import '../../features/auth/presentation/views/otp_view.dart';
 import '../../features/auth/presentation/views/signin_view.dart';
 import '../../features/auth/presentation/views/splash_view.dart';
 import '../../features/hair_test/presentation/views/hair_test_view.dart';
@@ -11,6 +10,7 @@ import '../../features/reviews/presentation/views/reviews_view.dart';
 import '../../features/shell/presentation/views/main_shell_view.dart';
 import '../../features/shop/data/models/product_model.dart';
 import '../../features/shop/presentation/views/cart_view.dart';
+import '../../features/shop/presentation/views/notifications_view.dart';
 import '../../features/shop/presentation/views/checkout_view.dart';
 import '../../features/shop/presentation/views/product_details_view.dart';
 import '../../features/static/presentation/views/about_view.dart';
@@ -82,6 +82,10 @@ class AppRouter {
 
       // Standalone full-screen routes that push over the shell (NO bottom nav, NO shell navbar)
       GoRoute(
+        path: RouteNames.home,
+        redirect: (context, state) => RouteNames.mainShell,
+      ),
+      GoRoute(
         path: RouteNames.hairTest,
         builder: (context, state) => const HairTestView(),
       ),
@@ -97,8 +101,12 @@ class AppRouter {
         path: RouteNames.cart,
         builder: (context, state) {
           final items = state.extra as List<Map<String, dynamic>>?;
-          return CartView(initialItems: items ?? const []);
+          return CartView(initialItems: items);
         },
+      ),
+      GoRoute(
+        path: RouteNames.notifications,
+        builder: (context, state) => const NotificationsView(),
       ),
       GoRoute(
         path: RouteNames.productDetails,
@@ -115,13 +123,6 @@ class AppRouter {
       GoRoute(
         path: RouteNames.signin,
         builder: (context, state) => const SigninView(),
-      ),
-      GoRoute(
-        path: RouteNames.otp,
-        builder: (context, state) {
-          final identifier = state.extra as String? ?? '';
-          return OtpView(identifier: identifier);
-        },
       ),
       GoRoute(
         path: RouteNames.about,

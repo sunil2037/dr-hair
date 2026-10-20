@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/custom_app_bar.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../../domain/models/video_story_model.dart';
 import '../viewmodels/videos_cubit.dart';
@@ -77,6 +79,8 @@ class _VideosContentState extends State<_VideosContent> {
 
         return Scaffold(
           backgroundColor: Colors.black,
+          extendBodyBehindAppBar: true,
+          appBar: const CustomAppBar(isDark: true),
           body: Stack(
             fit: StackFit.expand,
             children: [
@@ -133,7 +137,7 @@ class _VideosContentState extends State<_VideosContent> {
 
     return Container(
       padding: EdgeInsets.only(
-        top: topPadding + 6,
+        top: topPadding + 62,
         left: 16,
         right: 16,
         bottom: 12,
@@ -157,58 +161,53 @@ class _VideosContentState extends State<_VideosContent> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Patient Video Stories',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -0.3,
-                      shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-                    ),
+              const Text(
+                'Patient Video Stories',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                  shadows: [
+                    Shadow(color: Colors.black54, blurRadius: 6),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.4),
                   ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      LucideIcons.badgeCheck,
+                      color: AppColors.success,
+                      size: 12,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: AppColors.success.withValues(alpha: 0.4),
+                    SizedBox(width: 4),
+                    Text(
+                      '100% Verified Outcomes',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          LucideIcons.badgeCheck,
-                          color: AppColors.success,
-                          size: 12,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '100% Verified Outcomes',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
-
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Horizontal Category Filter Pills
           SingleChildScrollView(
@@ -427,23 +426,33 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     });
   }
 
-  void _onShare() {
+  Future<void> _onShare() async {
     HapticFeedback.mediumImpact();
     context.read<VideosCubit>().incrementShare(widget.video.id);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.primaryDark,
-        content: Row(
-          children: [
-            const Icon(LucideIcons.check, color: AppColors.success, size: 18),
-            const SizedBox(width: 10),
-            Text('Story link copied for ${widget.video.name}!'),
-          ],
+
+    if (_isTesting) {
+      return;
+    }
+
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      final Rect? origin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+
+      final shareText =
+          'Watch ${widget.video.name}\'s hair transformation journey on Dr.Hair: "${widget.video.caption}" (${widget.video.treatment}). Check it out at https://drhair.health/videos/${widget.video.id}';
+
+      await SharePlus.instance.share(
+        ShareParams(
+          text: shareText,
+          subject: '${widget.video.name} - Dr.Hair Transformation Story',
+          sharePositionOrigin: origin,
         ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('Error opening share sheet: $e');
+    }
   }
 
   @override
@@ -577,7 +586,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
           // 5. Minimal Right Action Sidebar: ONLY Like and Share buttons
           Positioned(
             right: 14,
-            bottom: 110,
+            bottom: 150,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -712,13 +721,13 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: iconColor, size: 23),
+          Icon(icon, color: iconColor, size: 26),
           const SizedBox(height: 4),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
             ),

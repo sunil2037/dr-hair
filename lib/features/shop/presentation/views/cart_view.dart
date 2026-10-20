@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
+import '../viewmodels/cart_cubit.dart';
 
 class CartView extends StatefulWidget {
   final List<Map<String, dynamic>>? initialItems;
@@ -17,7 +19,9 @@ class CartView extends StatefulWidget {
 }
 
 class _CartViewState extends State<CartView> {
-  late List<Map<String, dynamic>> _items;
+  late List<Map<String, dynamic>> _localItems;
+  List<Map<String, dynamic>> get _items =>
+      context.read<CartCubit?>()?.state.items ?? _localItems;
 
   final TextEditingController _couponController = TextEditingController();
   bool _couponApplied = false;
@@ -25,7 +29,7 @@ class _CartViewState extends State<CartView> {
   @override
   void initState() {
     super.initState();
-    _items = widget.initialItems != null
+    _localItems = widget.initialItems != null
         ? List<Map<String, dynamic>>.from(
             widget.initialItems!.map((item) => Map<String, dynamic>.from(item)),
           )
@@ -70,18 +74,36 @@ class _CartViewState extends State<CartView> {
 
   void _incrementQuantity(int index) {
     if (_items[index]['quantity'] < 10) {
-      setState(() {
-        _items[index]['quantity'] = (_items[index]['quantity'] as int) + 1;
-      });
+      final sharedCart = context.read<CartCubit?>();
+      if (sharedCart != null) {
+        sharedCart.setQuantity(
+          _items[index]['id'] as String,
+          (_items[index]['quantity'] as int) + 1,
+        );
+      } else {
+        setState(() {
+          _localItems[index]['quantity'] =
+              (_localItems[index]['quantity'] as int) + 1;
+        });
+      }
       HapticFeedback.selectionClick();
     }
   }
 
   void _decrementQuantity(int index) {
     if ((_items[index]['quantity'] as int) > 1) {
-      setState(() {
-        _items[index]['quantity'] = (_items[index]['quantity'] as int) - 1;
-      });
+      final sharedCart = context.read<CartCubit?>();
+      if (sharedCart != null) {
+        sharedCart.setQuantity(
+          _items[index]['id'] as String,
+          (_items[index]['quantity'] as int) - 1,
+        );
+      } else {
+        setState(() {
+          _localItems[index]['quantity'] =
+              (_localItems[index]['quantity'] as int) - 1;
+        });
+      }
       HapticFeedback.selectionClick();
     } else {
       _removeItem(index);
@@ -89,10 +111,13 @@ class _CartViewState extends State<CartView> {
   }
 
   void _removeItem(int index) {
-    final removed = _items[index];
-    setState(() {
-      _items.removeAt(index);
-    });
+    final removed = Map<String, dynamic>.from(_items[index]);
+    final sharedCart = context.read<CartCubit?>();
+    if (sharedCart != null) {
+      sharedCart.remove(removed['id'] as String);
+    } else {
+      setState(() => _localItems.removeAt(index));
+    }
     HapticFeedback.lightImpact();
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -101,19 +126,11 @@ class _CartViewState extends State<CartView> {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
         content: Text(
           'Removed ${removed['title']} from cart',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-        ),
-        action: SnackBarAction(
-          label: 'UNDO',
-          textColor: AppColors.starGold,
-          onPressed: () {
-            setState(() {
-              _items.insert(index, removed);
-            });
-          },
         ),
       ),
     );
@@ -121,11 +138,16 @@ class _CartViewState extends State<CartView> {
 
   void _clearCart() {
     if (_items.isEmpty) return;
-    final backup = List<Map<String, dynamic>>.from(_items);
-    setState(() {
-      _items.clear();
-      _couponApplied = false;
-    });
+    final sharedCart = context.read<CartCubit?>();
+    if (sharedCart != null) {
+      sharedCart.clear();
+      setState(() => _couponApplied = false);
+    } else {
+      setState(() {
+        _localItems.clear();
+        _couponApplied = false;
+      });
+    }
     HapticFeedback.mediumImpact();
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -134,16 +156,8 @@ class _CartViewState extends State<CartView> {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
         content: const Text('Cart cleared'),
-        action: SnackBarAction(
-          label: 'UNDO',
-          textColor: AppColors.starGold,
-          onPressed: () {
-            setState(() {
-              _items.addAll(backup);
-            });
-          },
-        ),
       ),
     );
   }
@@ -172,6 +186,16 @@ class _CartViewState extends State<CartView> {
 
   @override
   Widget build(BuildContext context) {
+    final cartCubit = context.read<CartCubit?>();
+    if (cartCubit != null) {
+      return BlocBuilder<CartCubit, CartState>(
+        builder: (context, state) => _buildScaffold(context),
+      );
+    }
+    return _buildScaffold(context);
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -297,43 +321,44 @@ class _CartViewState extends State<CartView> {
             ),
             const SizedBox(height: 16),
 
-            // Reset Demo Items Button
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _items = [
-                    {
-                      'title': 'Follicle Booster Serum',
-                      'desc': 'Advance Density Complex • 30ml',
-                      'price': 1299,
-                      'quantity': 1,
-                      'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
-                    },
-                    {
-                      'title': 'Clinical Scalp Detox Shampoo',
-                      'desc': 'Anti-Microbial Zinc Pyrithione • 200ml',
-                      'price': 749,
-                      'quantity': 1,
-                      'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=400',
-                    },
-                  ];
-                });
-                HapticFeedback.lightImpact();
-              },
-              icon: const Icon(
-                LucideIcons.rotateCcw,
-                size: 14,
-                color: AppColors.primary,
-              ),
-              label: const Text(
-                'Reset Demo Cart Items',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
+            // Keep the demo reset affordance only in standalone preview mode.
+            if (context.read<CartCubit?>() == null)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _localItems = [
+                      {
+                        'title': 'Follicle Booster Serum',
+                        'desc': 'Advance Density Complex • 30ml',
+                        'price': 1299,
+                        'quantity': 1,
+                        'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
+                      },
+                      {
+                        'title': 'Clinical Scalp Detox Shampoo',
+                        'desc': 'Anti-Microbial Zinc Pyrithione • 200ml',
+                        'price': 749,
+                        'quantity': 1,
+                        'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=400',
+                      },
+                    ];
+                  });
+                  HapticFeedback.lightImpact();
+                },
+                icon: const Icon(
+                  LucideIcons.rotateCcw,
+                  size: 14,
                   color: AppColors.primary,
                 ),
+                label: const Text(
+                  'Reset Demo Cart Items',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),

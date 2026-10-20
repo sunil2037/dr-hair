@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../viewmodels/hair_test_cubit.dart';
 import '../viewmodels/hair_test_state.dart';
 
@@ -526,171 +526,16 @@ class _HairTestContent extends StatelessWidget {
     final cubit = context.read<HairTestCubit>();
     final bool hasExistingPhoto = cubit.state.hasPhoto(label);
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Text(
-                'Upload Photo',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Select image source for $label',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.secondaryDark,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildSourceOption(
-                sheetContext: sheetContext,
-                icon: LucideIcons.camera,
-                title: 'Take Photo',
-                subtitle: 'Open camera to capture your scalp',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  cubit.pickPhoto(label: label, source: ImageSource.camera);
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildSourceOption(
-                sheetContext: sheetContext,
-                icon: LucideIcons.image,
-                title: 'Choose from Gallery',
-                subtitle: 'Select an existing photo from library',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  cubit.pickPhoto(label: label, source: ImageSource.gallery);
-                },
-              ),
-              if (hasExistingPhoto) ...[
-                const SizedBox(height: 12),
-                _buildSourceOption(
-                  sheetContext: sheetContext,
-                  icon: LucideIcons.trash2,
-                  title: 'Remove Photo',
-                  subtitle: 'Clear current photo for $label',
-                  isDestructive: true,
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    cubit.removePhoto(label);
-                  },
-                ),
-              ],
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSourceOption({
-    required BuildContext sheetContext,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isDestructive
-              ? AppColors.danger.withValues(alpha: 0.06)
-              : AppColors.background,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDestructive
-                ? AppColors.danger.withValues(alpha: 0.2)
-                : AppColors.border,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isDestructive
-                    ? AppColors.danger.withValues(alpha: 0.12)
-                    : AppColors.primary5,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isDestructive ? AppColors.danger : AppColors.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isDestructive
-                          ? AppColors.danger
-                          : AppColors.primaryDark,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDestructive
-                          ? AppColors.danger.withValues(alpha: 0.8)
-                          : AppColors.secondaryDark,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              LucideIcons.chevronRight,
-              size: 18,
-              color: isDestructive
-                  ? AppColors.danger.withValues(alpha: 0.6)
-                  : AppColors.textMuted,
-            ),
-          ],
-        ),
-      ),
+    PhotoSourceBottomSheet.show(
+      context,
+      title: 'Upload Photo',
+      subtitle: 'Select image source for $label',
+      cameraSubtitle: 'Open camera to capture your scalp',
+      gallerySubtitle: 'Select an existing photo from library',
+      removeSubtitle: 'Clear current photo for $label',
+      hasExistingPhoto: hasExistingPhoto,
+      onSelectSource: (source) => cubit.pickPhoto(label: label, source: source),
+      onRemovePhoto: () => cubit.removePhoto(label),
     );
   }
 
@@ -729,14 +574,17 @@ class _HairTestContent extends StatelessWidget {
             child: InkWell(
               onTap: () => onSelected(opt),
               borderRadius: BorderRadius.circular(18),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary5 : Colors.white,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.border,
-                    width: isSelected ? 2 : 1,
+                  border: Border(
+                    left: BorderSide(
+                      color: isSelected ? AppColors.primary : AppColors.border,
+                      width: isSelected ? 3 : 1,
+                    ),
                   ),
                 ),
                 child: Row(
