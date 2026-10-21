@@ -68,8 +68,8 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
     final Duration motionDuration = disableMotion
         ? Duration.zero
         : const Duration(milliseconds: 180);
-    final double barHeight = isIOS ? 52 : 55;
-    final double actionSize = isIOS ? 52 : 55;
+    final double barHeight = isIOS ? 53 : 55;
+    final double actionSize = isIOS ? 53 : 55;
 
     final int? currentPillIndex = _getPillIndex(widget.currentIndex);
     if (currentPillIndex != null) {
@@ -114,7 +114,7 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
           left: false,
           right: false,
           bottom: true,
-          minimum: EdgeInsets.only(bottom: isIOS ? 6 : 10, top: 4),
+          minimum: EdgeInsets.only(bottom: isIOS ? 0 : 10, top: 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -141,7 +141,7 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
               // 2. Navigation Row (Pill + Standalone Action Button)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16)
-                    .copyWith(bottom: isIOS ? 2 : 10),
+                    .copyWith(bottom: isIOS ? 0 : 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [

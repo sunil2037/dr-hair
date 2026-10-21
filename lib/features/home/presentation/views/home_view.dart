@@ -197,8 +197,8 @@ class _HomeViewState extends State<HomeView>
     final double screenWidth = mediaQuery.size.width;
     final double topPadding = mediaQuery.padding.top + kToolbarHeight;
     final double bannerHeight = (screenHeight * 0.4).clamp(
-      topPadding + 170.0,
-      390.0,
+      topPadding + 160.0,
+      380.0,
     );
 
     return Column(
