@@ -133,154 +133,152 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPatientCard(context),
-              const SizedBox(height: 24),
-              _buildSectionHeader(
-                title: 'YOUR CARE',
-                subtitle: 'The tools for your hair health journey',
-              ),
-              const SizedBox(height: 10),
-              _buildGroupedCard([
-                _ProfileMenuTile(
-                  icon: LucideIcons.clipboardPlus,
-                  iconColor: AppColors.primary,
-                  iconBgColor: AppColors.primary5,
-                  title: 'Treatment plan',
-                  subtitle: 'View your regimen and dosage',
-                  onTap: () => context.push(RouteNames.treatmentDetails),
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.calendarCheck,
-                  iconColor: const Color(0xFF059669),
-                  iconBgColor: const Color(0xFFECFDF5),
-                  title: 'Daily routine',
-                  subtitle: 'Check off today’s care steps',
-                  onTap: () => context.push(RouteNames.routine),
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.chartNoAxesCombined,
-                  iconColor: const Color(0xFF7C3AED),
-                  iconBgColor: const Color(0xFFF5F3FF),
-                  title: 'Progress journal',
-                  subtitle: 'Review your check-ins over time',
-                  onTap: () => context.push(RouteNames.progress),
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.apple,
-                  iconColor: const Color(0xFFEA580C),
-                  iconBgColor: const Color(0xFFFFF7ED),
-                  title: 'Nutrition guide',
-                  subtitle: 'See daily meal ideas',
-                  onTap: () => context.push(RouteNames.dietPlan),
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.bell,
-                  iconColor: const Color(0xFFCA8A04),
-                  iconBgColor: const Color(0xFFFEFCE8),
-                  title: 'Care reminders',
-                  subtitle: 'Manage your reminder preferences',
-                  onTap: () => context.push(RouteNames.reminders),
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.phoneCall,
-                  iconColor: const Color(0xFF0891B2),
-                  iconBgColor: const Color(0xFFECFEFF),
-                  title: 'Talk to a hair coach',
-                  subtitle: 'Choose a time for a guidance call',
-                  onTap: () => context.push(RouteNames.coachBooking),
-                  showDivider: false,
-                ),
-              ]),
-              const SizedBox(height: 22),
-              _buildSectionHeader(
-                title: 'ORDERS',
-                subtitle: 'Your products and deliveries',
-              ),
-              const SizedBox(height: 10),
-              _buildGroupedCard([
-                Builder(
-                  builder: (context) {
-                    final cart = context.read<CartCubit?>();
-                    Widget tile(int itemCount) => _ProfileMenuTile(
-                      icon: LucideIcons.shoppingBag,
-                      iconColor: const Color(0xFF0284C7),
-                      iconBgColor: const Color(0xFFF0F9FF),
-                      title: 'My cart',
-                      subtitle: itemCount == 0
-                          ? 'Your cart is empty'
-                          : '$itemCount ${itemCount == 1 ? 'item' : 'items'} ready to review',
-                      onTap: () => context.push(RouteNames.cart),
-                    );
-                    if (cart == null) return tile(0);
-                    return BlocBuilder<CartCubit, CartState>(
-                      builder: (context, state) => tile(state.itemCount),
-                    );
-                  },
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.packageCheck,
-                  iconColor: const Color(0xFF059669),
-                  iconBgColor: const Color(0xFFECFDF5),
-                  title: 'Orders & delivery',
-                  subtitle: 'Check your order status',
-                  onTap: () => context.push(RouteNames.orders),
-                  showDivider: false,
-                ),
-              ]),
-              const SizedBox(height: 22),
-              _buildSectionHeader(
-                title: 'ACCOUNT',
-                subtitle: 'Your details and support',
-              ),
-              const SizedBox(height: 10),
-              _buildGroupedCard([
-                _ProfileMenuTile(
-                  icon: LucideIcons.userRound,
-                  iconColor: AppColors.primary,
-                  iconBgColor: AppColors.primary5,
-                  title: 'Personal information',
-                  subtitle: 'Edit your profile details',
-                  onTap: () => context.push(RouteNames.updateProfile),
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.messageSquare,
-                  iconColor: AppColors.whatsapp,
-                  iconBgColor: AppColors.whatsapp.withValues(alpha: 0.12),
-                  title: 'Contact support',
-                  subtitle: 'Chat with the Dr.Hair team on WhatsApp',
-                  onTap: _launchWhatsapp,
-                ),
-                _ProfileMenuTile(
-                  icon: LucideIcons.logOut,
-                  iconColor: AppColors.danger,
-                  iconBgColor: AppColors.danger.withValues(alpha: 0.1),
-                  title: 'Sign out',
-                  subtitle: 'Sign out of this account',
-                  isDestructive: true,
-                  onTap: () => _showSignOutDialog(context),
-                  showDivider: false,
-                ),
-              ]),
-              const SizedBox(height: 20),
-              const Center(
-                child: Text(
-                  'Dr.Hair · Hair care, made personal',
-                  style: TextStyle(fontSize: 11, color: AppColors.textMuted),
-                ),
-              ),
-            ],
+    final double topPadding = MediaQuery.of(context).padding.top + 20.0;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 110),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPatientCard(context),
+          const SizedBox(height: 24),
+          _buildSectionHeader(
+            title: 'YOUR CARE',
+            subtitle: 'The tools for your hair health journey',
           ),
-        ),
+          const SizedBox(height: 10),
+          _buildGroupedCard([
+            _ProfileMenuTile(
+              icon: LucideIcons.clipboardPlus,
+              iconColor: AppColors.primary,
+              iconBgColor: AppColors.primary5,
+              title: 'Treatment plan',
+              subtitle: 'View your regimen and dosage',
+              onTap: () => context.push(RouteNames.treatmentDetails),
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.calendarCheck,
+              iconColor: const Color(0xFF059669),
+              iconBgColor: const Color(0xFFECFDF5),
+              title: 'Daily routine',
+              subtitle: 'Check off today’s care steps',
+              onTap: () => context.push(RouteNames.routine),
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.chartNoAxesCombined,
+              iconColor: const Color(0xFF7C3AED),
+              iconBgColor: const Color(0xFFF5F3FF),
+              title: 'Progress journal',
+              subtitle: 'Review your check-ins over time',
+              onTap: () => context.push(RouteNames.progress),
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.apple,
+              iconColor: const Color(0xFFEA580C),
+              iconBgColor: const Color(0xFFFFF7ED),
+              title: 'Nutrition guide',
+              subtitle: 'See daily meal ideas',
+              onTap: () => context.push(RouteNames.dietPlan),
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.bell,
+              iconColor: const Color(0xFFCA8A04),
+              iconBgColor: const Color(0xFFFEFCE8),
+              title: 'Care reminders',
+              subtitle: 'Manage your reminder preferences',
+              onTap: () => context.push(RouteNames.reminders),
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.phoneCall,
+              iconColor: const Color(0xFF0891B2),
+              iconBgColor: const Color(0xFFECFEFF),
+              title: 'Talk to a hair coach',
+              subtitle: 'Choose a time for a guidance call',
+              onTap: () => context.push(RouteNames.coachBooking),
+              showDivider: false,
+            ),
+          ]),
+          const SizedBox(height: 22),
+          _buildSectionHeader(
+            title: 'ORDERS',
+            subtitle: 'Your products and deliveries',
+          ),
+          const SizedBox(height: 10),
+          _buildGroupedCard([
+            Builder(
+              builder: (context) {
+                final cart = context.read<CartCubit?>();
+                Widget tile(int itemCount) => _ProfileMenuTile(
+                  icon: LucideIcons.shoppingBag,
+                  iconColor: const Color(0xFF0284C7),
+                  iconBgColor: const Color(0xFFF0F9FF),
+                  title: 'My cart',
+                  subtitle: itemCount == 0
+                      ? 'Your cart is empty'
+                      : '$itemCount ${itemCount == 1 ? 'item' : 'items'} ready to review',
+                  onTap: () => context.push(RouteNames.cart),
+                );
+                if (cart == null) return tile(0);
+                return BlocBuilder<CartCubit, CartState>(
+                  builder: (context, state) => tile(state.itemCount),
+                );
+              },
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.packageCheck,
+              iconColor: const Color(0xFF059669),
+              iconBgColor: const Color(0xFFECFDF5),
+              title: 'Orders & delivery',
+              subtitle: 'Check your order status',
+              onTap: () => context.push(RouteNames.orders),
+              showDivider: false,
+            ),
+          ]),
+          const SizedBox(height: 22),
+          _buildSectionHeader(
+            title: 'ACCOUNT',
+            subtitle: 'Your details and support',
+          ),
+          const SizedBox(height: 10),
+          _buildGroupedCard([
+            _ProfileMenuTile(
+              icon: LucideIcons.userRound,
+              iconColor: AppColors.primary,
+              iconBgColor: AppColors.primary5,
+              title: 'Personal information',
+              subtitle: 'Edit your profile details',
+              onTap: () => context.push(RouteNames.updateProfile),
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.messageSquare,
+              iconColor: AppColors.whatsapp,
+              iconBgColor: AppColors.whatsapp.withValues(alpha: 0.12),
+              title: 'Contact support',
+              subtitle: 'Chat with the Dr.Hair team on WhatsApp',
+              onTap: _launchWhatsapp,
+            ),
+            _ProfileMenuTile(
+              icon: LucideIcons.logOut,
+              iconColor: AppColors.danger,
+              iconBgColor: AppColors.danger.withValues(alpha: 0.1),
+              title: 'Sign out',
+              subtitle: 'Sign out of this account',
+              isDestructive: true,
+              onTap: () => _showSignOutDialog(context),
+              showDivider: false,
+            ),
+          ]),
+          const SizedBox(height: 20),
+          const Center(
+            child: Text(
+              'Dr.Hair · Hair care, made personal',
+              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -343,8 +341,9 @@ class ProfileView extends StatelessWidget {
 
     Widget buildCard(UserModel? user) {
       final name = user?.name.isNotEmpty == true ? user!.name : 'Yashveer Soni';
-      final patientId =
-          user?.patientId.isNotEmpty == true ? user!.patientId : 'DRH-2024-8849';
+      final patientId = user?.patientId.isNotEmpty == true
+          ? user!.patientId
+          : 'DRH-2024-8849';
       final photoUrl = user?.photoUrl;
 
       Widget avatarWidget;
@@ -422,7 +421,11 @@ class ProfileView extends StatelessWidget {
                 IconButton(
                   tooltip: 'Edit profile',
                   onPressed: () => context.push(RouteNames.updateProfile),
-                  icon: const Icon(LucideIcons.pencil, color: AppColors.primary),
+                  icon: const Icon(
+                    LucideIcons.pencil,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
                 ),
               ],
             ),

@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Dr. Hair needs access to your camera to take photos of your scalp for clinical evaluation.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Dr. Hair needs access to your photos to upload scalp photos for clinical evaluation.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -57,9 +61,5 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>Dr. Hair needs access to your camera to take photos of your scalp for clinical evaluation.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Dr. Hair needs access to your photos to upload scalp photos for clinical evaluation.</string>
 </dict>
 </plist>

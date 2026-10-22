@@ -21,28 +21,36 @@ class MainShellView extends StatefulWidget {
 }
 
 class _MainShellViewState extends State<MainShellView> {
-  late final ValueNotifier<double> _homeScrollOffset;
+  late final List<ValueNotifier<double>> _tabScrollOffsets;
   late final ValueNotifier<bool> _isBottomNavHidden;
 
   @override
   void initState() {
     super.initState();
-    _homeScrollOffset = ValueNotifier<double>(0);
+    _tabScrollOffsets = List.generate(4, (_) => ValueNotifier<double>(0));
     _isBottomNavHidden = ValueNotifier<bool>(false);
   }
 
   @override
   void dispose() {
-    _homeScrollOffset.dispose();
+    for (final notifier in _tabScrollOffsets) {
+      notifier.dispose();
+    }
     _isBottomNavHidden.dispose();
     super.dispose();
   }
 
   void _onTabSelected(int index) {
     if (_isBottomNavHidden.value) _isBottomNavHidden.value = false;
+    final isReselectingActiveTab = index == widget.navigationShell.currentIndex;
+    if (isReselectingActiveTab &&
+        index >= 0 &&
+        index < _tabScrollOffsets.length) {
+      _tabScrollOffsets[index].value = 0;
+    }
     widget.navigationShell.goBranch(
       index,
-      initialLocation: index == widget.navigationShell.currentIndex,
+      initialLocation: isReselectingActiveTab,
     );
   }
 
@@ -50,25 +58,24 @@ class _MainShellViewState extends State<MainShellView> {
   Widget build(BuildContext context) {
     final int currentTab = widget.navigationShell.currentIndex;
     final String location = GoRouterState.of(context).matchedLocation;
-    final bool isHomeTab = currentTab == 0 && location == RouteNames.mainShell;
     final bool isVideosTab = currentTab == 2 || location == RouteNames.videos;
-    final PreferredSizeWidget appBar = isHomeTab
-        ? PreferredSize(
+    final int activeIndex = currentTab.clamp(0, _tabScrollOffsets.length - 1);
+    final PreferredSizeWidget? appBar = isVideosTab
+        ? null
+        : PreferredSize(
             preferredSize: const Size.fromHeight(60),
             child: ValueListenableBuilder<double>(
-              valueListenable: _homeScrollOffset,
-              builder: (context, offset, child) => CustomAppBar(
-                scrollProgress: (offset / 80.0).clamp(0.0, 1.0),
-              ),
+              valueListenable: _tabScrollOffsets[activeIndex],
+              builder: (context, offset, child) =>
+                  CustomAppBar(scrollProgress: (offset / 80.0).clamp(0.0, 1.0)),
             ),
-          )
-        : const CustomAppBar();
+          );
 
     return Scaffold(
       backgroundColor: isVideosTab ? Colors.black : AppColors.background,
       extendBody: true,
-      extendBodyBehindAppBar: isHomeTab,
-      appBar: isVideosTab ? null : appBar,
+      extendBodyBehindAppBar: !isVideosTab,
+      appBar: appBar,
       // Screen body naturally fills the available viewport above the bottom nav bar
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
@@ -84,11 +91,12 @@ class _MainShellViewState extends State<MainShellView> {
             }
           }
 
-          if (isHomeTab && notification is ScrollUpdateNotification) {
+          if (!isVideosTab && notification is ScrollUpdateNotification) {
             final double pixels = notification.metrics.pixels;
             final double nextOffset = pixels.clamp(0.0, 300.0).toDouble();
-            if (nextOffset != _homeScrollOffset.value) {
-              _homeScrollOffset.value = nextOffset;
+            final notifier = _tabScrollOffsets[activeIndex];
+            if (nextOffset != notifier.value) {
+              notifier.value = nextOffset;
             }
           }
           return false;
@@ -100,20 +108,21 @@ class _MainShellViewState extends State<MainShellView> {
       // too adds the iOS top/status-bar inset above the bar and makes it tall.
       bottomNavigationBar: ValueListenableBuilder<bool>(
         valueListenable: _isBottomNavHidden,
-        builder: (context, isNavHidden, child) => BlocBuilder<CartCubit, CartState>(
-          builder: (context, cartState) => RepaintBoundary(
-            child: ShellBottomNavBar(
-              currentIndex: widget.navigationShell.currentIndex,
-              cartItemCount: cartState.itemCount,
-              cartSubtotal: cartState.subtotal,
-              isHidden: isNavHidden && !isVideosTab,
-              showBackground: !isVideosTab,
-              onTabSelected: _onTabSelected,
-              onCartPressed: () => context.push(RouteNames.cart),
-              onActionPressed: () => context.push(RouteNames.hairTest),
+        builder: (context, isNavHidden, child) =>
+            BlocBuilder<CartCubit, CartState>(
+              builder: (context, cartState) => RepaintBoundary(
+                child: ShellBottomNavBar(
+                  currentIndex: widget.navigationShell.currentIndex,
+                  cartItemCount: cartState.itemCount,
+                  cartSubtotal: cartState.subtotal,
+                  isHidden: isNavHidden && !isVideosTab,
+                  showBackground: !isVideosTab,
+                  onTabSelected: _onTabSelected,
+                  onCartPressed: () => context.push(RouteNames.cart),
+                  onActionPressed: () => context.push(RouteNames.hairTest),
+                ),
+              ),
             ),
-          ),
-        ),
       ),
     );
   }

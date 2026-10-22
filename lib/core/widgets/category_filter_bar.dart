@@ -142,8 +142,9 @@ class _FilterChipItemState extends State<_FilterChipItem> {
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13,
-                fontWeight:
-                    widget.isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontWeight: widget.isSelected
+                    ? FontWeight.w700
+                    : FontWeight.w600,
                 color: widget.isSelected
                     ? widget.selectedTextColor
                     : widget.unselectedTextColor,

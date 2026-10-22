@@ -9,6 +9,7 @@ import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
 import 'features/auth/presentation/viewmodels/auth_cubit.dart';
+import 'features/care/presentation/viewmodels/care_cubit.dart';
 import 'features/shop/presentation/viewmodels/cart_cubit.dart';
 
 Future<void> main() async {
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
             create: (_) => AuthCubit()..checkAuthStatus(),
           ),
         BlocProvider<CartCubit>(create: (_) => CartCubit()),
+        BlocProvider<CareCubit>(create: (_) => CareCubit()),
       ],
       child: app,
     );
