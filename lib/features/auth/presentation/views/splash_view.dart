@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
   late final AnimationController _motionController;
   bool _motionConfigured = false;
   bool _hasNavigated = false;
+  Timer? _navigationFallback;
 
   @override
   void initState() {
@@ -34,6 +36,9 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
           if (status == AnimationStatus.completed) _onSplashComplete();
         });
     _entranceController.forward();
+    // Keep navigation resilient if the entrance animation is interrupted by
+    // lifecycle changes or reduced-motion settings on a device.
+    _navigationFallback = Timer(const Duration(seconds: 2), _onSplashComplete);
 
     // Continuous soothing motion loop (vitality ripples, levitation, sparkles)
     _motionController = AnimationController(
@@ -56,6 +61,7 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _navigationFallback?.cancel();
     _entranceController.dispose();
     _motionController.dispose();
     super.dispose();
@@ -64,8 +70,8 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
   void _onSplashComplete() {
     if (!mounted || _hasNavigated) return;
     _hasNavigated = true;
-    final authCubit = context.read<AuthCubit?>();
-    final isAuthenticated = authCubit?.state.isAuthenticated ?? false;
+    _navigationFallback?.cancel();
+    final isAuthenticated = context.read<AuthCubit>().state.isAuthenticated;
     if (isAuthenticated) {
       context.go(RouteNames.mainShell);
     } else {

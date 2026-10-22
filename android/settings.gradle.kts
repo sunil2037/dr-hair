@@ -7,9 +7,11 @@ pluginManagement {
                 localProps.reader(Charsets.UTF_8).use { properties.load(it) }
             }
             var path = properties.getProperty("flutter.sdk")
-            val cleanSymlink = java.io.File("/Users/sunilsharma/SDKs/flutter")
-            if (cleanSymlink.exists() && (path == null || path.contains("Sunil"))) {
-                path = cleanSymlink.absolutePath
+            val devSdk = java.io.File("/Users/sunilsharma/Developer/flutter")
+            if (path == null || path.contains("Documents") || path.contains("Sunil’s")) {
+                if (devSdk.exists()) {
+                    path = devSdk.absolutePath
+                }
             }
             require(path != null) { "flutter.sdk not set in local.properties" }
             path
@@ -32,11 +34,13 @@ val flutterSdkPath =
             localProps.reader(Charsets.UTF_8).use { properties.load(it) }
         }
         var path = properties.getProperty("flutter.sdk")
-        val cleanSymlink = java.io.File("/Users/sunilsharma/SDKs/flutter")
-        if (cleanSymlink.exists() && (path == null || path.contains("Sunil"))) {
-            path = cleanSymlink.absolutePath
+        val devSdk = java.io.File("/Users/sunilsharma/Developer/flutter")
+        if (path == null || path.contains("Documents") || path.contains("Sunil’s")) {
+            if (devSdk.exists()) {
+                path = devSdk.absolutePath
+            }
         }
-        path ?: "/Users/sunilsharma/SDKs/flutter"
+        path ?: "/Users/sunilsharma/Developer/flutter"
     }
 
 extra["flutterSdkPath"] = flutterSdkPath

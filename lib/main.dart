@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,13 +15,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = AppBlocObserver();
 
-  // Turn off screen rotation globally (lock to portrait only)
-  await SystemChrome.setPreferredOrientations([
+  // Render Flutter's first frame before waiting for the platform orientation
+  // channel. A delayed native response should not leave the launch screen up.
+  runApp(const MyApp());
+
+  unawaited(SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]);
-
-  runApp(const MyApp());
+  ]).catchError((Object error) {
+    debugPrint('Could not set preferred screen orientation: $error');
+  }));
 }
 
 class MyApp extends StatelessWidget {
