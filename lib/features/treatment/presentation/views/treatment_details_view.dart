@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../../../core/constants/app_colors.dart';
 
 class TreatmentDetailsView extends StatelessWidget {
@@ -23,7 +24,7 @@ class TreatmentDetailsView extends StatelessWidget {
           children: [
             // Status Card
             Container(
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: AppColors.navyGradient,
                 borderRadius: BorderRadius.circular(24),
@@ -43,7 +44,9 @@ class TreatmentDetailsView extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.success.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(20),
@@ -52,7 +55,7 @@ class TreatmentDetailsView extends StatelessWidget {
                           'CLINICALLY VERIFIED',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
                           ),
@@ -68,12 +71,12 @@ class TreatmentDetailsView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   const Text(
                     'Androgenetic Alopecia - Grade 2',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -82,7 +85,7 @@ class TreatmentDetailsView extends StatelessWidget {
                     'Early crown miniaturization with frontal hairline recession. Follicles remain viable for medical reactivation.',
                     style: TextStyle(
                       color: Colors.white70,
-                      fontSize: 13,
+                      fontSize: 12,
                       height: 1.4,
                     ),
                   ),
@@ -167,13 +170,16 @@ class TreatmentDetailsView extends StatelessWidget {
                 children: [
                   const Row(
                     children: [
-                      Icon(LucideIcons.clipboardCheck,
-                          color: AppColors.primary, size: 22),
+                      Icon(
+                        LucideIcons.clipboardCheck,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
                       SizedBox(width: 10),
                       Text(
                         'Dermatologist Clinical Notes',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primaryDark,
                         ),
@@ -184,7 +190,7 @@ class TreatmentDetailsView extends StatelessWidget {
                   const Text(
                     '"Patient exhibits classic pattern thinning. Recommended 4 months of rigorous topical and oral therapy. Follow-up digital photography check-in scheduled for month 2."',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontStyle: FontStyle.italic,
                       color: AppColors.secondaryDark,
                       height: 1.45,
@@ -244,7 +250,7 @@ class TreatmentDetailsView extends StatelessWidget {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -254,14 +260,14 @@ class TreatmentDetailsView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.primary5,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 24),
+            child: Icon(icon, color: AppColors.primary, size: 22),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +275,7 @@ class TreatmentDetailsView extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primaryDark,
                   ),
@@ -278,14 +284,16 @@ class TreatmentDetailsView extends StatelessWidget {
                 Text(
                   dosage,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     color: AppColors.secondaryDark,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary100,
                     borderRadius: BorderRadius.circular(10),
@@ -293,7 +301,7 @@ class TreatmentDetailsView extends StatelessWidget {
                   child: Text(
                     status,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
                     ),

@@ -17,7 +17,12 @@ import '../../features/static/presentation/views/about_view.dart';
 import '../../features/static/presentation/views/contact_view.dart';
 import '../../features/treatment/presentation/views/treatment_details_view.dart';
 import '../../features/videos/presentation/views/videos_view.dart';
-import '../../features/care/presentation/views/care_feature_views.dart';
+import '../../features/care/presentation/views/coach_booking_view.dart';
+import '../../features/care/presentation/views/diet_plan_view.dart';
+import '../../features/care/presentation/views/order_tracking_view.dart';
+import '../../features/care/presentation/views/progress_tracking_view.dart';
+import '../../features/care/presentation/views/reminders_view.dart';
+import '../../features/care/presentation/views/routine_tracker_view.dart';
 import 'route_names.dart';
 
 class AppRouter {

@@ -250,7 +250,9 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.15),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.15,
+                                ),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -294,7 +296,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                   'Change Profile Photo',
                   style: TextStyle(
                     color: AppColors.primary,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -381,7 +383,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
             color: AppColors.primaryDark,
           ),
@@ -390,10 +392,9 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          validator: (value) =>
-              value == null || value.trim().isEmpty
-                  ? 'This field is required'
-                  : null,
+          validator: (value) => value == null || value.trim().isEmpty
+              ? 'This field is required'
+              : null,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
             filled: true,
