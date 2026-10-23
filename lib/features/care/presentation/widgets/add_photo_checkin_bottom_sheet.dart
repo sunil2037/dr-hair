@@ -477,14 +477,6 @@ class _AddPhotoCheckInBottomSheetState
 
                       HapticFeedback.mediumImpact();
                       Navigator.pop(context);
-                      AppToast.show(context,
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text(
-                            'Progress check-in saved.',
-                          ),
-                        ),
-                      );
                     },
                   ),
                 ),

@@ -31,4 +31,5 @@ class RouteNames {
   static const String returnsRefunds = '/returns-refunds';
   static const String cancellationPolicy = '/cancellation-policy';
   static const String guarantee = '/guarantee';
+  static const String products = '/products';
 }

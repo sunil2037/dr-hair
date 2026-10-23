@@ -117,7 +117,7 @@ class _CoachBookingViewState extends State<CoachBookingView> {
       if (mounted) {
         AppToast.show(context,
           const SnackBar(
-            content: Text('Opening Google Maps location...'),
+            content: Text('Could not open the map. Please try again.'),
             backgroundColor: AppColors.primaryDark,
           ),
         );
@@ -189,7 +189,7 @@ class _CoachBookingViewState extends State<CoachBookingView> {
       if (mounted) {
         AppToast.show(context,
           const SnackBar(
-            content: Text('Opening Google Calendar...'),
+            content: Text('Could not add the calendar event. Please try again.'),
             backgroundColor: AppColors.primaryDark,
           ),
         );
@@ -267,7 +267,7 @@ class _CoachBookingViewState extends State<CoachBookingView> {
         if (mounted) {
           AppToast.show(context,
             const SnackBar(
-              content: Text('Apple Calendar reminder ready.'),
+              content: Text('Could not create the calendar reminder. Please try again.'),
               backgroundColor: AppColors.primaryDark,
             ),
           );
@@ -300,12 +300,6 @@ class _CoachBookingViewState extends State<CoachBookingView> {
               Navigator.pop(ctx);
               context.read<CareCubit>().cancelCoachBooking(bookingId);
               HapticFeedback.mediumImpact();
-              AppToast.show(context,
-                const SnackBar(
-                  content: Text('In-clinic appointment has been cancelled.'),
-                  backgroundColor: AppColors.primaryDark,
-                ),
-              );
             },
             child: const Text(
               'Cancel Booking',

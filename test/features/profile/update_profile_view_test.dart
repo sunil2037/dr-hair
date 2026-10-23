@@ -99,10 +99,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(fakePicker.lastSource, ImageSource.gallery);
-      expect(find.text('Profile photo updated'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
-    testWidgets('removing photo clears photo and shows confirmation', (tester) async {
+    testWidgets('removing photo clears it without showing a toast', (tester) async {
       await tester.pumpWidget(
         BlocProvider<AuthCubit>.value(
           value: authCubit,
@@ -116,7 +116,8 @@ void main() {
       await tester.tap(find.text('Remove Profile Photo'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Profile photo removed'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byIcon(LucideIcons.userRound), findsWidgets);
     });
 
     testWidgets('saving changes updates AuthCubit and pops view', (tester) async {

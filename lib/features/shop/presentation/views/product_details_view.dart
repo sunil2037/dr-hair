@@ -932,29 +932,6 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                             cart?.remove(lineId);
                                             cubit.removeFromCart();
                                             HapticFeedback.lightImpact();
-                                            AppToast.show(context,
-                                                SnackBar(
-                                                  behavior:
-                                                      SnackBarBehavior.floating,
-                                                  backgroundColor:
-                                                      AppColors.primaryDark,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                  ),
-                                                  duration: const Duration(
-                                                    seconds: 2,
-                                                  ),
-                                                  content: Text(
-                                                    'Removed ${product.name} from cart',
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              );
                                           } else {
                                             final next = quantity - 1;
                                             cubit.setQuantity(next);
@@ -1070,18 +1047,6 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                         );
                                         cubit.addToCart();
                                         HapticFeedback.lightImpact();
-                                        AppToast.show(context,
-                                            SnackBar(
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              duration: const Duration(
-                                                seconds: 2,
-                                              ),
-                                              content: const Text(
-                                                'Added to your cart',
-                                              ),
-                                            ),
-                                          );
                                       }
                                     : null,
                                 icon: const Icon(

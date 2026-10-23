@@ -14,7 +14,6 @@ import '../../../auth/domain/models/user_model.dart';
 import '../../../auth/presentation/viewmodels/auth_cubit.dart';
 import '../../../auth/presentation/viewmodels/auth_state.dart';
 import '../../../shop/presentation/viewmodels/cart_cubit.dart';
-import '../../../../core/widgets/app_toast.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -100,14 +99,6 @@ class ProfileView extends StatelessWidget {
                       Navigator.pop(modalContext);
                       final authCubit = context.read<AuthCubit?>();
                       authCubit?.signOut();
-                      AppToast.show(
-                        context,
-                        const SnackBar(
-                          backgroundColor: AppColors.primary,
-                          content: Text('Signed out successfully.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
                       context.go(RouteNames.signin);
                     },
                   ),

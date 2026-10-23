@@ -8,7 +8,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../viewmodels/cart_cubit.dart';
-import '../../../../core/widgets/app_toast.dart';
 
 class CartView extends StatefulWidget {
   final List<Map<String, dynamic>>? initialItems;
@@ -112,7 +111,7 @@ class _CartViewState extends State<CartView> {
   }
 
   void _removeItem(int index) {
-    final removed = Map<String, dynamic>.from(_items[index]);
+    final removed = _items[index];
     final sharedCart = context.read<CartCubit?>();
     if (sharedCart != null) {
       sharedCart.remove(removed['id'] as String);
@@ -120,37 +119,10 @@ class _CartViewState extends State<CartView> {
       setState(() => _localItems.removeAt(index));
     }
     HapticFeedback.lightImpact();
-    AppToast.show(context,
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.primaryDark,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 4),
-        content: Text(
-          'Removed ${removed['title']} from cart',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        action: SnackBarAction(
-          label: 'UNDO',
-          textColor: AppColors.starGold,
-          onPressed: () {
-            if (sharedCart != null) {
-              sharedCart.restore(removed, index);
-            } else {
-              setState(() => _localItems.insert(index, removed));
-            }
-          },
-        ),
-      ),
-    );
   }
 
   void _clearCart() {
     if (_items.isEmpty) return;
-    final cached = List<Map<String, dynamic>>.from(
-      _items.map((e) => Map<String, dynamic>.from(e)),
-    );
     final sharedCart = context.read<CartCubit?>();
     if (sharedCart != null) {
       sharedCart.clear();
@@ -162,26 +134,6 @@ class _CartViewState extends State<CartView> {
       });
     }
     HapticFeedback.mediumImpact();
-    AppToast.show(context,
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.primaryDark,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 4),
-        content: const Text('Cart cleared'),
-        action: SnackBarAction(
-          label: 'UNDO',
-          textColor: AppColors.starGold,
-          onPressed: () {
-            if (sharedCart != null) {
-              sharedCart.replaceAll(cached);
-            } else {
-              setState(() => _localItems.addAll(cached));
-            }
-          },
-        ),
-      ),
-    );
   }
 
   void _applyCoupon() {

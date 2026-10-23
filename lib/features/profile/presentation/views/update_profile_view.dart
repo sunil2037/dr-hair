@@ -83,13 +83,6 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
               _isPhotoRemoved = false;
             });
             HapticFeedback.lightImpact();
-            AppToast.show(context,
-                const SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 2),
-                  content: Text('Profile photo updated'),
-                ),
-              );
           }
         } catch (e) {
           if (mounted) {
@@ -108,13 +101,6 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           _isPhotoRemoved = true;
         });
         HapticFeedback.lightImpact();
-        AppToast.show(context,
-            const SnackBar(
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
-              content: Text('Profile photo removed'),
-            ),
-          );
       },
     );
   }
@@ -131,17 +117,6 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
       );
 
       HapticFeedback.mediumImpact();
-      AppToast.show(context,
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.primaryDark,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-            content: const Text('Profile changes saved successfully!'),
-          ),
-        );
 
       Navigator.of(context).pop(true);
     }

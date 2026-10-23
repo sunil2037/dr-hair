@@ -13,6 +13,7 @@ import '../../features/shop/presentation/views/cart_view.dart';
 import '../../features/shop/presentation/views/notifications_view.dart';
 import '../../features/shop/presentation/views/checkout_view.dart';
 import '../../features/shop/presentation/views/product_details_view.dart';
+import '../../features/shop/presentation/views/products_view.dart';
 import '../../features/static/domain/policy_models.dart';
 import '../../features/static/presentation/views/about_view.dart';
 import '../../features/static/presentation/views/contact_view.dart';
@@ -126,6 +127,10 @@ class AppRouter {
         path: RouteNames.checkout,
         builder: (context, state) =>
             CheckoutView(amount: state.extra as int? ?? 2048),
+      ),
+      GoRoute(
+        path: RouteNames.products,
+        builder: (context, state) => const ProductsView(),
       ),
       GoRoute(
         path: RouteNames.signin,

@@ -1,3 +1,4 @@
+import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -144,7 +145,8 @@ class _SigninViewState extends State<SigninView>
       authCubit.resendOtp();
     }
     final phoneDisplay = '$_countryCode ${_phoneController.text.trim()}';
-    AppToast.show(context,
+    AppToast.show(
+      context,
       SnackBar(
         backgroundColor: AppColors.primary,
         content: Text('A fresh code was sent to $phoneDisplay.'),
@@ -155,7 +157,8 @@ class _SigninViewState extends State<SigninView>
   Future<void> _verifyOtpAndLogin() async {
     final code = _otpControllers.map((c) => c.text).join();
     if (code.length != 6 || !RegExp(r'^\d{6}$').hasMatch(code)) {
-      AppToast.show(context,
+      AppToast.show(
+        context,
         const SnackBar(
           content: Text('Enter the complete 6-digit verification code.'),
           backgroundColor: AppColors.danger,
@@ -191,6 +194,11 @@ class _SigninViewState extends State<SigninView>
   void _navigateToHome() {
     if (!mounted) return;
     try {
+      final hairTestCubit = context.read<HairTestCubit?>();
+      if (hairTestCubit != null && !hairTestCubit.state.isCompleted) {
+        context.go(RouteNames.hairTest);
+        return;
+      }
       context.go(RouteNames.mainShell);
     } catch (_) {
       if (Navigator.of(context).canPop()) {

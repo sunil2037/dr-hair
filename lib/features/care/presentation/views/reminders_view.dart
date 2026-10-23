@@ -600,15 +600,6 @@ class RemindersView extends StatelessWidget {
                   ),
                   onPressed: () {
                     HapticFeedback.mediumImpact();
-                    AppToast.show(context,
-                      const SnackBar(
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: AppColors.primaryDark,
-                        content: Text(
-                          'Test push simulated: "Dr.Hair: Evening topical serum ready."',
-                        ),
-                      ),
-                    );
                   },
                   icon: const Icon(LucideIcons.bell, size: 16),
                   label: const Text('Send Test Push Notification'),

@@ -154,15 +154,6 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
     HapticFeedback.mediumImpact();
     Navigator.pop(context);
 
-    AppToast.show(context,
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.primaryDark,
-        content: Text(
-          _isEditing ? 'Reminder updated successfully.' : 'New reminder scheduled.',
-        ),
-      ),
-    );
   }
 
   String _selectedDaysSummary() {
@@ -194,12 +185,6 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
               Navigator.pop(ctx);
               context.read<CareCubit>().deleteReminder(widget.reminderToEdit!.id);
               Navigator.pop(context);
-              AppToast.show(context,
-                const SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  content: Text('Reminder deleted.'),
-                ),
-              );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: const Text('Delete'),

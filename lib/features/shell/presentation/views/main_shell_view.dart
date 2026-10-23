@@ -1,3 +1,4 @@
+import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/rendering.dart';
@@ -108,21 +109,32 @@ class _MainShellViewState extends State<MainShellView> {
       // too adds the iOS top/status-bar inset above the bar and makes it tall.
       bottomNavigationBar: ValueListenableBuilder<bool>(
         valueListenable: _isBottomNavHidden,
-        builder: (context, isNavHidden, child) =>
-            BlocBuilder<CartCubit, CartState>(
-              builder: (context, cartState) => RepaintBoundary(
-                child: ShellBottomNavBar(
-                  currentIndex: widget.navigationShell.currentIndex,
-                  cartItemCount: cartState.itemCount,
-                  cartSubtotal: cartState.subtotal,
-                  isHidden: isNavHidden && !isVideosTab,
-                  showBackground: !isVideosTab,
-                  onTabSelected: _onTabSelected,
-                  onCartPressed: () => context.push(RouteNames.cart),
-                  onActionPressed: () => context.push(RouteNames.hairTest),
-                ),
+        builder: (context, isNavHidden, child) {
+          final isTestCompleted =
+              context.watch<HairTestCubit?>()?.state.isCompleted ?? false;
+
+          return BlocBuilder<CartCubit, CartState>(
+            builder: (context, cartState) => RepaintBoundary(
+              child: ShellBottomNavBar(
+                currentIndex: widget.navigationShell.currentIndex,
+                cartItemCount: cartState.itemCount,
+                cartSubtotal: cartState.subtotal,
+                isTestCompleted: isTestCompleted,
+                isHidden: isNavHidden && !isVideosTab,
+                showBackground: !isVideosTab,
+                onTabSelected: _onTabSelected,
+                onCartPressed: () => context.push(RouteNames.cart),
+                onActionPressed: () {
+                  if (isTestCompleted) {
+                    context.push(RouteNames.products);
+                  } else {
+                    context.push(RouteNames.hairTest);
+                  }
+                },
               ),
             ),
+          );
+        },
       ),
     );
   }

@@ -18,6 +18,7 @@ class ShellBottomNavBar extends StatefulWidget {
   final int cartItemCount;
   final int? cartSubtotal;
   final VoidCallback? onActionPressed;
+  final bool isTestCompleted;
 
   const ShellBottomNavBar({
     super.key,
@@ -29,6 +30,7 @@ class ShellBottomNavBar extends StatefulWidget {
     this.cartItemCount = 0,
     this.cartSubtotal,
     this.onActionPressed,
+    this.isTestCompleted = false,
   });
 
   @override
@@ -57,7 +59,11 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
     if (widget.onActionPressed != null) {
       widget.onActionPressed!();
     } else {
-      context.push(RouteNames.hairTest);
+      if (widget.isTestCompleted) {
+        context.push(RouteNames.products);
+      } else {
+        context.push(RouteNames.hairTest);
+      }
     }
   }
 
@@ -461,13 +467,16 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
     required Duration motionDuration,
     required double size,
   }) {
+    final bool isCompleted = widget.isTestCompleted;
+    final String label = isCompleted ? 'Products' : 'AI Hair Analysis';
+
     return Semantics(
       button: true,
-      label: 'AI Hair Analysis',
+      label: label,
       selected: isSelected,
       excludeSemantics: true,
       child: Tooltip(
-        message: 'AI Hair Analysis',
+        message: label,
         child: InkWell(
           customBorder: const CircleBorder(),
           onTapDown: (_) => setState(() => _isActionPressed = true),
@@ -503,17 +512,23 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
                       angle: iconAngle,
                       child: Transform.scale(
                         scale: iconScale,
-                        child: Image.asset(
-                          "assets/icons/LampIcon.png",
-                          height: 26,
-                          width: 26,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                LucideIcons.sparkles,
+                        child: isCompleted
+                            ? const Icon(
+                                LucideIcons.shoppingBag,
                                 color: Colors.white,
                                 size: 24,
+                              )
+                            : Image.asset(
+                                "assets/icons/LampIcon.png",
+                                height: 26,
+                                width: 26,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      LucideIcons.sparkles,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
                               ),
-                        ),
                       ),
                     ),
                   ),

@@ -56,7 +56,7 @@ void main() {
       },
     );
 
-    testWidgets('clear cart button empties cart and allows undo', (
+    testWidgets('clear cart empties without showing an undo toast', (
       tester,
     ) async {
       await tester.pumpWidget(const MaterialApp(home: CartView()));
@@ -70,15 +70,8 @@ void main() {
 
       // Cart is now empty
       expect(find.text('Your Cart is Empty'), findsOneWidget);
-      expect(find.text('UNDO'), findsOneWidget);
-
-      // Tap UNDO
-      await tester.tap(find.text('UNDO'));
-      await tester.pumpAndSettle();
-
-      // Cart items restored
-      expect(find.text('Follicle Booster Serum'), findsOneWidget);
-      expect(find.text('Your Cart is Empty'), findsNothing);
+      expect(find.text('UNDO'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('quantity increment and decrement updates total', (
@@ -105,7 +98,7 @@ void main() {
       expect(find.text('₹2048'), findsWidgets);
     });
 
-    testWidgets('removing item updates cart and shows undo option', (
+    testWidgets('removing item updates cart without a toast', (
       tester,
     ) async {
       await tester.pumpWidget(const MaterialApp(home: CartView()));
@@ -117,20 +110,11 @@ void main() {
       await tester.tap(trashButtons.first);
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Removed Follicle Booster Serum from cart'),
-        findsOneWidget,
-      );
-      expect(find.text('UNDO'), findsOneWidget);
+      expect(find.text('UNDO'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
       // Only 1 item remains: 749
       expect(find.text('₹749'), findsWidgets);
-
-      // Tap UNDO
-      await tester.tap(find.text('UNDO'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Follicle Booster Serum'), findsOneWidget);
-      expect(find.text('₹2048'), findsWidgets);
+      expect(find.text('Follicle Booster Serum'), findsNothing);
     });
   });
 }

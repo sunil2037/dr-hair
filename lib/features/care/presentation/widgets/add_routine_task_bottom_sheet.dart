@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../viewmodels/care_cubit.dart';
-import '../../../../core/widgets/app_toast.dart';
 
 /// Reusable bottom sheet for creating a custom care routine task.
 class AddRoutineTaskBottomSheet extends StatefulWidget {
@@ -165,12 +164,6 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
                   );
                   HapticFeedback.mediumImpact();
                   Navigator.pop(context);
-                  AppToast.show(context,
-                    const SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      content: Text('Custom routine step added!'),
-                    ),
-                  );
                 },
               ),
             ),

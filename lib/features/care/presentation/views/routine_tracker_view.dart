@@ -8,7 +8,6 @@ import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
 import '../widgets/add_routine_task_bottom_sheet.dart';
 import '../widgets/care_widgets.dart';
-import '../../../../core/widgets/app_toast.dart';
 
 /// 1. Routine Tracker View
 /// Allows users to view today's regimen progress, maintain daily streaks, and mark treatment steps done.
@@ -35,12 +34,6 @@ class RoutineTrackerView extends StatelessWidget {
               onPressed: () {
                 HapticFeedback.lightImpact();
                 context.read<CareCubit>().resetTodayRoutine();
-                AppToast.show(context,
-                  const SnackBar(
-                    behavior: SnackBarBehavior.floating,
-                    content: Text('Today’s routine steps reset.'),
-                  ),
-                );
               },
             ),
             IconButton(
