@@ -49,8 +49,9 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
-        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

@@ -10,6 +10,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../../../auth/presentation/viewmodels/auth_cubit.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 class UpdateProfileView extends StatefulWidget {
   final ImagePicker? imagePicker;
@@ -82,9 +83,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
               _isPhotoRemoved = false;
             });
             HapticFeedback.lightImpact();
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
+            AppToast.show(context,
                 const SnackBar(
                   behavior: SnackBarBehavior.floating,
                   duration: Duration(seconds: 2),
@@ -94,7 +93,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            AppToast.show(context,
               SnackBar(
                 behavior: SnackBarBehavior.floating,
                 content: Text('Could not access photo: $e'),
@@ -109,9 +108,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           _isPhotoRemoved = true;
         });
         HapticFeedback.lightImpact();
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
+        AppToast.show(context,
             const SnackBar(
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 2),
@@ -134,9 +131,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
       );
 
       HapticFeedback.mediumImpact();
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
+      AppToast.show(context,
           SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.primaryDark,

@@ -19,11 +19,6 @@ enum PolicyType {
     slug: 'cancellation-policy',
     title: 'Cancellation Policy',
     shortTitle: 'Cancellations',
-  ),
-  moneyBackGuarantee(
-    slug: 'guarantee',
-    title: 'Money-Back Guarantee',
-    shortTitle: 'Guarantee',
   );
 
   final String slug;

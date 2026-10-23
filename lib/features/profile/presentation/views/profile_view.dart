@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
@@ -15,21 +14,10 @@ import '../../../auth/domain/models/user_model.dart';
 import '../../../auth/presentation/viewmodels/auth_cubit.dart';
 import '../../../auth/presentation/viewmodels/auth_state.dart';
 import '../../../shop/presentation/viewmodels/cart_cubit.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
-
-  Future<void> _launchWhatsapp() async {
-    const phoneNumber = '918058056789';
-    final uri = Uri.parse('https://wa.me/$phoneNumber');
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        debugPrint('Could not launch WhatsApp');
-      }
-    } catch (e) {
-      debugPrint('Error launching WhatsApp: $e');
-    }
-  }
 
   void _showSignOutDialog(BuildContext context) {
     showModalBottomSheet(
@@ -112,7 +100,8 @@ class ProfileView extends StatelessWidget {
                       Navigator.pop(modalContext);
                       final authCubit = context.read<AuthCubit?>();
                       authCubit?.signOut();
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      AppToast.show(
+                        context,
                         const SnackBar(
                           backgroundColor: AppColors.primary,
                           content: Text('Signed out successfully.'),
@@ -152,6 +141,14 @@ class ProfileView extends StatelessWidget {
           const SizedBox(height: 10),
           _buildGroupedCard([
             _ProfileMenuTile(
+              icon: LucideIcons.calendarClock,
+              iconColor: const Color(0xFF0891B2),
+              iconBgColor: const Color(0xFFECFEFF),
+              title: 'Appointments',
+              subtitle: 'Schedule in-clinic consultation & scalp scan',
+              onTap: () => context.push(RouteNames.coachBooking),
+            ),
+            _ProfileMenuTile(
               icon: LucideIcons.clipboardPlus,
               iconColor: AppColors.primary,
               iconBgColor: AppColors.primary5,
@@ -190,14 +187,6 @@ class ProfileView extends StatelessWidget {
               title: 'Care reminders',
               subtitle: 'Manage your reminder preferences',
               onTap: () => context.push(RouteNames.reminders),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.phoneCall,
-              iconColor: const Color(0xFF0891B2),
-              iconBgColor: const Color(0xFFECFEFF),
-              title: 'Talk to a hair coach',
-              subtitle: 'Choose a time for a guidance call',
-              onTap: () => context.push(RouteNames.coachBooking),
               showDivider: false,
             ),
           ]),
@@ -208,6 +197,14 @@ class ProfileView extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _buildGroupedCard([
+            _ProfileMenuTile(
+              icon: LucideIcons.packageCheck,
+              iconColor: const Color(0xFF059669),
+              iconBgColor: const Color(0xFFECFDF5),
+              title: 'Orders & delivery',
+              subtitle: 'Check your order status',
+              onTap: () => context.push(RouteNames.orders),
+            ),
             Builder(
               builder: (context) {
                 final cart = context.read<CartCubit?>();
@@ -220,55 +217,13 @@ class ProfileView extends StatelessWidget {
                       ? 'Your cart is empty'
                       : '$itemCount ${itemCount == 1 ? 'item' : 'items'} ready to review',
                   onTap: () => context.push(RouteNames.cart),
+                  showDivider: false,
                 );
                 if (cart == null) return tile(0);
                 return BlocBuilder<CartCubit, CartState>(
                   builder: (context, state) => tile(state.itemCount),
                 );
               },
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.packageCheck,
-              iconColor: const Color(0xFF059669),
-              iconBgColor: const Color(0xFFECFDF5),
-              title: 'Orders & delivery',
-              subtitle: 'Check your order status',
-              onTap: () => context.push(RouteNames.orders),
-              showDivider: false,
-            ),
-          ]),
-          const SizedBox(height: 22),
-          _buildSectionHeader(
-            title: 'ACCOUNT',
-            subtitle: 'Your details and support',
-          ),
-          const SizedBox(height: 10),
-          _buildGroupedCard([
-            _ProfileMenuTile(
-              icon: LucideIcons.userRound,
-              iconColor: AppColors.primary,
-              iconBgColor: AppColors.primary5,
-              title: 'Personal information',
-              subtitle: 'Edit your profile details',
-              onTap: () => context.push(RouteNames.updateProfile),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.messageSquare,
-              iconColor: AppColors.whatsapp,
-              iconBgColor: AppColors.whatsapp.withValues(alpha: 0.12),
-              title: 'Contact support',
-              subtitle: 'Chat with the Dr.Hair team on WhatsApp',
-              onTap: _launchWhatsapp,
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.logOut,
-              iconColor: AppColors.danger,
-              iconBgColor: AppColors.danger.withValues(alpha: 0.1),
-              title: 'Sign out',
-              subtitle: 'Sign out of this account',
-              isDestructive: true,
-              onTap: () => _showSignOutDialog(context),
-              showDivider: false,
             ),
           ]),
           const SizedBox(height: 22),
@@ -309,17 +264,11 @@ class ProfileView extends StatelessWidget {
               title: 'Cancellation Policy',
               subtitle: 'Order cutoff & appointment rescheduling',
               onTap: () => context.push(RouteNames.cancellationPolicy),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.award,
-              iconColor: const Color(0xFF9333EA),
-              iconBgColor: const Color(0xFFFAF5FF),
-              title: 'Money-Back Guarantee',
-              subtitle: '90-day consistency framework (pending approval)',
-              onTap: () => context.push(RouteNames.guarantee),
               showDivider: false,
             ),
           ]),
+          const SizedBox(height: 24),
+          _buildSignOutButton(context),
           const SizedBox(height: 20),
           const Center(
             child: Text(
@@ -328,6 +277,61 @@ class ProfileView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSignOutButton(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _showSignOutDialog(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    LucideIcons.logOut,
+                    size: 16,
+                    color: AppColors.danger,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Sign out',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.danger,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -513,9 +517,9 @@ class _ProfileMenuTile extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.isDestructive = false,
     this.showDivider = true,
-  }) : badgeColor = null,
+  }) : isDestructive = false,
+       badgeColor = null,
        badgeText = null;
 
   @override

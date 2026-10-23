@@ -195,11 +195,6 @@ class AppRouter {
         builder: (context, state) =>
             const PolicyPageView(initialType: PolicyType.cancellationPolicy),
       ),
-      GoRoute(
-        path: RouteNames.guarantee,
-        builder: (context, state) =>
-            const PolicyPageView(initialType: PolicyType.moneyBackGuarantee),
-      ),
     ],
   );
 }

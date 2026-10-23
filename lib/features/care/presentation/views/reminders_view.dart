@@ -12,6 +12,7 @@ import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
 import '../widgets/add_reminder_bottom_sheet.dart';
 import '../widgets/care_widgets.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// Reminders View
 /// Comprehensive hair care regimen reminder manager with custom repeat days,
@@ -67,7 +68,7 @@ class RemindersView extends StatelessWidget {
                         duration: const Duration(minutes: 15),
                       );
                   Navigator.pop(sheetContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  AppToast.show(context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
                       content: Text('Reminder snoozed for 15 minutes.'),
@@ -84,7 +85,7 @@ class RemindersView extends StatelessWidget {
                         duration: const Duration(hours: 1),
                       );
                   Navigator.pop(sheetContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  AppToast.show(context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
                       content: Text('Reminder snoozed for 1 hour.'),
@@ -103,7 +104,7 @@ class RemindersView extends StatelessWidget {
                       : const Duration(hours: 3);
                   context.read<CareCubit>().snoozeReminder(reminder.id, duration: duration);
                   Navigator.pop(sheetContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  AppToast.show(context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
                       content: Text('Reminder snoozed until 8:00 PM tonight.'),
@@ -599,7 +600,7 @@ class RemindersView extends StatelessWidget {
                   ),
                   onPressed: () {
                     HapticFeedback.mediumImpact();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    AppToast.show(context,
                       const SnackBar(
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.primaryDark,

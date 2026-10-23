@@ -48,7 +48,8 @@ void main() {
       // Test validation on invalid input (less than 10 digits)
       await tester.tap(find.text('Send Verification OTP'));
       await tester.pumpAndSettle();
-      expect(find.text('Enter a valid 10-digit mobile number.'), findsOneWidget);
+      expect(find.text('Please enter a valid 10-digit mobile number'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
 
       // Enter valid 10-digit mobile number
       await tester.enterText(find.byType(TextField).first, '9876543210');

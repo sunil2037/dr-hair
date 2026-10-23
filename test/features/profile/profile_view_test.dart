@@ -19,9 +19,9 @@ void main() {
     expect(find.text('Progress journal'), findsOneWidget);
     expect(find.text('Nutrition guide'), findsOneWidget);
     expect(find.text('Care reminders'), findsOneWidget);
-    expect(find.text('Talk to a hair coach'), findsOneWidget);
+    expect(find.text('Appointments'), findsOneWidget);
     expect(find.text('My cart'), findsOneWidget);
     expect(find.text('Orders & delivery'), findsOneWidget);
-    expect(find.text('Personal information'), findsOneWidget);
+    expect(find.text('Sign out'), findsOneWidget);
   });
 }

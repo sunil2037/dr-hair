@@ -1,5 +1,7 @@
 import 'dart:io';
 
+export 'doctor_selection_card.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +24,7 @@ class CarePageScaffold extends StatelessWidget {
   final FloatingActionButtonLocation? floatingActionButtonLocation;
   final EdgeInsetsGeometry? padding;
   final ScrollController? scrollController;
+  final bool isScrollable;
 
   const CarePageScaffold({
     super.key,
@@ -32,6 +35,7 @@ class CarePageScaffold extends StatelessWidget {
     this.floatingActionButtonLocation,
     this.padding,
     this.scrollController,
+    this.isScrollable = true,
   });
 
   @override
@@ -76,12 +80,14 @@ class CarePageScaffold extends StatelessWidget {
       floatingActionButtonLocation: floatingActionButtonLocation,
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          padding: padding ?? const EdgeInsets.fromLTRB(16, 16, 16, 40),
-          child: child,
-        ),
+        child: isScrollable
+            ? SingleChildScrollView(
+                controller: scrollController,
+                physics: const BouncingScrollPhysics(),
+                padding: padding ?? const EdgeInsets.fromLTRB(16, 16, 16, 40),
+                child: child,
+              )
+            : child,
       ),
     );
   }

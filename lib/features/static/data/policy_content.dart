@@ -18,8 +18,6 @@ class PolicyRepository {
         return _returnsAndRefunds;
       case PolicyType.cancellationPolicy:
         return _cancellationPolicy;
-      case PolicyType.moneyBackGuarantee:
-        return _moneyBackGuarantee;
     }
   }
 
@@ -29,7 +27,6 @@ class PolicyRepository {
       _termsAndConditions,
       _returnsAndRefunds,
       _cancellationPolicy,
-      _moneyBackGuarantee,
     ];
   }
 
@@ -232,48 +229,6 @@ class PolicyRepository {
         title: '3. Subscription Regimen Cancellations',
         content:
             'If you are enrolled in an auto-replenishment monthly care regimen, you can pause or cancel upcoming shipments at any time up to 48 hours before the scheduled monthly billing date directly from your Profile settings.',
-      ),
-    ],
-  );
-
-  // 5. MONEY-BACK GUARANTEE (Explicitly Pending Formal Approval)
-  static const PolicyDocument _moneyBackGuarantee = PolicyDocument(
-    type: PolicyType.moneyBackGuarantee,
-    title: 'Money-Back Guarantee',
-    lastUpdated: currentEffectiveDate,
-    summary:
-        'Terms regarding the proposed Dr. Hair 90-Day Regrowth Consistency Guarantee. Please note that these terms are currently draft proposals pending formal corporate and clinical validation.',
-    hasPendingLegalApproval: true,
-    pendingApprovalNotice:
-        'POLICY DETAILS PENDING FORMAL BUSINESS & LEGAL APPROVAL. Dr. Hair does not currently represent a binding commercial money-back guarantee in production. The terms below represent proposed qualification standards under internal review.',
-    sections: [
-      PolicySection(
-        title: '1. Status: Under Business & Legal Review',
-        content:
-            'Dr. Hair is committed to clinically proven trichological efficacy. However, because biological hair regrowth response varies by genetics, nutritional baseline, and consistency, a binding money-back guarantee is subject to strict eligibility criteria that are currently pending executive and legal ratification.',
-        isPendingApproval: true,
-        pendingApprovalNotes:
-            'Do not treat this policy as an active legal warranty until officially ratified and published on the production legal registry.',
-      ),
-      PolicySection(
-        title: '2. Proposed Consistency Qualification Criteria',
-        content:
-            'Under the proposed 90-day consistency framework, eligible participants must demonstrate:',
-        bulletPoints: [
-          'Continuous, uninterrupted use of the prescribed daily topical serum and supplement regimen for a minimum of 90 consecutive days.',
-          'Logging of at least 85% of daily routine tasks in the Dr. Hair care tracker.',
-          'Monthly scalp progression check-in photographs taken on Day 1 (baseline), Day 30, Day 60, and Day 90 under identical lighting and camera angles.',
-        ],
-      ),
-      PolicySection(
-        title: '3. Proposed Exclusions',
-        content:
-            'The proposed guarantee would not apply to: (a) Advanced Norwood Stage 6-7 complete follicular fibrosis, (b) Hair loss caused by chemotherapy, thyroid dysfunction, or autoimmune conditions, (c) Inconsistent application with multi-week gaps, or (d) Simultaneous use of competing unapproved chemical agents.',
-      ),
-      PolicySection(
-        title: '4. Claims Process (When Ratified)',
-        content:
-            'Upon formal corporate launch, claims would be reviewed by a clinical trichology board comparing verified baseline and 90-day photographs. Details will be updated here once approved by company directors.',
       ),
     ],
   );

@@ -25,34 +25,20 @@ void main() {
       expect(find.text('7. Grievance Redressal Officer'), findsOneWidget);
     });
 
-    testWidgets('switches between policies using tabs', (tester) async {
-      await tester.pumpWidget(buildPolicyApp(initialType: PolicyType.privacyPolicy));
+    testWidgets('renders specific policy by initialType', (tester) async {
+      await tester.pumpWidget(buildPolicyApp(initialType: PolicyType.termsAndConditions));
       await tester.pumpAndSettle();
-
-      // Tap Terms chip
-      expect(find.text('Terms'), findsOneWidget);
-      await tester.tap(find.text('Terms'));
-      await tester.pumpAndSettle();
-
       expect(find.text('Terms & Conditions'), findsWidgets);
       expect(find.text('1. Clinical & Medical Disclaimer'), findsOneWidget);
 
-      // Tap Returns & Refunds chip
-      expect(find.text('Returns & Refunds'), findsOneWidget);
-      await tester.tap(find.text('Returns & Refunds'));
+      await tester.pumpWidget(buildPolicyApp(initialType: PolicyType.returnsAndRefunds));
       await tester.pumpAndSettle();
-
       expect(find.text('Returns & Refunds Policy'), findsWidgets);
       expect(find.text('1. Hygiene & Seal Restrictions'), findsOneWidget);
 
-      // Tap Guarantee chip
-      expect(find.text('Guarantee'), findsOneWidget);
-      await tester.tap(find.text('Guarantee'));
+      await tester.pumpWidget(buildPolicyApp(initialType: PolicyType.cancellationPolicy));
       await tester.pumpAndSettle();
-
-      expect(find.text('Money-Back Guarantee'), findsWidgets);
-      expect(find.text('1. Status: Under Business & Legal Review'), findsOneWidget);
-      expect(find.textContaining('POLICY DETAILS PENDING FORMAL BUSINESS & LEGAL APPROVAL'), findsOneWidget);
+      expect(find.text('Cancellation Policy'), findsWidgets);
     });
 
     testWidgets('PolicyRepository contains valid structured content for all policy types', (tester) async {

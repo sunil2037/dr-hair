@@ -10,6 +10,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../viewmodels/care_cubit.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// Reusable bottom sheet for capturing and logging scalp progress check-in photos
 /// across 3 clinical angles: Front, Top/Crown, and Back.
@@ -88,7 +89,7 @@ class _AddPhotoCheckInBottomSheetState
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            AppToast.show(context,
               SnackBar(content: Text('Could not access image: $e')),
             );
           }
@@ -476,11 +477,11 @@ class _AddPhotoCheckInBottomSheetState
 
                       HapticFeedback.mediumImpact();
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      AppToast.show(context,
                         const SnackBar(
                           behavior: SnackBarBehavior.floating,
                           content: Text(
-                            'Progress check-in logged! Clinical team notified.',
+                            'Progress check-in saved.',
                           ),
                         ),
                       );

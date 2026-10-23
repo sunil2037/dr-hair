@@ -8,6 +8,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../viewmodels/cart_cubit.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 class CartView extends StatefulWidget {
   final List<Map<String, dynamic>>? initialItems;
@@ -119,9 +120,7 @@ class _CartViewState extends State<CartView> {
       setState(() => _localItems.removeAt(index));
     }
     HapticFeedback.lightImpact();
-
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
+    AppToast.show(context,
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
@@ -163,9 +162,7 @@ class _CartViewState extends State<CartView> {
       });
     }
     HapticFeedback.mediumImpact();
-
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
+    AppToast.show(context,
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,

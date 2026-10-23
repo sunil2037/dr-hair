@@ -4,6 +4,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../data/models/delivery_address_model.dart';
+import '../widgets/delivery_address_bottom_sheet.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 class CheckoutView extends StatefulWidget {
   final int amount;
@@ -15,8 +18,30 @@ class CheckoutView extends StatefulWidget {
 }
 
 class _CheckoutViewState extends State<CheckoutView> {
+  List<DeliveryAddress> _addresses = DeliveryAddress.defaultAddresses();
+  DeliveryAddress? _selectedAddress;
+
+  void _openAddressSheet() {
+    DeliveryAddressBottomSheet.show(
+      context: context,
+      addresses: _addresses,
+      selectedAddress: _selectedAddress,
+      onAddressSelected: (address) {
+        setState(() {
+          _selectedAddress = address;
+        });
+      },
+      onAddressesUpdated: (updatedList, activeAddress) {
+        setState(() {
+          _addresses = updatedList;
+          _selectedAddress = activeAddress;
+        });
+      },
+    );
+  }
+
   void _handlePlaceOrder() {
-    ScaffoldMessenger.of(context).showSnackBar(
+    AppToast.show(context,
       const SnackBar(
         content: Text(
           'Checkout is unavailable until address, order, and payment services are connected.',
@@ -55,7 +80,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: _handlePlaceOrder,
+                  onTap: _openAddressSheet,
                   child: const Text(
                     'Change',
                     style: TextStyle(
@@ -69,44 +94,148 @@ class _CheckoutViewState extends State<CheckoutView> {
             ),
             const SizedBox(height: 10),
 
-            // Address Card
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(LucideIcons.mapPin, color: AppColors.primary, size: 28),
-                  SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Delivery address required',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Add a saved address before placing an order.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.secondaryDark,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
+            // Address Card (Tap to change or add delivery address)
+            GestureDetector(
+              onTap: _openAddressSheet,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _selectedAddress != null
+                        ? AppColors.primary100
+                        : AppColors.border,
+                    width: _selectedAddress != null ? 1.5 : 1.0,
                   ),
-                ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: _selectedAddress == null
+                    ? const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            LucideIcons.mapPin,
+                            color: AppColors.primary,
+                            size: 25,
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Delivery address required',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Add a saved address before placing an order.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.secondaryDark,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 18,
+                            color: AppColors.secondaryDark,
+                          ),
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary5,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              LucideIcons.mapPinCheck,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      _selectedAddress!.name,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primaryDark,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEFF6FF),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        _selectedAddress!.tag.toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF1D4ED8),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  _selectedAddress!.phone,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.secondaryDark,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _selectedAddress!.formattedAddress,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            LucideIcons.pencil,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
               ),
             ),
 
@@ -145,7 +274,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         Text(
                           'UPI / Credit & Debit Card / Netbanking',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: AppColors.primaryDark,
                           ),
@@ -153,7 +282,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         Text(
                           'Payment provider connection required to continue',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: AppColors.secondaryDark,
                           ),
                         ),
@@ -164,11 +293,11 @@ class _CheckoutViewState extends State<CheckoutView> {
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 16),
 
             // Order Breakdown
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -179,7 +308,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   _SummaryRow('Items Total', '₹${widget.amount}'),
                   const _SummaryRow('Express Delivery', 'FREE'),
                   const _SummaryRow('Doctor Review Fee', 'WAIVED'),
-                  const Divider(color: AppColors.border, height: 20),
+                  const Divider(color: AppColors.border, height: 10),
                   _SummaryRow(
                     'Total Payable',
                     '₹${widget.amount}',
@@ -189,7 +318,7 @@ class _CheckoutViewState extends State<CheckoutView> {
               ),
             ),
 
-            const SizedBox(height: 36),
+            const SizedBox(height: 20),
 
             // Place Order Button
             SizedBox(
@@ -210,7 +339,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                     Text(
                       'Payment setup required • ₹${widget.amount}',
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -247,7 +376,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 36),
 
             // Policy Links
             Center(
@@ -322,7 +451,7 @@ class _SummaryRow extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: isTotal ? 15 : 13,
+              fontSize: isTotal ? 14 : 12,
               fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
               color: isTotal ? AppColors.primaryDark : AppColors.secondaryDark,
             ),
@@ -330,8 +459,8 @@ class _SummaryRow extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: isTotal ? 17 : 14,
-              fontWeight: isTotal ? FontWeight.w900 : FontWeight.w700,
+              fontSize: isTotal ? 16 : 12,
+              fontWeight: isTotal ? FontWeight.w700 : FontWeight.w600,
               color: isTotal ? AppColors.primary : AppColors.primaryDark,
             ),
           ),

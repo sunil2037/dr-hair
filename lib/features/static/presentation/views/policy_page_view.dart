@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -7,7 +6,7 @@ import '../../data/policy_content.dart';
 import '../../domain/policy_models.dart';
 
 /// Reusable, readable policy viewer displaying centralized terms, DPDP privacy notices,
-/// refund windows, cancellation rules, and guarantee disclosures.
+/// refund windows, and cancellation rules.
 class PolicyPageView extends StatefulWidget {
   final PolicyType initialType;
 
@@ -29,10 +28,12 @@ class _PolicyPageViewState extends State<PolicyPageView> {
     _currentType = widget.initialType;
   }
 
-  void _onSelectPolicy(PolicyType type) {
-    if (_currentType == type) return;
-    HapticFeedback.selectionClick();
-    setState(() => _currentType = type);
+  @override
+  void didUpdateWidget(PolicyPageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialType != widget.initialType) {
+      _currentType = widget.initialType;
+    }
   }
 
   @override
@@ -61,37 +62,6 @@ class _PolicyPageViewState extends State<PolicyPageView> {
         child: Column(
           children: [
             // Policy Selector Horizontal Tabs
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  children: PolicyType.values.map((type) {
-                    final isSelected = _currentType == type;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(type.shortTitle),
-                        selected: isSelected,
-                        selectedColor: AppColors.primary5,
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                        ),
-                        side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.border,
-                        ),
-                        onSelected: (_) => _onSelectPolicy(type),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            const Divider(height: 1, color: AppColors.border),
 
             // Policy Document Content
             Expanded(
@@ -108,14 +78,17 @@ class _PolicyPageViewState extends State<PolicyPageView> {
                           child: Text(
                             policy.title,
                             style: const TextStyle(
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.w900,
                               color: AppColors.primaryDark,
                             ),
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary5,
                             borderRadius: BorderRadius.circular(8),
@@ -124,7 +97,7 @@ class _PolicyPageViewState extends State<PolicyPageView> {
                           child: Text(
                             'Updated ${policy.lastUpdated}',
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.primary,
                             ),
@@ -154,7 +127,8 @@ class _PolicyPageViewState extends State<PolicyPageView> {
                     const SizedBox(height: 16),
 
                     // Pending Business/Legal Approval Banner (Mandatory Requirement)
-                    if (policy.hasPendingLegalApproval && policy.pendingApprovalNotice != null)
+                    if (policy.hasPendingLegalApproval &&
+                        policy.pendingApprovalNotice != null)
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),
                         padding: const EdgeInsets.all(16),
@@ -235,7 +209,10 @@ class _PolicyPageViewState extends State<PolicyPageView> {
                                 ),
                                 if (section.isPendingApproval)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFEF3C7),
                                       borderRadius: BorderRadius.circular(6),
@@ -266,7 +243,8 @@ class _PolicyPageViewState extends State<PolicyPageView> {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 6),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Padding(
                                         padding: EdgeInsets.only(top: 5),
@@ -349,7 +327,7 @@ class _PolicyPageViewState extends State<PolicyPageView> {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Reach our care & compliance team directly at support@drhair.com or connect via WhatsApp in the Profile tab.',
+                            'Reach our care & compliance team directly at support@drhair.com or visit our clinic in Jaipur.',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.secondaryDark,

@@ -10,6 +10,7 @@ import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../viewmodels/auth_cubit.dart';
 import '../viewmodels/auth_state.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 enum _LoginStep { phone, otp }
 
@@ -104,12 +105,6 @@ class _SigninViewState extends State<SigninView>
       setState(() {
         _phoneError = 'Please enter a valid 10-digit mobile number';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter a valid 10-digit mobile number.'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
       return;
     }
 
@@ -149,7 +144,7 @@ class _SigninViewState extends State<SigninView>
       authCubit.resendOtp();
     }
     final phoneDisplay = '$_countryCode ${_phoneController.text.trim()}';
-    ScaffoldMessenger.of(context).showSnackBar(
+    AppToast.show(context,
       SnackBar(
         backgroundColor: AppColors.primary,
         content: Text('A fresh code was sent to $phoneDisplay.'),
@@ -160,7 +155,7 @@ class _SigninViewState extends State<SigninView>
   Future<void> _verifyOtpAndLogin() async {
     final code = _otpControllers.map((c) => c.text).join();
     if (code.length != 6 || !RegExp(r'^\d{6}$').hasMatch(code)) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.show(context,
         const SnackBar(
           content: Text('Enter the complete 6-digit verification code.'),
           backgroundColor: AppColors.danger,
@@ -184,12 +179,6 @@ class _SigninViewState extends State<SigninView>
     setState(() => _isLoading = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: AppColors.primary,
-          content: Text('Login successful! Welcome to Dr. Hair.'),
-        ),
-      );
       _navigateToHome();
     }
   }

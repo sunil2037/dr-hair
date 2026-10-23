@@ -8,6 +8,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
 import '../widgets/care_widgets.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// 6. Order Tracking View
 /// Live prescription & clinical kit dispatch tracking, compounding status, and WhatsApp support.
@@ -262,7 +263,7 @@ class OrderTrackingView extends StatelessWidget {
                                 ClipboardData(text: order.trackingNumber),
                               );
                               HapticFeedback.lightImpact();
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              AppToast.show(context,
                                 const SnackBar(
                                   content: Text(
                                     'Tracking number copied to clipboard!',

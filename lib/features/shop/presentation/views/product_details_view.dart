@@ -10,6 +10,7 @@ import '../../../../core/widgets/custom_cached_image.dart';
 import '../viewmodels/cart_cubit.dart';
 import '../viewmodels/product_details_cubit.dart';
 import '../viewmodels/product_details_state.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 class ProductDetailsView extends StatelessWidget {
   final ProductDetailsCubit? cubit;
@@ -78,7 +79,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
 
   void _onShare() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
+    AppToast.show(context,
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
@@ -931,9 +932,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                             cart?.remove(lineId);
                                             cubit.removeFromCart();
                                             HapticFeedback.lightImpact();
-                                            ScaffoldMessenger.of(context)
-                                              ..hideCurrentSnackBar()
-                                              ..showSnackBar(
+                                            AppToast.show(context,
                                                 SnackBar(
                                                   behavior:
                                                       SnackBarBehavior.floating,
@@ -1071,9 +1070,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                         );
                                         cubit.addToCart();
                                         HapticFeedback.lightImpact();
-                                        ScaffoldMessenger.of(context)
-                                          ..hideCurrentSnackBar()
-                                          ..showSnackBar(
+                                        AppToast.show(context,
                                             SnackBar(
                                               behavior:
                                                   SnackBarBehavior.floating,

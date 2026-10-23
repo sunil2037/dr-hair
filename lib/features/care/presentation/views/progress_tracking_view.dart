@@ -11,6 +11,7 @@ import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
 import '../widgets/add_photo_checkin_bottom_sheet.dart';
 import '../widgets/care_widgets.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// Progress Tracking View
 /// Displays date-wise treatment photo check-in cards with 3 clinical angles
@@ -305,7 +306,7 @@ class _ProgressTrackingViewState extends State<ProgressTrackingView> {
                   HapticFeedback.mediumImpact();
                   context.read<CareCubit>().deleteProgressCheckIn(ci.id);
                   Navigator.pop(sheetContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  AppToast.show(context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
                       content: Text('Progress check-in removed.'),

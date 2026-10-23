@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../viewmodels/hair_test_cubit.dart';
 import '../viewmodels/hair_test_state.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 class HairTestView extends StatelessWidget {
   final HairTestCubit? cubit;
@@ -35,7 +36,7 @@ class _HairTestContent extends StatelessWidget {
     return BlocConsumer<HairTestCubit, HairTestState>(
       listener: (context, state) {
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          AppToast.show(context,
             SnackBar(
               content: Text(state.errorMessage!),
               backgroundColor: AppColors.danger,

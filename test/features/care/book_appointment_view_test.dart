@@ -6,11 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dr_hair/features/care/data/services/care_notification_service.dart';
 import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
 import 'package:dr_hair/features/care/presentation/views/coach_booking_view.dart';
+import 'package:dr_hair/core/widgets/custom_animated_dropdown.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Book In-Clinic Physical Appointment View Tests', () {
+  group('Book In-Clinic Physical Appointment - Jaipur Clinic Tests', () {
     late SharedPreferences prefs;
     late CareNotificationService notificationService;
     late CareCubit careCubit;
@@ -35,7 +36,7 @@ void main() {
       );
     }
 
-    testWidgets('renders In-Clinic Physical Appointment screen with clinic centers, doctor carousel, and interactive calendar', (
+    testWidgets('renders clinic card, specialists with tap-to-book, and nested scroll tab bar filter', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1800);
@@ -45,35 +46,30 @@ void main() {
       await tester.pumpWidget(createTestApp(const CoachBookingView()));
       await tester.pumpAndSettle();
 
-      // Title & Hero In-Clinic header
-      expect(find.text('Book Appointment'), findsOneWidget);
-      expect(find.text('In-Clinic Physical Appointment'), findsOneWidget);
-      expect(find.text('60x Dermoscopy'), findsOneWidget);
-      expect(find.text('Physical Exam'), findsOneWidget);
-      expect(find.text('In-Clinic Only'), findsOneWidget);
+      // Top Clinic Detail Card with exact Jaipur location
+      expect(find.text('Dr. Hair Clinic & Hair Restoration Centre'), findsOneWidget);
+      expect(find.textContaining('111/398, Vijay Path'), findsOneWidget);
+      expect(find.textContaining('Mansarovar, Jaipur, Rajasthan 302020'), findsOneWidget);
+      expect(find.text('Open in Google Maps'), findsOneWidget);
 
-      // Section headers
-      expect(find.text('1. SELECT CLINIC CENTRE'), findsOneWidget);
-      expect(find.text('2. CLINICAL EXAMINATION TYPE'), findsOneWidget);
-      expect(find.text('3. SELECT ATTENDING DOCTOR'), findsOneWidget);
-      expect(find.text('4. SELECT APPOINTMENT DATE'), findsOneWidget);
-      expect(find.text('5. SELECT TIME SLOT'), findsOneWidget);
+      // Section Headers on Main Screen
+      expect(find.text('ATTENDING SPECIALISTS'), findsOneWidget);
 
-      // Clinic branches visible
-      expect(find.text('Mumbai'), findsOneWidget);
-      expect(find.text('Bengaluru'), findsOneWidget);
-      expect(find.text('Delhi NCR'), findsOneWidget);
-
-      // Specialists visible
+      // Doctors visible in horizontal cards
       expect(find.text('Dr. Priya Verma'), findsWidgets);
       expect(find.text('Dr. Arvind Mehta'), findsOneWidget);
+      expect(find.text('Dr. Sneha Kapoor'), findsOneWidget);
 
-      // Calendar legend visible
-      expect(find.text('Available Date'), findsOneWidget);
-      expect(find.text('Closed / Sunday'), findsOneWidget);
+      // Pinned Tab Bar Filter (Upcoming, Attended, Cancelled)
+      expect(find.textContaining('Upcoming'), findsWidgets);
+      expect(find.textContaining('Attended'), findsWidgets);
+      expect(find.textContaining('Cancelled'), findsWidgets);
+
+      // Confirms bottom floating button is removed
+      expect(find.byType(FloatingActionButton), findsNothing);
     });
 
-    testWidgets('allows selecting clinic center, examination type, calendar date, and time slot', (
+    testWidgets('tapping specialist card opens bottom sheet with ONLY selected doctor details', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 2000);
@@ -83,29 +79,50 @@ void main() {
       await tester.pumpWidget(createTestApp(const CoachBookingView()));
       await tester.pumpAndSettle();
 
-      // Switch clinic center to Bengaluru
-      await tester.tap(find.text('Bengaluru'));
+      // Tap on Dr. Arvind Mehta's card to open booking sheet
+      await tester.tap(find.text('Dr. Arvind Mehta'));
       await tester.pumpAndSettle();
 
-      // Switch clinical examination type
-      await tester.tap(find.text('In-Clinic Follow-up & Progress Scan (20m)'));
+      // Inside bottom sheet
+      expect(find.text('Book Appointment'), findsOneWidget);
+      expect(find.text('Physical Visit · Mansarovar, Jaipur Clinic'), findsOneWidget);
+
+      // ONLY selected attendant details are shown in the bottom sheet
+      expect(find.text('Attending Specialist'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Dr. Arvind Mehta'),
+        ),
+        findsWidgets,
+      );
+      // Dr. Priya Verma should NOT be shown inside the bottom sheet
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Dr. Priya Verma'),
+        ),
+        findsNothing,
+      );
+
+      // Date & Timing selectors
+      expect(find.text('SELECT APPOINTMENT DATE'), findsOneWidget);
+      expect(find.text('APPOINTMENT TIME'), findsOneWidget);
+      expect(find.byType(CustomAnimatedDropdown<String>), findsOneWidget);
+
+      // Enter optional visit notes
+      await tester.ensureVisible(find.byType(TextField));
+      await tester.enterText(
+        find.byType(TextField),
+        'Suffering from frontal hairline recession and itching.',
+      );
       await tester.pumpAndSettle();
 
-      // Select afternoon slot
-      await tester.ensureVisible(find.text('02:00 PM'));
-      await tester.tap(find.text('02:00 PM'));
-      await tester.pumpAndSettle();
-
-      // Select symptom chip
-      await tester.ensureVisible(find.text('Scalp Inflammation'));
-      await tester.tap(find.text('Scalp Inflammation'));
-      await tester.pumpAndSettle();
-
-      // Verify button is ready
+      // Confirm button is visible
       expect(find.text('Confirm In-Clinic Appointment'), findsOneWidget);
     });
 
-    testWidgets('confirms in-clinic appointment and displays in-person visit details in bottom sheet', (
+    testWidgets('confirms in-clinic appointment and displays professional pass with Google & Apple Calendar reminders', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 2200);
@@ -117,28 +134,36 @@ void main() {
 
       final initialBookingsCount = careCubit.state.coachBookings.length;
 
-      // Tap Confirm Appointment button
+      // Tap on Dr. Priya Verma to open sheet
+      await tester.tap(find.text('Dr. Priya Verma').first);
+      await tester.pumpAndSettle();
+
+      // Tap Confirm Appointment button inside bottom sheet
       await tester.ensureVisible(find.text('Confirm In-Clinic Appointment'));
       await tester.tap(find.text('Confirm In-Clinic Appointment'));
       await tester.pumpAndSettle();
 
-      // Verify bottom sheet modal
+      // Verify professional confirmation modal
       expect(find.text('Appointment Confirmed!'), findsOneWidget);
-      expect(find.text('In-Clinic Visit'), findsOneWidget);
-      expect(find.text('Add to Calendar'), findsOneWidget);
-      expect(find.text('Done'), findsOneWidget);
+      expect(find.text('In-Person Consultation Pass · Jaipur Clinic'), findsOneWidget);
+      expect(find.text('CONFIRMED'), findsOneWidget);
+      expect(find.textContaining('Dr. Hair Clinic & Hair Restoration Centre'), findsWidgets);
+      expect(find.textContaining('Mansarovar, Jaipur'), findsWidgets);
 
-      // Cubit should have added a new booking
-      expect(careCubit.state.coachBookings.length, initialBookingsCount + 1);
+      // Google Calendar and Apple Calendar reminder buttons are present
+      expect(find.text('Google Calendar'), findsOneWidget);
+      expect(find.text('Apple Calendar'), findsOneWidget);
 
-      // Close bottom sheet
+      // Close confirmation sheet
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Appointment Confirmed!'), findsNothing);
+      // Cubit should have added a new booking
+      expect(careCubit.state.coachBookings.length, initialBookingsCount + 1);
+      expect(find.text('In-Person Consultation Pass · Jaipur Clinic'), findsNothing);
     });
 
-    testWidgets('scheduled clinic appointments display directions dialog and permit cancellation', (
+    testWidgets('scheduled clinic visits at Mansarovar clinic show Open in Maps and allow cancel', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1800);
@@ -148,18 +173,8 @@ void main() {
       await tester.pumpWidget(createTestApp(const CoachBookingView()));
       await tester.pumpAndSettle();
 
-      // Existing booking in initial state is an in-clinic appointment
-      expect(find.text('Clinic Directions'), findsOneWidget);
-
-      // Tap Clinic Directions
-      await tester.tap(find.text('Clinic Directions'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Get Directions'), findsOneWidget);
-
-      // Close directions dialog
-      await tester.tap(find.text('Close'));
-      await tester.pumpAndSettle();
+      // Initial booking in state has Open in Maps
+      expect(find.text('Open in Maps'), findsOneWidget);
 
       // Tap Cancel button
       await tester.tap(find.text('Cancel'));
@@ -169,8 +184,12 @@ void main() {
       await tester.tap(find.text('Cancel Booking'));
       await tester.pumpAndSettle();
 
-      // Status should update to Cancelled
-      expect(find.text('Cancelled'), findsOneWidget);
+      // Switch to Cancelled tab
+      await tester.tap(find.textContaining('Cancelled').first);
+      await tester.pumpAndSettle();
+
+      // Status should update to Cancelled in the Cancelled tab
+      expect(find.text('Cancelled'), findsWidgets);
     });
   });
 }

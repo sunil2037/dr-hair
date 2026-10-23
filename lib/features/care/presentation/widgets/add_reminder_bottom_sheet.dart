@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../domain/models/care_models.dart';
 import '../viewmodels/care_cubit.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// Reusable bottom sheet for creating or editing hair care regimen reminders.
 class AddReminderBottomSheet extends StatefulWidget {
@@ -99,7 +100,7 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
         if (_selectedDays.length > 1) {
           _selectedDays.remove(day);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
+          AppToast.show(context,
             const SnackBar(
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 2),
@@ -153,7 +154,7 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
     HapticFeedback.mediumImpact();
     Navigator.pop(context);
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    AppToast.show(context,
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
@@ -193,7 +194,7 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
               Navigator.pop(ctx);
               context.read<CareCubit>().deleteReminder(widget.reminderToEdit!.id);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              AppToast.show(context,
                 const SnackBar(
                   behavior: SnackBarBehavior.floating,
                   content: Text('Reminder deleted.'),
