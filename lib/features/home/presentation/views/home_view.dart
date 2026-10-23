@@ -6,11 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../widgets/medicine_card.dart';
-import '../widgets/real_transformations_section.dart';
 
 class HomeView extends StatefulWidget {
   final VoidCallback onStartHairTest;
-
   const HomeView({super.key, required this.onStartHairTest});
 
   @override
@@ -166,23 +164,18 @@ class _HomeViewState extends State<HomeView>
 
           const SizedBox(height: 24),
 
-          // 12. REAL TRANSFORMATIONS (BEFORE / AFTER)
-          _revealSection(11, _buildRealTransformations()),
-
-          const SizedBox(height: 24),
-
-          // 13. FREQUENTLY ASKED QUESTIONS
-          _revealSection(12, _buildFaqSection()),
+          // 12. FREQUENTLY ASKED QUESTIONS
+          _revealSection(11, _buildFaqSection()),
 
           const SizedBox(height: 24),
 
           // 14. CERTIFICATIONS
-          _revealSection(13, _buildCertifications()),
+          _revealSection(12, _buildCertifications()),
 
           const SizedBox(height: 24),
 
           // 15. CLINIC LOCATION
-          _revealSection(14, _buildLocationSection()),
+          _revealSection(13, _buildLocationSection()),
 
           const SizedBox(height: 24),
         ],
@@ -1415,11 +1408,6 @@ class _HomeViewState extends State<HomeView>
         ),
       ],
     );
-  }
-
-  // --- SECTION 12: REAL TRANSFORMATIONS (BEFORE / AFTER) ---
-  Widget _buildRealTransformations() {
-    return const RealTransformationsSection();
   }
 
   // --- SECTION 13: FAQS ---

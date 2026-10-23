@@ -123,7 +123,7 @@ class OrderTrackingView extends StatelessWidget {
                           Text(
                             'Estimated Arrival: ${order.estimatedDelivery}',
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF065F46),
                             ),
@@ -136,55 +136,88 @@ class OrderTrackingView extends StatelessWidget {
 
                 careSectionHeader(title: 'DISPATCH TIMELINE'),
 
-                // Delivery Stepper
+                // Delivery Stepper with TweenAnimationBuilder
                 careCard(
-                  child: Column(
-                    children: [
-                      _buildTimelineStep(
-                        title: 'Order Confirmed & Payment Verified',
-                        subtitle: 'Oct 20, 2026 · 10:14 AM',
-                        isCompleted: order.currentStep >= 0,
-                        isCurrent: order.currentStep == 0,
-                      ),
-                      _buildTimelineDivider(
-                        isCompleted: order.currentStep >= 1,
-                      ),
-                      _buildTimelineStep(
-                        title: 'Clinical Formulation Compounded',
-                        subtitle: 'Pharmacist calibrated 5% topical booster',
-                        isCompleted: order.currentStep >= 1,
-                        isCurrent: order.currentStep == 1,
-                      ),
-                      _buildTimelineDivider(
-                        isCompleted: order.currentStep >= 2,
-                      ),
-                      _buildTimelineStep(
-                        title: 'Dispatched from Central Pharmacy',
-                        subtitle: '${order.courierName} Hub · In transit',
-                        isCompleted: order.currentStep >= 2,
-                        isCurrent: order.currentStep == 2,
-                      ),
-                      _buildTimelineDivider(
-                        isCompleted: order.currentStep >= 3,
-                      ),
-                      _buildTimelineStep(
-                        title: 'Out for Delivery',
-                        subtitle:
-                            'Courier partner is on the way to your address',
-                        isCompleted: order.currentStep >= 3,
-                        isCurrent: order.currentStep == 3,
-                      ),
-                      _buildTimelineDivider(
-                        isCompleted: order.currentStep >= 4,
-                      ),
-                      _buildTimelineStep(
-                        title: 'Delivered',
-                        subtitle: 'Expected by 2:00 PM',
-                        isCompleted: order.currentStep >= 4,
-                        isCurrent: order.currentStep == 4,
-                        isLast: true,
-                      ),
-                    ],
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(
+                      begin: 0.0,
+                      end: order.currentStep.toDouble(),
+                    ),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeInOutCubic,
+                    builder: (context, animValue, _) {
+                      final timelineSteps = [
+                        (
+                          title: 'Order Confirmed & Payment Verified',
+                          subtitle: 'Oct 20, 2026 · 10:14 AM',
+                        ),
+                        (
+                          title: 'Clinical Formulation Compounded',
+                          subtitle: 'Pharmacist calibrated 5% topical booster',
+                        ),
+                        (
+                          title: 'Dispatched from Central Pharmacy',
+                          subtitle: '${order.courierName} Hub · In transit',
+                        ),
+                        (
+                          title: 'Out for Delivery',
+                          subtitle:
+                              'Courier partner is on the way to your address',
+                        ),
+                        (title: 'Delivered', subtitle: 'Expected by 2:00 PM'),
+                      ];
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Animated Progress Summary Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    LucideIcons.truck,
+                                    size: 20,
+                                    color: Color(0xFF059669),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Step ${(animValue.clamp(0, order.currentStep) + 1).toInt()} of 5 · ${order.status}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Animated Timeline Steps
+                          for (int i = 0; i < timelineSteps.length; i++) ...[
+                            _buildTimelineStep(
+                              title: timelineSteps[i].title,
+                              subtitle: timelineSteps[i].subtitle,
+                              isCompleted:
+                                  animValue >= i + 1 ||
+                                  (i < order.currentStep && animValue >= i),
+                              isCurrent:
+                                  i == order.currentStep && animValue >= i,
+                              isReached: animValue >= i,
+                            ),
+                            if (i < timelineSteps.length - 1)
+                              _buildTimelineDivider(
+                                progress: animValue,
+                                stepIndex: i,
+                              ),
+                          ],
+                        ],
+                      );
+                    },
                   ),
                 ),
 
@@ -353,7 +386,13 @@ class OrderTrackingView extends StatelessWidget {
                         color: Color(0xFF25D366),
                       ),
                     ),
-                    label: const Text('Contact Support regarding this order'),
+                    label: const Text(
+                      'Contact Support regarding this order',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -369,29 +408,45 @@ class OrderTrackingView extends StatelessWidget {
     required String subtitle,
     required bool isCompleted,
     required bool isCurrent,
-    bool isLast = false,
+    required bool isReached,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
           width: 24,
           height: 24,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isCompleted
                 ? const Color(0xFF10B981)
-                : (isCurrent ? AppColors.primary : AppColors.border),
+                : (isCurrent
+                      ? AppColors.primary
+                      : (isReached
+                            ? AppColors.primary100
+                            : const Color(0xFFF1F5F9))),
+            border: Border.all(
+              color: isCompleted
+                  ? const Color(0xFF10B981)
+                  : (isCurrent ? AppColors.primary : AppColors.border),
+              width: isCurrent ? 2 : 1,
+            ),
           ),
-          child: Icon(
-            isCompleted
-                ? LucideIcons.check
-                : (isCurrent ? LucideIcons.loader : LucideIcons.circle),
-            size: 13,
-            color: Colors.white,
+          child: Center(
+            child: Icon(
+              isCompleted
+                  ? LucideIcons.check
+                  : (isCurrent ? LucideIcons.loader : LucideIcons.circle),
+              size: 13,
+              color: (isCompleted || isCurrent)
+                  ? Colors.white
+                  : AppColors.textMuted,
+            ),
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,7 +454,7 @@ class OrderTrackingView extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: isCompleted || isCurrent
                       ? AppColors.primaryDark
@@ -409,9 +464,11 @@ class OrderTrackingView extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.secondaryDark,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: (isCompleted || isCurrent)
+                      ? AppColors.secondaryDark
+                      : AppColors.textMuted,
                 ),
               ),
             ],
@@ -421,13 +478,31 @@ class OrderTrackingView extends StatelessWidget {
     );
   }
 
-  static Widget _buildTimelineDivider({required bool isCompleted}) {
+  static Widget _buildTimelineDivider({
+    required double progress,
+    required int stepIndex,
+  }) {
+    final fill = (progress - stepIndex).clamp(0.0, 1.0);
+
     return Container(
-      margin: const EdgeInsets.only(left: 11, top: 4, bottom: 4),
-      width: 2,
+      margin: const EdgeInsets.only(left: 10.75, top: 4, bottom: 4),
+      width: 2.5,
       height: 22,
-      color: isCompleted ? const Color(0xFF10B981) : AppColors.border,
-      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        color: AppColors.border,
+        borderRadius: BorderRadius.circular(2),
+      ),
+      alignment: Alignment.topCenter,
+      child: FractionallySizedBox(
+        heightFactor: fill,
+        alignment: Alignment.topCenter,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
     );
   }
 }

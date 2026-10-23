@@ -19,7 +19,9 @@ class CarePageScaffold extends StatelessWidget {
   final Widget child;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
   final EdgeInsetsGeometry? padding;
+  final ScrollController? scrollController;
 
   const CarePageScaffold({
     super.key,
@@ -27,7 +29,9 @@ class CarePageScaffold extends StatelessWidget {
     required this.child,
     this.actions,
     this.floatingActionButton,
+    this.floatingActionButtonLocation,
     this.padding,
+    this.scrollController,
   });
 
   @override
@@ -69,14 +73,127 @@ class CarePageScaffold extends StatelessWidget {
         actions: actions,
       ),
       floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
+          controller: scrollController,
           physics: const BouncingScrollPhysics(),
           padding: padding ?? const EdgeInsets.fromLTRB(16, 16, 16, 40),
           child: child,
         ),
       ),
+    );
+  }
+}
+
+/// A clean horizontal scroll row that manages edge-to-edge scrolling with
+/// natural left and right insets and uniform spacing between items.
+class CareHorizontalScrollRow extends StatelessWidget {
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+  final EdgeInsetsGeometry padding;
+  final double spacing;
+
+  const CareHorizontalScrollRow({
+    super.key,
+    required this.itemCount,
+    required this.itemBuilder,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
+    this.spacing = 8.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: padding,
+      child: Row(
+        children: [
+          for (int i = 0; i < itemCount; i++) ...[
+            if (i > 0) SizedBox(width: spacing),
+            itemBuilder(context, i),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Standardized Dr.Hair horizontal scrollable tab bar for Care views.
+/// Features natural left & right edge insets, smooth animated selection states,
+/// haptic feedback, and uniform spacing without trailing gaps.
+class CareHorizontalTabBar extends StatelessWidget {
+  final List<String> tabs;
+  final int selectedIndex;
+  final ValueChanged<int> onTabSelected;
+  final EdgeInsetsGeometry padding;
+  final double spacing;
+
+  const CareHorizontalTabBar({
+    super.key,
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onTabSelected,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
+    this.spacing = 8.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CareHorizontalScrollRow(
+      itemCount: tabs.length,
+      padding: padding,
+      spacing: spacing,
+      itemBuilder: (context, i) {
+        final isSelected = selectedIndex == i;
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTabSelected(i);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 9,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.border,
+                width: 1.2,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.18),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+            ),
+            child: Text(
+              tabs[i],
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.primaryDark,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

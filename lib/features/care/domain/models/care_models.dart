@@ -5,6 +5,9 @@ class ProgressCheckIn {
   final String id;
   final DateTime date;
   final String imagePath;
+  final String? frontImagePath;
+  final String? backImagePath;
+  final String? topImagePath;
   final String scalpRegion;
   final String sheddingLevel;
   final String notes;
@@ -16,6 +19,9 @@ class ProgressCheckIn {
     required this.id,
     required this.date,
     required this.imagePath,
+    this.frontImagePath,
+    this.backImagePath,
+    this.topImagePath,
     required this.scalpRegion,
     required this.sheddingLevel,
     this.notes = '',
@@ -24,10 +30,17 @@ class ProgressCheckIn {
     this.doctorNote,
   });
 
+  String get effectiveFrontImage => frontImagePath ?? imagePath;
+  String get effectiveTopImage => topImagePath ?? imagePath;
+  String get effectiveBackImage => backImagePath ?? imagePath;
+
   ProgressCheckIn copyWith({
     String? id,
     DateTime? date,
     String? imagePath,
+    String? frontImagePath,
+    String? backImagePath,
+    String? topImagePath,
     String? scalpRegion,
     String? sheddingLevel,
     String? notes,
@@ -39,6 +52,9 @@ class ProgressCheckIn {
       id: id ?? this.id,
       date: date ?? this.date,
       imagePath: imagePath ?? this.imagePath,
+      frontImagePath: frontImagePath ?? this.frontImagePath,
+      backImagePath: backImagePath ?? this.backImagePath,
+      topImagePath: topImagePath ?? this.topImagePath,
       scalpRegion: scalpRegion ?? this.scalpRegion,
       sheddingLevel: sheddingLevel ?? this.sheddingLevel,
       notes: notes ?? this.notes,

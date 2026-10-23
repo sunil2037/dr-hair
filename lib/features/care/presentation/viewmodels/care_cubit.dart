@@ -286,15 +286,21 @@ class CareCubit extends Cubit<CareState> {
   void addProgressCheckIn({
     required DateTime date,
     required String imagePath,
+    String? frontImagePath,
+    String? backImagePath,
+    String? topImagePath,
     required String scalpRegion,
     required String sheddingLevel,
     required String notes,
-    required int densityRating,
+    int densityRating = 4,
   }) {
     final newCheckIn = ProgressCheckIn(
       id: 'ci_${DateTime.now().millisecondsSinceEpoch}',
       date: date,
       imagePath: imagePath,
+      frontImagePath: frontImagePath,
+      backImagePath: backImagePath,
+      topImagePath: topImagePath,
       scalpRegion: scalpRegion,
       sheddingLevel: sheddingLevel,
       notes: notes,

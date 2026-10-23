@@ -11,7 +11,8 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../viewmodels/care_cubit.dart';
 
-/// Reusable bottom sheet for capturing and logging scalp progress check-in photos.
+/// Reusable bottom sheet for capturing and logging scalp progress check-in photos
+/// across 3 clinical angles: Front, Top/Crown, and Back.
 class AddPhotoCheckInBottomSheet extends StatefulWidget {
   const AddPhotoCheckInBottomSheet({super.key});
 
@@ -31,10 +32,11 @@ class AddPhotoCheckInBottomSheet extends StatefulWidget {
 
 class _AddPhotoCheckInBottomSheetState
     extends State<AddPhotoCheckInBottomSheet> {
-  String? _localImagePath;
-  String _region = 'Crown / Vertex';
+  String? _frontImagePath;
+  String? _topImagePath;
+  String? _backImagePath;
+  final String _region = 'Crown / Vertex';
   String _shedding = 'Low / Normal';
-  int _density = 4;
   final TextEditingController _notesController = TextEditingController();
 
   @override
@@ -43,14 +45,28 @@ class _AddPhotoCheckInBottomSheetState
     super.dispose();
   }
 
-  Future<void> _pickPhoto() async {
+  Future<void> _pickPhoto(String angle) async {
     HapticFeedback.selectionClick();
+    String title = 'Upload Scalp Photo';
+    String subtitle = 'Capture a clear photo under bright, direct light';
+
+    if (angle == 'front') {
+      title = 'Front Hairline Photo';
+      subtitle = 'Snap or choose a clear photo of your frontal hairline';
+    } else if (angle == 'top') {
+      title = 'Top / Crown Photo';
+      subtitle = 'Snap or choose a photo of the crown & vertex area';
+    } else if (angle == 'back') {
+      title = 'Back Scalp Photo';
+      subtitle = 'Snap or choose a photo of the rear occipital region';
+    }
+
     await PhotoSourceBottomSheet.show(
       context,
-      title: 'Scalp Progress Photo',
-      subtitle: 'Capture a clear photo under bright, direct light',
+      title: title,
+      subtitle: subtitle,
       cameraTitle: 'Open Camera',
-      cameraSubtitle: 'Snap a fresh scalp or hairline photo',
+      cameraSubtitle: 'Snap a fresh photo for this angle',
       galleryTitle: 'Select from Gallery',
       gallerySubtitle: 'Choose from your saved photos',
       onSelectSource: (source) async {
@@ -63,7 +79,11 @@ class _AddPhotoCheckInBottomSheetState
             imageQuality: 85,
           );
           if (image != null && mounted) {
-            setState(() => _localImagePath = image.path);
+            setState(() {
+              if (angle == 'front') _frontImagePath = image.path;
+              if (angle == 'top') _topImagePath = image.path;
+              if (angle == 'back') _backImagePath = image.path;
+            });
             HapticFeedback.lightImpact();
           }
         } catch (e) {
@@ -77,6 +97,154 @@ class _AddPhotoCheckInBottomSheetState
     );
   }
 
+  Widget _buildPhotoSlot({
+    required String angle,
+    required String label,
+    required String? imagePath,
+    required IconData fallbackIcon,
+  }) {
+    final hasImage = imagePath != null;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _pickPhoto(angle),
+        child: Container(
+          height: 125,
+          decoration: BoxDecoration(
+            color: hasImage ? Colors.black : AppColors.background,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: hasImage ? AppColors.primary : AppColors.border,
+              width: hasImage ? 2 : 1,
+            ),
+          ),
+          child: Stack(
+            children: [
+              if (hasImage) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(
+                    File(imagePath),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        if (angle == 'front') _frontImagePath = null;
+                        if (angle == 'top') _topImagePath = null;
+                        if (angle == 'back') _backImagePath = null;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.x,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 6,
+                  left: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          LucideIcons.checkCircle2,
+                          size: 11,
+                          color: Color(0xFF10B981),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary5,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            fallbackIcon,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          '+ Add Photo',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -85,263 +253,243 @@ class _AddPhotoCheckInBottomSheetState
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
-        constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.8),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Log Hair Progress Check-in',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Upload consistent scalp photos to track follicle density changes.',
-                style: TextStyle(fontSize: 12.5, color: AppColors.secondaryDark),
-              ),
-              const SizedBox(height: 16),
-
-              // Image Picker Trigger Box
-              GestureDetector(
-                onTap: _pickPhoto,
-                child: Container(
-                  height: 170,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: _localImagePath != null
-                          ? AppColors.primary
-                          : AppColors.border,
-                      width: _localImagePath != null ? 2 : 1,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Fixed Sheet Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                  child: _localImagePath != null
-                      ? Stack(
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.file(
-                                File(_localImagePath!),
-                                width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              right: 10,
-                              bottom: 10,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      LucideIcons.camera,
-                                      size: 13,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Retake',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary5,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                LucideIcons.camera,
-                                color: AppColors.primary,
-                                size: 26,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Tap to capture or upload photo',
+                            Text(
+                              'Log Hair Progress Check-in',
                               style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDark,
                               ),
                             ),
-                            const SizedBox(height: 3),
-                            const Text(
-                              'Camera or photo gallery',
+                            SizedBox(height: 2),
+                            Text(
+                              'Upload 3 photos: Front, Top & Back views',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 color: AppColors.secondaryDark,
                               ),
                             ),
                           ],
                         ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-              const Text(
-                'Target Scalp Region',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                children: [
-                  'Crown / Vertex',
-                  'Frontal Hairline',
-                  'Temples',
-                  'Overall Scalp',
-                ].map(
-                  (r) => ChoiceChip(
-                    label: Text(r),
-                    selected: _region == r,
-                    onSelected: (val) {
-                      if (val) setState(() => _region = r);
-                    },
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        icon: const Icon(
+                          LucideIcons.x,
+                          size: 20,
+                          color: AppColors.textMuted,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
-                ).toList(),
+                ],
               ),
+            ),
+            const Divider(height: 1, color: AppColors.border),
 
-              const SizedBox(height: 14),
-              const Text(
-                'Current Daily Shedding Level',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                children: ['Low / Normal', 'Moderate', 'Noticeable', 'Heavy'].map(
-                  (s) => ChoiceChip(
-                    label: Text(s),
-                    selected: _shedding == s,
-                    onSelected: (val) {
-                      if (val) setState(() => _shedding = s);
-                    },
-                  ),
-                ).toList(),
-              ),
-
-              const SizedBox(height: 14),
-              const Text(
-                'Follicle Density Feel',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: List.generate(5, (starIndex) {
-                  final score = starIndex + 1;
-                  return IconButton(
-                    icon: Icon(
-                      LucideIcons.star,
-                      color: score <= _density
-                          ? AppColors.starGold
-                          : AppColors.border,
-                      size: 26,
+            // Scrollable Form Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 3-Angle Upload Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Upload 3 Angles',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                        Text(
+                          '${[_frontImagePath, _topImagePath, _backImagePath].where((e) => e != null).length}/3 captured',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _density = score);
-                    },
-                  );
-                }),
-              ),
+                    const SizedBox(height: 10),
 
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Clinical Notes / Scalp Feel',
-                  hintText: 'e.g. Less hair fall during combing, new baby hairs forming.',
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                ),
-              ),
+                    Row(
+                      children: [
+                        _buildPhotoSlot(
+                          angle: 'front',
+                          label: 'Front View',
+                          imagePath: _frontImagePath,
+                          fallbackIcon: LucideIcons.user,
+                        ),
+                        const SizedBox(width: 10),
+                        _buildPhotoSlot(
+                          angle: 'top',
+                          label: 'Top / Crown',
+                          imagePath: _topImagePath,
+                          fallbackIcon: LucideIcons.sparkles,
+                        ),
+                        const SizedBox(width: 10),
+                        _buildPhotoSlot(
+                          angle: 'back',
+                          label: 'Back View',
+                          imagePath: _backImagePath,
+                          fallbackIcon: LucideIcons.scan,
+                        ),
+                      ],
+                    ),
 
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: AppButton(
-                  text: 'Save Progress Photo',
-                  variant: AppButtonVariant.filled,
-                  onPressed: () {
-                    final image = _localImagePath ??
-                        'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600';
+                    const SizedBox(height: 20),
 
-                    context.read<CareCubit>().addProgressCheckIn(
-                      date: DateTime.now(),
-                      imagePath: image,
-                      scalpRegion: _region,
-                      sheddingLevel: _shedding,
-                      notes: _notesController.text.trim().isEmpty
-                          ? 'Logged regular monthly check-in photo.'
-                          : _notesController.text.trim(),
-                      densityRating: _density,
-                    );
+                    const Text(
+                      'Current Daily Shedding Level',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      children:
+                          ['Low / Normal', 'Moderate', 'Noticeable', 'Heavy']
+                              .map(
+                                (s) => ChoiceChip(
+                                  label: Text(s),
+                                  selected: _shedding == s,
+                                  onSelected: (val) {
+                                    if (val) setState(() => _shedding = s);
+                                  },
+                                ),
+                              )
+                              .toList(),
+                    ),
 
-                    HapticFeedback.mediumImpact();
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        behavior: SnackBarBehavior.floating,
-                        content: Text(
-                          'Progress check-in logged! Clinical team notified.',
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _notesController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        // labelText: 'Clinical Notes / Scalp Observations',
+                        hintText: 'e.g. Less hair fall, thicker feel at crown, regular serum application.',
+                        filled: true,
+                        fillColor: AppColors.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: AppColors.border),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // Fixed Non-Scrollable Save Button Footer
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                MediaQuery.of(context).padding.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    offset: const Offset(0, -4),
+                    blurRadius: 10,
+                  ),
+                ],
+                border: const Border(
+                  top: BorderSide(color: AppColors.border, width: 1),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    text: 'Save Progress Photos',
+                    variant: AppButtonVariant.filled,
+                    onPressed: () {
+                      final primaryImage =
+                          _frontImagePath ??
+                          _topImagePath ??
+                          _backImagePath ??
+                          'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600';
+
+                      context.read<CareCubit>().addProgressCheckIn(
+                        date: DateTime.now(),
+                        imagePath: primaryImage,
+                        frontImagePath: _frontImagePath ?? primaryImage,
+                        topImagePath: _topImagePath,
+                        backImagePath: _backImagePath,
+                        scalpRegion: _region,
+                        sheddingLevel: _shedding,
+                        notes: _notesController.text.trim().isEmpty
+                            ? 'Logged 3-angle progress check-in photos.'
+                            : _notesController.text.trim(),
+                        densityRating: 4,
+                      );
+
+                      HapticFeedback.mediumImpact();
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text(
+                            'Progress check-in logged! Clinical team notified.',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

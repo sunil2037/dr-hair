@@ -2,7 +2,6 @@
 export '../widgets/care_widgets.dart';
 
 // Extracted Reusable Sheets & Dialogs
-export '../widgets/compare_photos_bottom_sheet.dart';
 export '../widgets/add_photo_checkin_bottom_sheet.dart';
 export '../widgets/add_routine_task_bottom_sheet.dart';
 export '../widgets/add_reminder_bottom_sheet.dart';

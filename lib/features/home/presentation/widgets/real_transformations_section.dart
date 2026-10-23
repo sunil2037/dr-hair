@@ -17,10 +17,8 @@ class RealTransformationCard extends StatelessWidget {
     super.key,
     this.caseId = 'CASE ID: #4820',
     this.durationText = '3 Months Result',
-    this.beforeImageUrl =
-        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600',
-    this.afterImageUrl =
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600',
+    this.beforeImageUrl = 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600',
+    this.afterImageUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600',
     this.beforeLabel = 'BEFORE',
     this.afterLabel = 'AFTER',
     this.onTap,
@@ -162,64 +160,6 @@ class RealTransformationCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Reusable Section displaying the header title and the transformation card
-class RealTransformationsSection extends StatelessWidget {
-  final String title;
-  final String caseId;
-  final String durationText;
-  final String beforeImageUrl;
-  final String afterImageUrl;
-  final String beforeLabel;
-  final String afterLabel;
-  final EdgeInsetsGeometry padding;
-  final VoidCallback? onTap;
-
-  const RealTransformationsSection({
-    super.key,
-    this.title = 'Real Transformations',
-    this.caseId = 'CASE ID: #4820',
-    this.durationText = '3 Months Result',
-    this.beforeImageUrl =
-        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600',
-    this.afterImageUrl =
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600',
-    this.beforeLabel = 'BEFORE',
-    this.afterLabel = 'AFTER',
-    this.padding = const EdgeInsets.symmetric(horizontal: 20),
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: padding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-            ),
-          ),
-          const SizedBox(height: 16),
-          RealTransformationCard(
-            caseId: caseId,
-            durationText: durationText,
-            beforeImageUrl: beforeImageUrl,
-            afterImageUrl: afterImageUrl,
-            beforeLabel: beforeLabel,
-            afterLabel: afterLabel,
-            onTap: onTap,
-          ),
-        ],
       ),
     );
   }

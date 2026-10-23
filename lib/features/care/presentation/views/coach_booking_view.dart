@@ -64,10 +64,16 @@ class _CoachBookingViewState extends State<CoachBookingView> {
       builder: (context, state) {
         return CarePageScaffold(
           title: 'Talk to a Hair Coach',
+          padding: const EdgeInsets.only(top: 16, bottom: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              careCard(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    careCard(
                 backgroundColor: AppColors.primary5,
                 border: Border.all(color: AppColors.primary100),
                 child: const Column(
@@ -295,172 +301,206 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                 ],
               ),
 
-              const SizedBox(height: 18),
-              careSectionHeader(title: '3. SELECT DATE & TIME'),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  children: List.generate(5, (i) {
-                    final date = DateTime.now().add(Duration(days: i));
-                    final isSelected = _selectedDateOffset == i;
-                    final dayLabel = i == 0
-                        ? 'Today'
-                        : (i == 1
-                              ? 'Tomorrow'
-                              : '${date.day} ${careMonthName(date.month)}');
+                    const SizedBox(height: 18),
+                    careSectionHeader(title: '3. SELECT DATE & TIME'),
+                  ],
+                ),
+              ),
 
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _selectedDateOffset = i);
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 10),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+              // Date Selection Tabs (Edge-to-edge scroll with natural 16px insets & 8px spacing)
+              CareHorizontalScrollRow(
+                itemCount: 5,
+                spacing: 8,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemBuilder: (context, i) {
+                  final date = DateTime.now().add(Duration(days: i));
+                  final isSelected = _selectedDateOffset == i;
+                  final dayLabel = i == 0
+                      ? 'Today'
+                      : (i == 1
+                            ? 'Tomorrow'
+                            : '${date.day} ${careMonthName(date.month)}');
+
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedDateOffset = i);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.border,
+                          width: 1.2,
                         ),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.border,
-                          ),
-                        ),
-                        child: Text(
-                          dayLabel,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? Colors.white
-                                : AppColors.primaryDark,
-                          ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary
+                                      .withValues(alpha: 0.18),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                      ),
+                      child: Text(
+                        dayLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.primaryDark,
                         ),
                       ),
-                    );
-                  }),
-                ),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _slots.map((s) {
-                  final isSelected = _selectedSlot == s;
-                  return ChoiceChip(
-                    label: Text(s),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedSlot = s);
-                    },
-                  );
-                }).toList(),
-              ),
 
-              const SizedBox(height: 18),
-              careSectionHeader(title: '4. QUESTIONS / SYMPTOMS'),
-              TextField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  hintText:
-                      'e.g. Experiencing mild shedding, dosage question about topical serum.',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                ),
-              ),
+              // Bottom Section with natural 16px page padding
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _slots.map((s) {
+                        final isSelected = _selectedSlot == s;
+                        return ChoiceChip(
+                          label: Text(s),
+                          selected: isSelected,
+                          onSelected: (val) {
+                            if (val) setState(() => _selectedSlot = s);
+                          },
+                        );
+                      }).toList(),
+                    ),
 
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: AppButton(
-                  text: 'Confirm Guidance Call',
-                  variant: AppButtonVariant.filled,
-                  onPressed: () {
-                    final chosenDate = DateTime.now().add(
-                      Duration(days: _selectedDateOffset),
-                    );
-                    final coach = _coaches[_selectedCoachIndex];
-
-                    context.read<CareCubit>().bookCoach(
-                      coachName: coach['name']!,
-                      role: coach['role']!,
-                      avatarUrl: coach['avatar']!,
-                      date: chosenDate,
-                      timeSlot: _selectedSlot,
-                      consultationType: _consultationType,
-                      notes: _notesController.text.trim(),
-                    );
-
-                    HapticFeedback.mediumImpact();
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (ctx) => Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(28),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFECFDF5),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                LucideIcons.check,
-                                color: Color(0xFF059669),
-                                size: 28,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Consultation Booked!',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Appointment with ${coach['name']} on ${careMonthName(chosenDate.month)} ${chosenDate.day} at $_selectedSlot.\nYou will receive a WhatsApp reminder 15 minutes before the call.',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.secondaryDark,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: AppButton(
-                                text: 'Done',
-                                variant: AppButtonVariant.filled,
-                                onPressed: () => Navigator.pop(ctx),
-                              ),
-                            ),
-                          ],
+                    const SizedBox(height: 18),
+                    careSectionHeader(title: '4. QUESTIONS / SYMPTOMS'),
+                    TextField(
+                      controller: _notesController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText:
+                            'e.g. Experiencing mild shedding, dosage question about topical serum.',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide:
+                              const BorderSide(color: AppColors.border),
                         ),
                       ),
-                    );
-                  },
+                    ),
+
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: AppButton(
+                        text: 'Confirm Guidance Call',
+                        variant: AppButtonVariant.filled,
+                        onPressed: () {
+                          final chosenDate = DateTime.now().add(
+                            Duration(days: _selectedDateOffset),
+                          );
+                          final coach = _coaches[_selectedCoachIndex];
+
+                          context.read<CareCubit>().bookCoach(
+                            coachName: coach['name']!,
+                            role: coach['role']!,
+                            avatarUrl: coach['avatar']!,
+                            date: chosenDate,
+                            timeSlot: _selectedSlot,
+                            consultationType: _consultationType,
+                            notes: _notesController.text.trim(),
+                          );
+
+                          HapticFeedback.mediumImpact();
+                          showModalBottomSheet(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            builder: (ctx) => Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(28),
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFECFDF5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      LucideIcons.check,
+                                      color: Color(0xFF059669),
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Consultation Booked!',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Appointment with ${coach['name']} on ${careMonthName(chosenDate.month)} ${chosenDate.day} at $_selectedSlot.\nYou will receive a WhatsApp reminder 15 minutes before the call.',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.secondaryDark,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: AppButton(
+                                      text: 'Done',
+                                      variant: AppButtonVariant.filled,
+                                      onPressed: () => Navigator.pop(ctx),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
