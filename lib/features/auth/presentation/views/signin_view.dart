@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,6 +36,7 @@ class _SigninViewState extends State<SigninView>
   bool _isLoading = false;
   bool _entryMotionConfigured = false;
   final String _countryCode = '+91';
+  String? _phoneError;
 
   @override
   void initState() {
@@ -79,7 +81,11 @@ class _SigninViewState extends State<SigninView>
   }
 
   void _onPhoneChanged(String val) {
-    setState(() {});
+    if (_phoneError != null) {
+      setState(() => _phoneError = null);
+    } else {
+      setState(() {});
+    }
   }
 
   void _onTopBackTapped() {
@@ -95,6 +101,9 @@ class _SigninViewState extends State<SigninView>
   void _proceedToOtp() {
     final rawPhone = _phoneController.text.trim();
     if (rawPhone.length != 10 || !RegExp(r'^[0-9]{10}$').hasMatch(rawPhone)) {
+      setState(() {
+        _phoneError = 'Please enter a valid 10-digit mobile number';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Enter a valid 10-digit mobile number.'),
@@ -105,6 +114,7 @@ class _SigninViewState extends State<SigninView>
     }
 
     setState(() {
+      _phoneError = null;
       _currentStep = _LoginStep.otp;
     });
 
@@ -497,6 +507,31 @@ class _SigninViewState extends State<SigninView>
           ),
         ),
 
+        if (_phoneError != null) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.alertCircle,
+                  size: 14,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _phoneError!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.danger,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         const SizedBox(height: 20),
 
         // Send Verification OTP Button
@@ -535,20 +570,116 @@ class _SigninViewState extends State<SigninView>
           ],
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
 
-        // Continue as Guest
-        Center(
-          child: TextButton(
-            onPressed: _continueAsGuest,
-            child: const Text(
-              'Continue as Guest',
-              style: TextStyle(
-                color: AppColors.secondaryDark,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+        // Demo Mode Credentials & API Contract Notice
+        if (kDebugMode) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.primary5,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.primary100),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(top: 2),
+                  child: Icon(
+                    LucideIcons.info,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Preview / Demo Authentication Active',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Use demo code 123456 to verify. Requires backend SMS Gateway endpoints POST /api/v1/auth/otp/send and /verify for production delivery.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.3,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Continue as Guest
+          Center(
+            child: TextButton(
+              onPressed: _continueAsGuest,
+              child: const Text(
+                'Continue as Guest',
+                style: TextStyle(
+                  color: AppColors.secondaryDark,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
+          ),
+
+          const SizedBox(height: 10),
+        ],
+
+        // Terms and Privacy Policy Links
+        Center(
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            children: [
+              const Text(
+                'By signing in, you agree to our',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
+              GestureDetector(
+                onTap: () => context.push(RouteNames.terms),
+                child: const Text(
+                  'Terms & Conditions',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              const Text(
+                'and',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
+              GestureDetector(
+                onTap: () => context.push(RouteNames.privacyPolicy),
+                child: const Text(
+                  'Privacy Policy',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

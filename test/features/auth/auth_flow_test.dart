@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dr_hair/features/auth/presentation/viewmodels/auth_cubit.dart';
 import 'package:dr_hair/features/auth/presentation/views/splash_view.dart';
 import 'package:dr_hair/features/auth/presentation/views/signin_view.dart';
+import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
+import 'package:dr_hair/features/shop/presentation/viewmodels/cart_cubit.dart';
 import 'package:dr_hair/core/routes/app_router.dart';
 import 'package:dr_hair/core/constants/app_strings.dart';
 import 'package:dr_hair/core/theme/app_theme.dart';
@@ -114,8 +116,12 @@ void main() {
       final authCubit = AuthCubit();
 
       await tester.pumpWidget(
-        BlocProvider<AuthCubit>.value(
-          value: authCubit,
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthCubit>.value(value: authCubit),
+            BlocProvider<CartCubit>(create: (_) => CartCubit()),
+            BlocProvider<CareCubit>(create: (_) => CareCubit()),
+          ],
           child: MaterialApp.router(
             title: AppStrings.appName,
             theme: AppTheme.lightTheme,

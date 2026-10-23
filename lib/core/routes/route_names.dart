@@ -21,7 +21,14 @@ class RouteNames {
   static const String routine = '/routine';
   static const String progress = '/progress';
   static const String coachBooking = '/coach-booking';
+  static const String appointmentBooking = '/book-appointment';
   static const String dietPlan = '/diet-plan';
   static const String reminders = '/reminders';
   static const String orders = '/orders';
+  static const String policy = '/policy';
+  static const String privacyPolicy = '/privacy-policy';
+  static const String terms = '/terms';
+  static const String returnsRefunds = '/returns-refunds';
+  static const String cancellationPolicy = '/cancellation-policy';
+  static const String guarantee = '/guarantee';
 }

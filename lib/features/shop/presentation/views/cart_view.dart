@@ -126,11 +126,22 @@ class _CartViewState extends State<CartView> {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 4),
         content: Text(
           'Removed ${removed['title']} from cart',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+        ),
+        action: SnackBarAction(
+          label: 'UNDO',
+          textColor: AppColors.starGold,
+          onPressed: () {
+            if (sharedCart != null) {
+              sharedCart.restore(removed, index);
+            } else {
+              setState(() => _localItems.insert(index, removed));
+            }
+          },
         ),
       ),
     );
@@ -138,6 +149,9 @@ class _CartViewState extends State<CartView> {
 
   void _clearCart() {
     if (_items.isEmpty) return;
+    final cached = List<Map<String, dynamic>>.from(
+      _items.map((e) => Map<String, dynamic>.from(e)),
+    );
     final sharedCart = context.read<CartCubit?>();
     if (sharedCart != null) {
       sharedCart.clear();
@@ -156,8 +170,19 @@ class _CartViewState extends State<CartView> {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 4),
         content: const Text('Cart cleared'),
+        action: SnackBarAction(
+          label: 'UNDO',
+          textColor: AppColors.starGold,
+          onPressed: () {
+            if (sharedCart != null) {
+              sharedCart.replaceAll(cached);
+            } else {
+              setState(() => _localItems.addAll(cached));
+            }
+          },
+        ),
       ),
     );
   }

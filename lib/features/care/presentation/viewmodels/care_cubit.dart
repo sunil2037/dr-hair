@@ -1,12 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/services/care_notification_service.dart';
 import '../../domain/models/care_models.dart';
 import 'care_state.dart';
 
 class CareCubit extends Cubit<CareState> {
-  CareCubit() : super(const CareState()) {
+  final CareNotificationService? _notificationService;
+
+  CareCubit([this._notificationService]) : super(const CareState()) {
     _initializeDefaultData();
+    _initPersistence();
+  }
+
+  Future<void> _initPersistence() async {
+    final service = _notificationService ?? await CareNotificationService.create();
+    final status = service.getPermissionStatus();
+    final persistedReminders = service.loadReminders();
+    final persistedTasks = service.loadRoutineTasks();
+
+    emit(
+      state.copyWith(
+        notificationPermissionStatus: status,
+        reminders: persistedReminders ?? state.reminders,
+        routineTasks: persistedTasks ?? state.routineTasks,
+      ),
+    );
   }
 
   void _initializeDefaultData() {
@@ -330,6 +349,7 @@ class CareCubit extends Cubit<CareState> {
     }).toList();
 
     emit(state.copyWith(routineTasks: updated));
+    _notificationService?.saveRoutineTasks(updated);
   }
 
   void addCustomRoutineTask({
@@ -347,7 +367,9 @@ class CareCubit extends Cubit<CareState> {
       isCompleted: false,
     );
 
-    emit(state.copyWith(routineTasks: [...state.routineTasks, newTask]));
+    final updated = [...state.routineTasks, newTask];
+    emit(state.copyWith(routineTasks: updated));
+    _notificationService?.saveRoutineTasks(updated);
   }
 
   void resetTodayRoutine() {
@@ -355,29 +377,99 @@ class CareCubit extends Cubit<CareState> {
         .map((task) => task.copyWith(isCompleted: false))
         .toList();
     emit(state.copyWith(routineTasks: reset));
+    _notificationService?.saveRoutineTasks(reset);
   }
 
   // --- REMINDER ACTIONS ---
+  Future<void> requestNotificationPermission({bool simulateDenial = false}) async {
+    final service = _notificationService ?? await CareNotificationService.create();
+    final status = await service.requestPermission(simulateDenial: simulateDenial);
+    emit(state.copyWith(notificationPermissionStatus: status));
+  }
+
+  void saveReminder(CareReminder reminder) {
+    final existingIndex = state.reminders.indexWhere((r) => r.id == reminder.id);
+    List<CareReminder> updated;
+    if (existingIndex >= 0) {
+      updated = List<CareReminder>.from(state.reminders);
+      updated[existingIndex] = reminder;
+    } else {
+      updated = [...state.reminders, reminder];
+    }
+    emit(state.copyWith(reminders: updated));
+    _notificationService?.saveReminders(updated);
+    if (reminder.isEnabled) {
+      _notificationService?.scheduleReminder(reminder);
+    } else {
+      _notificationService?.cancelReminder(reminder.id);
+    }
+  }
+
+  void deleteReminder(String id) {
+    final updated = state.reminders.where((r) => r.id != id).toList();
+    emit(state.copyWith(reminders: updated));
+    _notificationService?.saveReminders(updated);
+    _notificationService?.cancelReminder(id);
+  }
+
   void toggleReminder(String id, bool isEnabled) {
     final updated = state.reminders.map((rem) {
       if (rem.id == id) {
-        return rem.copyWith(isEnabled: isEnabled);
+        final r = rem.copyWith(isEnabled: isEnabled);
+        if (isEnabled) {
+          _notificationService?.scheduleReminder(r);
+        } else {
+          _notificationService?.cancelReminder(r.id);
+        }
+        return r;
       }
       return rem;
     }).toList();
 
     emit(state.copyWith(reminders: updated));
+    _notificationService?.saveReminders(updated);
   }
 
   void updateReminderTime(String id, TimeOfDay newTime) {
     final updated = state.reminders.map((rem) {
       if (rem.id == id) {
-        return rem.copyWith(time: newTime);
+        final r = rem.copyWith(time: newTime);
+        _notificationService?.scheduleReminder(r);
+        return r;
       }
       return rem;
     }).toList();
 
     emit(state.copyWith(reminders: updated));
+    _notificationService?.saveReminders(updated);
+  }
+
+  void snoozeReminder(String id, {Duration duration = const Duration(minutes: 15)}) {
+    final until = DateTime.now().add(duration);
+    final updated = state.reminders.map((rem) {
+      if (rem.id == id) {
+        return rem.copyWith(snoozedUntil: until);
+      }
+      return rem;
+    }).toList();
+
+    emit(state.copyWith(reminders: updated));
+    _notificationService?.saveReminders(updated);
+  }
+
+  void toggleReminderCompletion(String id) {
+    final updated = state.reminders.map((rem) {
+      if (rem.id == id) {
+        return rem.copyWith(
+          isCompleted: !rem.isCompleted,
+          clearSnooze: true,
+        );
+      }
+      return rem;
+    }).toList();
+
+    emit(state.copyWith(reminders: updated));
+    _notificationService?.saveReminders(updated);
   }
 
   void addReminder({
@@ -385,6 +477,9 @@ class CareCubit extends Cubit<CareState> {
     required String subtitle,
     required TimeOfDay time,
     required String frequency,
+    String treatmentType = 'Topical Serum',
+    List<int> repeatDays = const [1, 2, 3, 4, 5, 6, 7],
+    String notes = '',
   }) {
     final newReminder = CareReminder(
       id: 'rem_${DateTime.now().millisecondsSinceEpoch}',
@@ -392,10 +487,13 @@ class CareCubit extends Cubit<CareState> {
       subtitle: subtitle,
       time: time,
       frequency: frequency,
+      treatmentType: treatmentType,
+      repeatDays: repeatDays,
+      notes: notes,
       isEnabled: true,
     );
 
-    emit(state.copyWith(reminders: [...state.reminders, newReminder]));
+    saveReminder(newReminder);
   }
 
   // --- COACH BOOKING ACTIONS ---

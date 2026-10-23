@@ -61,13 +61,12 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
-    _heartScale =
-        TweenSequence<double>([
-          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
-          TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
-        ]).animate(
-          CurvedAnimation(parent: _heartAnimController, curve: Curves.easeOut),
-        );
+    _heartScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+    ]).animate(
+      CurvedAnimation(parent: _heartAnimController, curve: Curves.easeOut),
+    );
   }
 
   @override
@@ -212,7 +211,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                       onTap: _onShare,
                     ),
                   ),
-                  const SizedBox(width: 6),
+
                   Semantics(
                     label: 'Notifications',
                     button: true,
@@ -853,9 +852,12 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                         ? cartQuantity
                         : state.quantity;
                     final isInCart =
-                        cartQuantity > 0 || (cart == null && state.isAddedToCart);
+                        cartQuantity > 0 ||
+                        (cart == null && state.isAddedToCart);
                     final total = state.currentUnitPrice * quantity;
-                    final reduceMotion = MediaQuery.disableAnimationsOf(barContext);
+                    final reduceMotion = MediaQuery.disableAnimationsOf(
+                      barContext,
+                    );
                     return AnimatedSwitcher(
                       duration: reduceMotion
                           ? Duration.zero
@@ -882,7 +884,8 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                 Expanded(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '₹$total',
@@ -938,7 +941,9 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                                       AppColors.primaryDark,
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
-                                                        BorderRadius.circular(12),
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
                                                   ),
                                                   duration: const Duration(
                                                     seconds: 2,
@@ -957,9 +962,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                             cart?.setQuantity(
                                               CartCubit.lineId(
                                                 product.id,
-                                                state
-                                                    .selectedSupplyPlan
-                                                    .title,
+                                                state.selectedSupplyPlan.title,
                                               ),
                                               next,
                                             );
@@ -1072,7 +1075,8 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                           ..hideCurrentSnackBar()
                                           ..showSnackBar(
                                             SnackBar(
-                                              behavior: SnackBarBehavior.floating,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
                                               duration: const Duration(
                                                 seconds: 2,
                                               ),

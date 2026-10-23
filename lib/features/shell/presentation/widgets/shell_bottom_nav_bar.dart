@@ -136,7 +136,9 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
                       ),
                     ),
                   ),
-                ),
+                )
+              else
+                const SizedBox.shrink(key: ValueKey('cart-summary-hidden')),
 
               // 2. Navigation Row (Pill + Standalone Action Button)
               Padding(
@@ -297,6 +299,7 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
       label:
           'View cart, $count ${count == 1 ? 'item' : 'items'}${subtotal != null && subtotal > 0 ? ', total ₹$subtotal' : ''}',
       child: Material(
+        key: const ValueKey('cart-summary'),
         color: AppColors.primary5,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -326,7 +329,9 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$count ${count == 1 ? 'item' : 'items'} in cart',
+                          subtotal != null && subtotal > 0
+                              ? '$count ${count == 1 ? 'item' : 'items'} · ₹$subtotal'
+                              : '$count ${count == 1 ? 'item' : 'items'} in cart',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -335,22 +340,21 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (subtotal != null && subtotal > 0)
-                          Text(
-                            '₹$subtotal subtotal',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.secondaryDark,
-                              fontSize: 10,
-                            ),
+                        const Text(
+                          'Tap to review & checkout',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.secondaryDark,
+                            fontSize: 10,
                           ),
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'View cart',
+                    'View Cart',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 11,

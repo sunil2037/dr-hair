@@ -13,8 +13,10 @@ import '../../features/shop/presentation/views/cart_view.dart';
 import '../../features/shop/presentation/views/notifications_view.dart';
 import '../../features/shop/presentation/views/checkout_view.dart';
 import '../../features/shop/presentation/views/product_details_view.dart';
+import '../../features/static/domain/policy_models.dart';
 import '../../features/static/presentation/views/about_view.dart';
 import '../../features/static/presentation/views/contact_view.dart';
+import '../../features/static/presentation/views/policy_page_view.dart';
 import '../../features/treatment/presentation/views/treatment_details_view.dart';
 import '../../features/videos/presentation/views/videos_view.dart';
 import '../../features/care/presentation/views/coach_booking_view.dart';
@@ -150,6 +152,10 @@ class AppRouter {
         builder: (context, state) => const CoachBookingView(),
       ),
       GoRoute(
+        path: RouteNames.appointmentBooking,
+        builder: (context, state) => const CoachBookingView(),
+      ),
+      GoRoute(
         path: RouteNames.dietPlan,
         builder: (context, state) => const DietPlanView(),
       ),
@@ -160,6 +166,39 @@ class AppRouter {
       GoRoute(
         path: RouteNames.orders,
         builder: (context, state) => const OrderTrackingView(),
+      ),
+      GoRoute(
+        path: RouteNames.policy,
+        builder: (context, state) {
+          final policyType = state.extra as PolicyType? ??
+              PolicyType.fromSlug(state.uri.queryParameters['type']);
+          return PolicyPageView(initialType: policyType);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.privacyPolicy,
+        builder: (context, state) =>
+            const PolicyPageView(initialType: PolicyType.privacyPolicy),
+      ),
+      GoRoute(
+        path: RouteNames.terms,
+        builder: (context, state) =>
+            const PolicyPageView(initialType: PolicyType.termsAndConditions),
+      ),
+      GoRoute(
+        path: RouteNames.returnsRefunds,
+        builder: (context, state) =>
+            const PolicyPageView(initialType: PolicyType.returnsAndRefunds),
+      ),
+      GoRoute(
+        path: RouteNames.cancellationPolicy,
+        builder: (context, state) =>
+            const PolicyPageView(initialType: PolicyType.cancellationPolicy),
+      ),
+      GoRoute(
+        path: RouteNames.guarantee,
+        builder: (context, state) =>
+            const PolicyPageView(initialType: PolicyType.moneyBackGuarantee),
       ),
     ],
   );

@@ -100,6 +100,28 @@ class RoutineTask {
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'subtitle': subtitle,
+      'category': category,
+      'timeOfDay': timeOfDay,
+      'isCompleted': isCompleted,
+    };
+  }
+
+  factory RoutineTask.fromJson(Map<String, dynamic> json) {
+    return RoutineTask(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      category: json['category'] as String? ?? '',
+      timeOfDay: json['timeOfDay'] as String? ?? '',
+      isCompleted: json['isCompleted'] as bool? ?? false,
+    );
+  }
 }
 
 /// Represents a scheduled notification reminder.
@@ -110,6 +132,11 @@ class CareReminder {
   final TimeOfDay time;
   final bool isEnabled;
   final String frequency;
+  final String treatmentType;
+  final List<int> repeatDays; // 1 = Monday, 7 = Sunday
+  final bool isCompleted;
+  final String notes;
+  final DateTime? snoozedUntil;
 
   const CareReminder({
     required this.id,
@@ -118,7 +145,56 @@ class CareReminder {
     required this.time,
     this.isEnabled = true,
     this.frequency = 'Daily',
+    this.treatmentType = 'Topical Serum',
+    this.repeatDays = const [1, 2, 3, 4, 5, 6, 7],
+    this.isCompleted = false,
+    this.notes = '',
+    this.snoozedUntil,
   });
+
+  bool get isSnoozed {
+    if (snoozedUntil == null) return false;
+    return DateTime.now().isBefore(snoozedUntil!);
+  }
+
+  String get daysSummary {
+    if (repeatDays.isEmpty || repeatDays.length == 7) {
+      return 'Daily';
+    }
+    final sorted = List<int>.from(repeatDays)..sort();
+    if (sorted.length == 5 &&
+        sorted[0] == 1 &&
+        sorted[1] == 2 &&
+        sorted[2] == 3 &&
+        sorted[3] == 4 &&
+        sorted[4] == 5) {
+      return 'Weekdays';
+    }
+    if (sorted.length == 2 && sorted[0] == 6 && sorted[1] == 7) {
+      return 'Weekends';
+    }
+
+    const dayNames = {
+      1: 'Mon',
+      2: 'Tue',
+      3: 'Wed',
+      4: 'Thu',
+      5: 'Fri',
+      6: 'Sat',
+      7: 'Sun',
+    };
+    return sorted.map((d) => dayNames[d] ?? '').where((s) => s.isNotEmpty).join(', ');
+  }
+
+  String get timeFormatted {
+    final hour = time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final formattedHour = hour == 0
+        ? 12
+        : (hour > 12 ? hour - 12 : hour);
+    return '$formattedHour:$minute $period';
+  }
 
   CareReminder copyWith({
     String? id,
@@ -127,6 +203,12 @@ class CareReminder {
     TimeOfDay? time,
     bool? isEnabled,
     String? frequency,
+    String? treatmentType,
+    List<int>? repeatDays,
+    bool? isCompleted,
+    String? notes,
+    DateTime? snoozedUntil,
+    bool clearSnooze = false,
   }) {
     return CareReminder(
       id: id ?? this.id,
@@ -135,6 +217,52 @@ class CareReminder {
       time: time ?? this.time,
       isEnabled: isEnabled ?? this.isEnabled,
       frequency: frequency ?? this.frequency,
+      treatmentType: treatmentType ?? this.treatmentType,
+      repeatDays: repeatDays ?? this.repeatDays,
+      isCompleted: isCompleted ?? this.isCompleted,
+      notes: notes ?? this.notes,
+      snoozedUntil: clearSnooze ? null : (snoozedUntil ?? this.snoozedUntil),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'subtitle': subtitle,
+      'hour': time.hour,
+      'minute': time.minute,
+      'isEnabled': isEnabled,
+      'frequency': frequency,
+      'treatmentType': treatmentType,
+      'repeatDays': repeatDays,
+      'isCompleted': isCompleted,
+      'notes': notes,
+      'snoozedUntil': snoozedUntil?.toIso8601String(),
+    };
+  }
+
+  factory CareReminder.fromJson(Map<String, dynamic> json) {
+    return CareReminder(
+      id: json['id'] as String? ?? 'rem_${DateTime.now().millisecondsSinceEpoch}',
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      time: TimeOfDay(
+        hour: json['hour'] as int? ?? 8,
+        minute: json['minute'] as int? ?? 0,
+      ),
+      isEnabled: json['isEnabled'] as bool? ?? true,
+      frequency: json['frequency'] as String? ?? 'Daily',
+      treatmentType: json['treatmentType'] as String? ?? 'Topical Serum',
+      repeatDays: (json['repeatDays'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [1, 2, 3, 4, 5, 6, 7],
+      isCompleted: json['isCompleted'] as bool? ?? false,
+      notes: json['notes'] as String? ?? '',
+      snoozedUntil: json['snoozedUntil'] != null
+          ? DateTime.tryParse(json['snoozedUntil'] as String)
+          : null,
     );
   }
 }

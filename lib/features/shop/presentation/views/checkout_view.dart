@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/routes/route_names.dart';
 
 class CheckoutView extends StatefulWidget {
   final int amount;
@@ -218,6 +220,84 @@ class _CheckoutViewState extends State<CheckoutView> {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+
+            // Demonstration Mode Note
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary5,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary100),
+              ),
+              child: const Row(
+                children: [
+                  Icon(LucideIcons.info, size: 16, color: AppColors.primary),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Demo Checkout: Live payment processor (Razorpay/Cashfree) and address verification API contract required for live transactions.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.secondaryDark,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Policy Links
+            Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                children: [
+                  GestureDetector(
+                    onTap: () => context.push(RouteNames.terms),
+                    child: const Text(
+                      'Terms & Conditions',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  const Text('·', style: TextStyle(color: AppColors.textMuted)),
+                  GestureDetector(
+                    onTap: () => context.push(RouteNames.privacyPolicy),
+                    child: const Text(
+                      'Privacy Policy',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  const Text('·', style: TextStyle(color: AppColors.textMuted)),
+                  GestureDetector(
+                    onTap: () => context.push(RouteNames.returnsRefunds),
+                    child: const Text(
+                      'Returns & Refunds',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),

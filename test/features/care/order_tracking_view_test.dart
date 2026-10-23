@@ -31,8 +31,9 @@ void main() {
     final ordersTile = find.text('Orders & delivery');
     expect(ordersTile, findsOneWidget);
 
-    // Scroll to it if needed
-    await tester.scrollUntilVisible(ordersTile, 100);
+    // Scroll to it and offset down slightly from under the app bar
+    await tester.ensureVisible(ordersTile);
+    await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, 80));
     await tester.pumpAndSettle();
 
     // Tap it

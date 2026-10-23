@@ -88,25 +88,32 @@ class _ReviewsViewState extends State<ReviewsView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // const Text(
-                //   'Clinical Reviews',
-                //   style: TextStyle(
-                //     fontSize: 20,
-                //     fontWeight: FontWeight.w600,
-                //     color: AppColors.primaryDark,
-                //     letterSpacing: -0.3,
-                //   ),
-                // ),
-                // const SizedBox(height: 3),
-                // const Text(
-                //   'Genuine feedback from verified DrHair patients',
-                //   style: TextStyle(
-                //     fontSize: 13,
-                //     color: AppColors.secondaryDark,
-                //     fontWeight: FontWeight.w500,
-                //   ),
-                // ),
-                // const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Clinical Reviews',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'Genuine feedback from verified DrHair patients',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.secondaryDark,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
                 // Rating Summary Card
                 Container(

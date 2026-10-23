@@ -117,6 +117,12 @@ class HairTestCubit extends Cubit<HairTestState> {
     }
   }
 
+  void setPhoto(String label, String path) {
+    final updatedPhotos = Map<String, String>.from(state.photos);
+    updatedPhotos[label] = path;
+    emit(state.copyWith(photos: updatedPhotos, clearErrorMessage: true));
+  }
+
   void removePhoto(String label) {
     final updatedPhotos = Map<String, String>.from(state.photos);
     updatedPhotos.remove(label);

@@ -638,18 +638,38 @@ class _HairTestContent extends StatelessWidget {
   }
 
   Widget _buildResultsView(BuildContext context) {
+    final state = context.read<HairTestCubit>().state;
+    final photoCount = state.photos.length;
+
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Assessment Summary',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(LucideIcons.x),
+          onPressed: () {
+            context.read<HairTestCubit>().reset();
+            Navigator.pop(context);
+          },
+        ),
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 90,
-                height: 90,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
@@ -657,29 +677,135 @@ class _HairTestContent extends StatelessWidget {
                 child: const Icon(
                   LucideIcons.circleCheck,
                   color: AppColors.success,
-                  size: 58,
+                  size: 48,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               const Text(
                 'Assessment complete',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.w900,
                   color: AppColors.primaryDark,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               const Text(
-                'Your answers and scalp photos are saved for this session. They have not been sent to a dermatologist because assessment services are not connected yet.',
+                'Your personalized responses and scalp photos have been recorded for this care session.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   color: AppColors.secondaryDark,
-                  height: 1.5,
+                  height: 1.45,
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 20),
+
+              // Summary Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'ASSESSMENT PROFILE SUMMARY',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSummaryRow(
+                      'Primary Concern',
+                      state.primaryConcern ?? 'Hair Fall & Thinning',
+                    ),
+                    const Divider(height: 16, color: AppColors.border),
+                    _buildSummaryRow(
+                      'Thinning Duration',
+                      state.duration ?? '3 - 6 Months',
+                    ),
+                    const Divider(height: 16, color: AppColors.border),
+                    _buildSummaryRow(
+                      'Lifestyle Stress',
+                      state.stressLevel ?? 'Moderate',
+                    ),
+                    const Divider(height: 16, color: AppColors.border),
+                    _buildSummaryRow(
+                      'Scalp Photos',
+                      photoCount > 0
+                          ? '$photoCount photos attached'
+                          : 'No photos captured (optional)',
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Clinical Disclaimer & Honest State (Mandatory Requirement)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      LucideIcons.stethoscope,
+                      color: Color(0xFFD97706),
+                      size: 22,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Algorithmic Assessment · Session Preview',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFB45309),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'This assessment is generated algorithmically for care personalization and is not a certified doctor’s clinical diagnosis. Clinician triage services (POST /api/v1/assessment/submit) are pending live backend connection.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF92400E),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Actions
               AppButton(
                 text: 'Done',
                 variant: AppButtonVariant.filled,
@@ -694,6 +820,30 @@ class _HairTestContent extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  static Widget _buildSummaryRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.secondaryDark,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

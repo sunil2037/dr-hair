@@ -1,3 +1,4 @@
+import '../../data/services/care_notification_service.dart';
 import '../../domain/models/care_models.dart';
 
 class CareState {
@@ -9,6 +10,8 @@ class CareState {
   final int currentDietDay;
   final int waterCups;
   final List<CareOrder> orders;
+  final NotificationPermissionStatus notificationPermissionStatus;
+  final bool isLoadingReminders;
 
   const CareState({
     this.checkIns = const [],
@@ -19,6 +22,8 @@ class CareState {
     this.currentDietDay = 0,
     this.waterCups = 6,
     this.orders = const [],
+    this.notificationPermissionStatus = NotificationPermissionStatus.notDetermined,
+    this.isLoadingReminders = false,
   });
 
   int get completedRoutineCount =>
@@ -38,6 +43,8 @@ class CareState {
     int? currentDietDay,
     int? waterCups,
     List<CareOrder>? orders,
+    NotificationPermissionStatus? notificationPermissionStatus,
+    bool? isLoadingReminders,
   }) {
     return CareState(
       checkIns: checkIns ?? this.checkIns,
@@ -48,6 +55,9 @@ class CareState {
       currentDietDay: currentDietDay ?? this.currentDietDay,
       waterCups: waterCups ?? this.waterCups,
       orders: orders ?? this.orders,
+      notificationPermissionStatus:
+          notificationPermissionStatus ?? this.notificationPermissionStatus,
+      isLoadingReminders: isLoadingReminders ?? this.isLoadingReminders,
     );
   }
 }
