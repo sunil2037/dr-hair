@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/constants/app_strings.dart';
 import 'core/routes/app_router.dart';
+import 'core/storage/app_local_cache.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
 import 'features/auth/presentation/viewmodels/auth_cubit.dart';
@@ -15,18 +16,21 @@ import 'features/shop/presentation/viewmodels/cart_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLocalCache.initialize();
   Bloc.observer = AppBlocObserver();
 
   // Render Flutter's first frame before waiting for the platform orientation
   // channel. A delayed native response should not leave the launch screen up.
   runApp(const MyApp());
 
-  unawaited(SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]).catchError((Object error) {
-    debugPrint('Could not set preferred screen orientation: $error');
-  }));
+  unawaited(
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]).catchError((Object error) {
+      debugPrint('Could not set preferred screen orientation: $error');
+    }),
+  );
 }
 
 class MyApp extends StatelessWidget {

@@ -62,12 +62,13 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
-    _heartScale = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
-    ]).animate(
-      CurvedAnimation(parent: _heartAnimController, curve: Curves.easeOut),
-    );
+    _heartScale =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+          TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+        ]).animate(
+          CurvedAnimation(parent: _heartAnimController, curve: Curves.easeOut),
+        );
   }
 
   @override
@@ -79,7 +80,8 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
 
   void _onShare() {
     HapticFeedback.lightImpact();
-    AppToast.show(context,
+    AppToast.show(
+      context,
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryDark,
@@ -1102,11 +1104,11 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
       color: AppColors.surface,
       shape: const CircleBorder(),
       child: IconButton(
-        icon: Icon(icon, size: 18, color: iconColor ?? AppColors.primaryDark),
+        icon: Icon(icon, size: 22, color: iconColor ?? AppColors.primaryDark),
         tooltip: tooltip,
         onPressed: onTap,
         constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(5),
       ),
     );
   }

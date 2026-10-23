@@ -1,27 +1,25 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/storage/app_local_cache.dart';
 import 'hair_test_state.dart';
 
 class HairTestCubit extends Cubit<HairTestState> {
   final ImagePicker _imagePicker;
-  SharedPreferences? _prefs;
+  final AppLocalCache _cache;
 
-  HairTestCubit({ImagePicker? imagePicker, SharedPreferences? prefs})
-      : _imagePicker = imagePicker ?? ImagePicker(),
-        super(const HairTestState()) {
-    _prefs = prefs;
-  }
+  HairTestCubit({ImagePicker? imagePicker, AppLocalCache? cache})
+    : _imagePicker = imagePicker ?? ImagePicker(),
+      _cache = cache ?? AppLocalCache.instance,
+      super(const HairTestState());
 
   Future<void> loadSavedState() async {
     try {
-      _prefs ??= await SharedPreferences.getInstance();
-      final hasCompleted = _prefs?.getBool('has_completed_hair_test') ?? false;
-      final savedStage = _prefs?.getString('hair_test_stage');
-      final savedDandruff = _prefs?.getString('hair_test_dandruff');
-      final savedName = _prefs?.getString('hair_test_name') ?? 'Sahil';
-      final savedAge = _prefs?.getString('hair_test_age') ?? '23';
+      final hasCompleted = _cache.getBool('has_completed_hair_test') ?? false;
+      final savedStage = _cache.getString('hair_test_stage');
+      final savedDandruff = _cache.getString('hair_test_dandruff');
+      final savedName = _cache.getString('hair_test_name') ?? 'Sahil';
+      final savedAge = _cache.getString('hair_test_age') ?? '23';
 
       if (hasCompleted) {
         emit(
@@ -59,7 +57,9 @@ class HairTestCubit extends Cubit<HairTestState> {
   String? _validationMessageForCurrentStep() {
     switch (state.currentStep) {
       case 0:
-        return state.selectedGender == null ? 'Choose an option to continue.' : null;
+        return state.selectedGender == null
+            ? 'Choose an option to continue.'
+            : null;
       case 1:
         return state.stage == null && state.primaryConcern == null
             ? 'Choose your hair fall stage or primary concern to continue.'
@@ -111,12 +111,15 @@ class HairTestCubit extends Cubit<HairTestState> {
     );
 
     try {
-      _prefs ??= await SharedPreferences.getInstance();
-      await _prefs?.setBool('has_completed_hair_test', true);
-      if (state.stage != null) await _prefs?.setString('hair_test_stage', state.stage!);
-      if (state.dandruff != null) await _prefs?.setString('hair_test_dandruff', state.dandruff!);
-      await _prefs?.setString('hair_test_name', state.name);
-      await _prefs?.setString('hair_test_age', state.age);
+      await _cache.put('has_completed_hair_test', true);
+      if (state.stage != null) {
+        await _cache.put('hair_test_stage', state.stage!);
+      }
+      if (state.dandruff != null) {
+        await _cache.put('hair_test_dandruff', state.dandruff!);
+      }
+      await _cache.put('hair_test_name', state.name);
+      await _cache.put('hair_test_age', state.age);
     } catch (_) {}
   }
 
@@ -125,6 +128,17 @@ class HairTestCubit extends Cubit<HairTestState> {
       state.copyWith(
         isRetesting: true,
         isSubmitted: false,
+        currentStep: 0,
+        clearErrorMessage: true,
+      ),
+    );
+  }
+
+  void dismissReport() {
+    emit(
+      state.copyWith(
+        isSubmitted: false,
+        isRetesting: false,
         currentStep: 0,
         clearErrorMessage: true,
       ),
@@ -146,11 +160,23 @@ class HairTestCubit extends Cubit<HairTestState> {
   }
 
   void selectStage(String stage) {
-    emit(state.copyWith(stage: stage, primaryConcern: stage, clearErrorMessage: true));
+    emit(
+      state.copyWith(
+        stage: stage,
+        primaryConcern: stage,
+        clearErrorMessage: true,
+      ),
+    );
   }
 
   void selectPrimaryConcern(String concern) {
-    emit(state.copyWith(primaryConcern: concern, stage: concern, clearErrorMessage: true));
+    emit(
+      state.copyWith(
+        primaryConcern: concern,
+        stage: concern,
+        clearErrorMessage: true,
+      ),
+    );
   }
 
   void selectDandruff(String condition) {

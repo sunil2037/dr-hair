@@ -4,8 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void main() {
-  testWidgets('selects tabs through the shell navigation bar',
-      (tester) async {
+  testWidgets('selects tabs through the shell navigation bar', (tester) async {
     int selectedIndex = 0;
     bool actionPressed = false;
 
@@ -83,5 +82,24 @@ void main() {
 
     expect(find.byKey(const ValueKey('cart-summary')), findsNothing);
     expect(find.byKey(const ValueKey('cart-summary-hidden')), findsOneWidget);
+  });
+  testWidgets('uses a medicine icon for the Products action after assessment', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ShellBottomNavBar(
+            currentIndex: 0,
+            isTestCompleted: true,
+            onTabSelected: (_) {},
+            onActionPressed: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(LucideIcons.pill), findsOneWidget);
+    expect(find.byTooltip('Products'), findsOneWidget);
   });
 }

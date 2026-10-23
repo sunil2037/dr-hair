@@ -132,6 +132,14 @@ class ProfileView extends StatelessWidget {
           const SizedBox(height: 10),
           _buildGroupedCard([
             _ProfileMenuTile(
+              icon: LucideIcons.clipboardCheck,
+              iconColor: const Color(0xFF0D9488),
+              iconBgColor: const Color(0xFFF0FDFA),
+              title: 'Assessment result',
+              subtitle: 'View your clinical hair diagnosis report',
+              onTap: () => context.push(RouteNames.assessmentResult),
+            ),
+            _ProfileMenuTile(
               icon: LucideIcons.calendarClock,
               iconColor: const Color(0xFF0891B2),
               iconBgColor: const Color(0xFFECFEFF),

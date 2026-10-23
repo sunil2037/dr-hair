@@ -53,10 +53,10 @@ class _HairTestContent extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        final bool showAssessmentReport =
-            state.isSubmitted || (state.isCompleted && !state.isRetesting);
+        // Show report only once after the assessment is submitted in the current session
+        final bool showAssessmentReport = state.isSubmitted;
         if (showAssessmentReport) {
-          return _AssessmentReportView(state: state);
+          return AssessmentReportView(state: state);
         }
 
         final bool disableAnimations = MediaQuery.disableAnimationsOf(context);
@@ -276,8 +276,7 @@ class _HairTestContent extends StatelessWidget {
       case 0:
         return _buildOptionSelector(
           title: 'What is your biological gender?',
-          subtitle:
-              'Hair loss pathways differ significantly between male and female androgen sensitivity.',
+          subtitle: 'Hair loss pathways differ significantly between male and female androgen sensitivity.',
           options: const ['Male', 'Female'],
           selected: state.selectedGender,
           onSelected: (val) => cubit.selectGender(val),
@@ -285,8 +284,7 @@ class _HairTestContent extends StatelessWidget {
       case 1:
         return _buildOptionSelector(
           title: 'Where are you experiencing hair loss?',
-          subtitle:
-              'Identify your hair thinning pattern to determine your clinical stage.',
+          subtitle: 'Identify your hair thinning pattern to determine your clinical stage.',
           options: const [
             'Receding Hairline (Temples)',
             'Stage 1 - Receding hairline at temples',
@@ -301,8 +299,7 @@ class _HairTestContent extends StatelessWidget {
       case 2:
         return _buildOptionSelector(
           title: 'Do you have dandruff or an itchy scalp?',
-          subtitle:
-              'Dandruff and excess sebum clog follicles and accelerate shedding.',
+          subtitle: 'Dandruff and excess sebum clog follicles and accelerate shedding.',
           options: const [
             '6 - 12 months',
             'Severe Dandruff & Flakes',
@@ -320,8 +317,7 @@ class _HairTestContent extends StatelessWidget {
       case 3:
         return _buildOptionSelector(
           title: 'What is your average daily stress & lifestyle level?',
-          subtitle:
-              'Cortisol elevation triggers vascular constriction around scalp capillaries.',
+          subtitle: 'Cortisol elevation triggers vascular constriction around scalp capillaries.',
           options: const [
             'Moderate',
             'Low / Manageable',
@@ -611,82 +607,93 @@ class _HairTestContent extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 22,
+            fontSize: 21,
             fontWeight: FontWeight.w800,
             color: AppColors.primaryDark,
+            letterSpacing: -0.2,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13.5,
             color: AppColors.secondaryDark,
-            height: 1.4,
+            height: 1.45,
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         ...options.map((opt) {
           final isSelected = selected == opt;
           return Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            child: InkWell(
-              onTap: () => onSelected(opt),
-              borderRadius: BorderRadius.circular(18),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border(
-                    left: BorderSide(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onSelected(opt),
+                borderRadius: BorderRadius.circular(16),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: 0.04)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
                       color: isSelected ? AppColors.primary : AppColors.border,
-                      width: isSelected ? 3 : 1,
+                      width: isSelected ? 1.8 : 1.2,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.border,
+                            width: 2,
+                          ),
                           color: isSelected
                               ? AppColors.primary
-                              : AppColors.border,
-                          width: 2,
+                              : Colors.transparent,
                         ),
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
+                        child: isSelected
+                            ? const Icon(
+                                LucideIcons.check,
+                                color: Colors.white,
+                                size: 14,
+                              )
+                            : null,
                       ),
-                      child: isSelected
-                          ? const Icon(
-                              LucideIcons.check,
-                              color: Colors.white,
-                              size: 14,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        opt,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: isSelected
-                              ? FontWeight.w800
-                              : FontWeight.w600,
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.primaryDark,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          opt,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.primaryDark,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -698,16 +705,16 @@ class _HairTestContent extends StatelessWidget {
 }
 
 /// The Clinical Assessment Report View meticulously matching the user's uploaded screenshot.
-class _AssessmentReportView extends StatefulWidget {
+class AssessmentReportView extends StatefulWidget {
   final HairTestState state;
 
-  const _AssessmentReportView({required this.state});
+  const AssessmentReportView({super.key, required this.state});
 
   @override
-  State<_AssessmentReportView> createState() => _AssessmentReportViewState();
+  State<AssessmentReportView> createState() => _AssessmentReportViewState();
 }
 
-class _AssessmentReportViewState extends State<_AssessmentReportView> {
+class _AssessmentReportViewState extends State<AssessmentReportView> {
   int _selectedRootCauseIndex = 0; // 0: Dandruff, 1: Nutrition, 2: Lifestyle
 
   void _showStudyBottomSheet(BuildContext context) {
@@ -741,7 +748,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
+                    color: AppColors.primaryDark,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -750,7 +757,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                   style: TextStyle(
                     fontSize: 13.5,
                     height: 1.5,
-                    color: Color(0xFF4B5563),
+                    color: AppColors.secondaryDark,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -800,6 +807,10 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    final String trimmedName = state.name.trim();
+    final String displayName = trimmedName.isNotEmpty
+        ? '${trimmedName[0].toUpperCase()}${trimmedName.substring(1)}, ${state.age}'
+        : 'Patient, ${state.age}';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -809,8 +820,9 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Color(0xFF111827)),
+          icon: const Icon(LucideIcons.arrowLeft, color: AppColors.primaryDark),
           onPressed: () {
+            context.read<HairTestCubit>().dismissReport();
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             } else {
@@ -823,13 +835,14 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
           style: TextStyle(
             fontSize: 19,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF111827),
+            color: AppColors.primaryDark,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () {
               context.read<HairTestCubit>().startRetest();
+              context.push(RouteNames.hairTest);
             },
             child: const Text(
               'Retest',
@@ -845,7 +858,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -857,7 +870,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFE5E7EB),
+                    color: AppColors.border,
                     width: 1.2,
                   ),
                   boxShadow: [
@@ -873,26 +886,40 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                   children: [
                     // Status Badge
                     Container(
-                      margin: const EdgeInsets.only(bottom: 10),
+                      margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                        horizontal: 10,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEAF8EE),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
                       ),
-                      child: const Text(
-                        'Assessment complete',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1B6A47),
-                        ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.checkCircle2,
+                            color: Color(0xFF1B6A47),
+                            size: 14,
+                          ),
+                          SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'Assessment complete',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1B6A47),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
-                    // Patient Header Row with Avatar
+                    // Patient Header Row with Avatar (Responsive layout)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -901,11 +928,11 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${state.name.toLowerCase()}, ${state.age}',
+                                displayName,
                                 style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF111827),
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryDark,
                                   letterSpacing: -0.3,
                                 ),
                               ),
@@ -913,36 +940,36 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                               const Text(
                                 "You've been diagnosed with",
                                 style: TextStyle(
-                                  fontSize: 13.5,
-                                  color: Color(0xFF6B7280),
+                                  fontSize: 13,
+                                  color: AppColors.secondaryDark,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 3),
                               Text(
                                 state.diagnosedTitle,
                                 style: const TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14.5,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF111827),
+                                  color: AppColors.primaryDark,
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 12),
                               const Text(
                                 'Start Seeing Results In',
                                 style: TextStyle(
-                                  fontSize: 13.5,
-                                  color: Color(0xFF6B7280),
+                                  fontSize: 13,
+                                  color: AppColors.secondaryDark,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 3),
                               Text(
                                 state.resultsTimeline,
                                 style: const TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14.5,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF111827),
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ],
@@ -951,11 +978,11 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                         const SizedBox(width: 12),
                         // Avatar Illustration Container
                         Container(
-                          width: 86,
-                          height: 124,
+                          width: 74,
+                          height: 106,
                           decoration: BoxDecoration(
                             color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: const _StageHairAvatar(),
@@ -972,20 +999,23 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B6A47),
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            '93% Saw Results*',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
+                          const Flexible(
+                            child: Text(
+                              '93% Saw Results*',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           InkWell(
                             onTap: () => _showStudyBottomSheet(context),
                             child: const Row(
@@ -1021,25 +1051,16 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEAF8EE),
+                        color: const Color(0xFFF0FDF4),
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFDCFCE7)),
                       ),
-                      child: const Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Stage 1 male pattern hair fall is marked by minor hair thinning at the crown or front of your head.',
-                            style: TextStyle(
-                              color: Color(0xFF1F2937),
-                              fontSize: 13.5,
-                              height: 1.45,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            'Hair follicle damage is very mild at this stage and can be easily stopped from progressing further if  the regimen is started early.',
-                            style: TextStyle(
+                            state.stageDescription,
+                            style: const TextStyle(
                               color: Color(0xFF1F2937),
                               fontSize: 13.5,
                               height: 1.45,
@@ -1059,10 +1080,10 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
-                  '*As per an internal study conducted by Traya in December 2022',
+                  '*As per an internal clinical registry conducted by Dr. Hair Dermatology Team in December 2022',
                   style: TextStyle(
                     fontSize: 11.5,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.secondaryDark,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -1076,13 +1097,13 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
+                  color: AppColors.primaryDark,
                 ),
               ),
 
               const SizedBox(height: 14),
 
-              // 3 Root Causes Horizontal Cards
+              // 3 Root Causes Horizontal Cards (Responsive)
               Row(
                 children: [
                   Expanded(
@@ -1092,27 +1113,27 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                       iconWidget: const _FollicleIcon(),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _buildRootCauseCard(
                       index: 1,
                       label: 'Nutrition',
                       iconWidget: const Icon(
                         LucideIcons.apple,
-                        size: 28,
-                        color: Color(0xFF111827),
+                        size: 26,
+                        color: AppColors.primaryDark,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _buildRootCauseCard(
                       index: 2,
                       label: 'Lifestyle',
                       iconWidget: const Icon(
                         LucideIcons.heartPulse,
-                        size: 28,
-                        color: Color(0xFF111827),
+                        size: 26,
+                        color: AppColors.primaryDark,
                       ),
                     ),
                   ),
@@ -1121,7 +1142,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
 
               const SizedBox(height: 12),
 
-              // Active Root Cause Detail Card (peach container peaking out in screenshot)
+              // Active Root Cause Detail Card
               _buildRootCauseDetailBox(),
 
               const SizedBox(height: 24),
@@ -1134,16 +1155,29 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
               // Clinical Disclaimer & Honest State (Preserving honesty & test compatibility)
               _buildDisclaimerBox(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // Done Button
+              // Practical Actions (No Bottom Price Bar)
               AppButton(
-                text: 'Done',
+                text: 'Browse Recommended Regimen',
                 variant: AppButtonVariant.filled,
                 size: AppButtonSize.large,
                 width: double.infinity,
                 onPressed: () {
-                  context.read<HairTestCubit>().reset();
+                  context.read<HairTestCubit>().dismissReport();
+                  context.push(RouteNames.products);
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              AppButton(
+                text: 'Done',
+                variant: AppButtonVariant.outlined,
+                size: AppButtonSize.large,
+                width: double.infinity,
+                onPressed: () {
+                  context.read<HairTestCubit>().dismissReport();
                   if (Navigator.of(context).canPop()) {
                     Navigator.of(context).pop();
                   } else {
@@ -1152,126 +1186,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                 },
               ),
 
-              const SizedBox(height: 80),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: const Border(
-            top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Facility guarantee banner
-              Container(
-                width: double.infinity,
-                color: const Color(0xFFF3F4F6),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 7,
-                  horizontal: 16,
-                ),
-                child: const Text(
-                  'All products made in GMP & ISO 9001 certified facilities',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-              ),
-
-              // Price and Buy Now CTA
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '₹1445',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF111827),
-                              ),
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              '₹2044',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF9CA3AF),
-                                decoration: TextDecoration.lineThrough,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Inclusive of all taxes',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF6B7280),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          context.push(RouteNames.products);
-                        },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Ink(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFB5D333),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 36,
-                              vertical: 13,
-                            ),
-                            child: Text(
-                              'Buy Now',
-                              style: TextStyle(
-                                color: Color(0xFF111827),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -1293,29 +1208,40 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
         borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: 104,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          height: 98,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFDF0E7) : Colors.white,
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.05)
+                : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xFFFBD7C0)
-                  : const Color(0xFFE5E7EB),
-              width: isSelected ? 1.5 : 1.0,
+              color: isSelected ? AppColors.primary : AppColors.border,
+              width: isSelected ? 1.8 : 1.0,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               iconWidget,
-              const SizedBox(height: 10),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? AppColors.primary : AppColors.primaryDark,
+                  ),
                 ),
               ),
             ],
@@ -1347,12 +1273,14 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                     color: Color(0xFF9A3412),
                   ),
                   SizedBox(width: 8),
-                  Text(
-                    'Root Cause: Scalp Follicle Health & Dandruff',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF7C2D12),
+                  Expanded(
+                    child: Text(
+                      'Root Cause: Scalp Follicle Health & Dandruff',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF7C2D12),
+                      ),
                     ),
                   ),
                 ],
@@ -1385,12 +1313,14 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                 children: [
                   Icon(LucideIcons.apple, size: 16, color: Color(0xFF14532D)),
                   SizedBox(width: 8),
-                  Text(
-                    'Root Cause: Micro-Nutrient Absorption & Diet',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF14532D),
+                  Expanded(
+                    child: Text(
+                      'Root Cause: Micro-Nutrient Absorption & Diet',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF14532D),
+                      ),
                     ),
                   ),
                 ],
@@ -1427,12 +1357,14 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
                     color: Color(0xFF78350F),
                   ),
                   SizedBox(width: 8),
-                  Text(
-                    'Root Cause: Stress, Sleep & Cortisol Constriction',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF78350F),
+                  Expanded(
+                    child: Text(
+                      'Root Cause: Stress, Sleep & Cortisol Constriction',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF78350F),
+                      ),
                     ),
                   ),
                 ],
@@ -1485,7 +1417,9 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
           const SizedBox(height: 12),
           _buildSummaryRow(
             'Primary Concern',
-            state.primaryConcern ?? state.stage ?? 'Receding Hairline (Temples)',
+            state.primaryConcern ??
+                state.stage ??
+                'Receding Hairline (Temples)',
           ),
           const Divider(height: 16, color: AppColors.border),
           _buildSummaryRow(
@@ -1493,10 +1427,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
             state.duration ?? '6 - 12 months',
           ),
           const Divider(height: 16, color: AppColors.border),
-          _buildSummaryRow(
-            'Lifestyle Stress',
-            state.stressLevel ?? 'Moderate',
-          ),
+          _buildSummaryRow('Lifestyle Stress', state.stressLevel ?? 'Moderate'),
           const Divider(height: 16, color: AppColors.border),
           _buildSummaryRow(
             'Scalp Photos',
@@ -1555,6 +1486,7 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
   static Widget _buildSummaryRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -1564,12 +1496,16 @@ class _AssessmentReportViewState extends State<_AssessmentReportView> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w700,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],

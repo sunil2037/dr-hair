@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/views/signin_view.dart';
 import '../../features/auth/presentation/views/splash_view.dart';
+import '../../features/hair_test/presentation/views/assessment_result_view.dart';
 import '../../features/hair_test/presentation/views/hair_test_view.dart';
 import '../../features/home/presentation/views/home_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
@@ -96,6 +97,10 @@ class AppRouter {
       GoRoute(
         path: RouteNames.hairTest,
         builder: (context, state) => const HairTestView(),
+      ),
+      GoRoute(
+        path: RouteNames.assessmentResult,
+        builder: (context, state) => const AssessmentResultView(),
       ),
       GoRoute(
         path: RouteNames.updateProfile,

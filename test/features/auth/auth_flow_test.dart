@@ -10,6 +10,7 @@ import 'package:dr_hair/core/routes/app_router.dart';
 import 'package:dr_hair/core/constants/app_strings.dart';
 import 'package:dr_hair/core/theme/app_theme.dart';
 import 'package:dr_hair/features/home/presentation/views/home_view.dart';
+import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void main() {
@@ -122,6 +123,7 @@ void main() {
             BlocProvider<AuthCubit>.value(value: authCubit),
             BlocProvider<CartCubit>(create: (_) => CartCubit()),
             BlocProvider<CareCubit>(create: (_) => CareCubit()),
+            BlocProvider<HairTestCubit>(create: (_) => HairTestCubit()),
           ],
           child: MaterialApp.router(
             title: AppStrings.appName,

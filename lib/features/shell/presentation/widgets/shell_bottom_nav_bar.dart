@@ -514,7 +514,7 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
                         scale: iconScale,
                         child: isCompleted
                             ? const Icon(
-                                LucideIcons.shoppingBag,
+                                LucideIcons.pill,
                                 color: Colors.white,
                                 size: 24,
                               )

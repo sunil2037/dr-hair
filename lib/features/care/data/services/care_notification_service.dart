@@ -1,14 +1,11 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter/foundation.dart';
+
+import '../../../../core/storage/app_local_cache.dart';
 import '../../domain/models/care_models.dart';
 
-enum NotificationPermissionStatus {
-  notDetermined,
-  granted,
-  denied,
-}
+enum NotificationPermissionStatus { notDetermined, granted, denied }
 
 /// Service managing reminder notification scheduling, permissions, and persistence.
 class CareNotificationService {
@@ -16,23 +13,22 @@ class CareNotificationService {
   static const String _remindersStorageKey = 'care_persisted_reminders_v1';
   static const String _routineStorageKey = 'care_persisted_routine_v1';
 
-  final SharedPreferences? _prefs;
+  final AppLocalCache? _cache;
 
-  CareNotificationService([this._prefs]);
+  CareNotificationService([this._cache]);
 
   static Future<CareNotificationService> create() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return CareNotificationService(prefs);
+      return CareNotificationService(AppLocalCache.instance);
     } catch (e) {
       debugPrint('CareNotificationService init fallback: $e');
-      return CareNotificationService(null);
+      return CareNotificationService();
     }
   }
 
   /// Retrieves the current notification permission status.
   NotificationPermissionStatus getPermissionStatus() {
-    final raw = _prefs?.getString(_permissionKey);
+    final raw = _cache?.getString(_permissionKey);
     if (raw == 'granted') return NotificationPermissionStatus.granted;
     if (raw == 'denied') return NotificationPermissionStatus.denied;
     return NotificationPermissionStatus.notDetermined;
@@ -40,11 +36,13 @@ class CareNotificationService {
 
   /// Requests notification permission honestly.
   /// If simulated in local demo environment, sets status to granted unless explicitly denied.
-  Future<NotificationPermissionStatus> requestPermission({bool simulateDenial = false}) async {
+  Future<NotificationPermissionStatus> requestPermission({
+    bool simulateDenial = false,
+  }) async {
     final status = simulateDenial
         ? NotificationPermissionStatus.denied
         : NotificationPermissionStatus.granted;
-    await _prefs?.setString(
+    await _cache?.put(
       _permissionKey,
       status == NotificationPermissionStatus.granted ? 'granted' : 'denied',
     );
@@ -53,15 +51,16 @@ class CareNotificationService {
 
   /// Resets permission back to notDetermined for testing.
   Future<void> resetPermission() async {
-    await _prefs?.remove(_permissionKey);
+    await _cache?.remove(_permissionKey);
   }
 
   /// Persists the active list of reminders to local storage.
   Future<bool> saveReminders(List<CareReminder> reminders) async {
-    if (_prefs == null) return false;
+    if (_cache == null) return false;
     try {
       final jsonList = reminders.map((r) => r.toJson()).toList();
-      return await _prefs.setString(_remindersStorageKey, jsonEncode(jsonList));
+      await _cache.put(_remindersStorageKey, jsonEncode(jsonList));
+      return true;
     } catch (e) {
       debugPrint('Failed to save reminders: $e');
       return false;
@@ -70,8 +69,8 @@ class CareNotificationService {
 
   /// Loads persisted reminders from local storage.
   List<CareReminder>? loadReminders() {
-    if (_prefs == null) return null;
-    final raw = _prefs.getString(_remindersStorageKey);
+    if (_cache == null) return null;
+    final raw = _cache.getString(_remindersStorageKey);
     if (raw == null || raw.isEmpty) return null;
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
@@ -86,10 +85,11 @@ class CareNotificationService {
 
   /// Persists routine tasks to local storage.
   Future<bool> saveRoutineTasks(List<RoutineTask> tasks) async {
-    if (_prefs == null) return false;
+    if (_cache == null) return false;
     try {
       final jsonList = tasks.map((t) => t.toJson()).toList();
-      return await _prefs.setString(_routineStorageKey, jsonEncode(jsonList));
+      await _cache.put(_routineStorageKey, jsonEncode(jsonList));
+      return true;
     } catch (e) {
       debugPrint('Failed to save routine tasks: $e');
       return false;
@@ -98,8 +98,8 @@ class CareNotificationService {
 
   /// Loads persisted routine tasks from local storage.
   List<RoutineTask>? loadRoutineTasks() {
-    if (_prefs == null) return null;
-    final raw = _prefs.getString(_routineStorageKey);
+    if (_cache == null) return null;
+    final raw = _cache.getString(_routineStorageKey);
     if (raw == null || raw.isEmpty) return null;
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;

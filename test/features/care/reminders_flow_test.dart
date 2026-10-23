@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:dr_hair/core/storage/app_local_cache.dart';
 import 'package:dr_hair/features/care/data/services/care_notification_service.dart';
 import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
 import 'package:dr_hair/features/care/presentation/views/reminders_view.dart';
@@ -12,14 +12,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Reminders Feature Tests', () {
-    late SharedPreferences prefs;
+    late AppLocalCache cache;
     late CareNotificationService notificationService;
     late CareCubit careCubit;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      prefs = await SharedPreferences.getInstance();
-      notificationService = CareNotificationService(prefs);
+      cache = AppLocalCache.inMemory();
+      notificationService = CareNotificationService(cache);
       careCubit = CareCubit(notificationService);
     });
 
@@ -30,9 +29,7 @@ void main() {
     Widget createTestApp(Widget child) {
       return BlocProvider<CareCubit>.value(
         value: careCubit,
-        child: MaterialApp(
-          home: Scaffold(body: child),
-        ),
+        child: MaterialApp(home: Scaffold(body: child)),
       );
     }
 
@@ -161,7 +158,7 @@ void main() {
       },
     );
 
-    test('persists reminders across app restart via SharedPreferences', () async {
+    test('persists reminders across app restart via local cache', () async {
       // Add custom reminder
       careCubit.addReminder(
         title: 'Ketoconazole 2% Wash',

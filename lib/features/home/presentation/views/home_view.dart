@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../care/presentation/viewmodels/care_cubit.dart';
+import '../../../care/presentation/viewmodels/care_state.dart';
+import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
+import '../../../hair_test/presentation/viewmodels/hair_test_state.dart';
+import '../../../shop/data/models/product_model.dart';
+import '../viewmodels/home_journey_selector.dart';
 import '../widgets/medicine_card.dart';
 
 class HomeView extends StatefulWidget {
@@ -130,8 +137,6 @@ class _HomeViewState extends State<HomeView>
           const SizedBox(height: 24),
 
           // 5. BASED ON YOUR CONDITION
-          _revealSection(4, _buildConditionBasedSection(context)),
-
           const SizedBox(height: 24),
 
           // 6. WHY TRUST DR. HAIR
@@ -150,7 +155,7 @@ class _HomeViewState extends State<HomeView>
           const SizedBox(height: 24),
 
           // 9. START HAIR TEST CTA BANNER
-          _revealSection(8, _buildCtaBanner()),
+          _revealSection(8, _buildJourneyCard()),
 
           const SizedBox(height: 24),
 
@@ -335,20 +340,35 @@ class _HomeViewState extends State<HomeView>
                               borderRadius: BorderRadius.circular(25),
                             ),
                           ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Free Hair Test',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Icon(LucideIcons.arrowRight, size: 14),
-                            ],
+                          child: BlocBuilder<HairTestCubit, HairTestState>(
+                            builder: (context, state) {
+                              final isComplete =
+                                  state.isCompleted && !state.isRetesting;
+                              final isInProgress =
+                                  HomeJourneySelector.hasAssessmentProgress(
+                                    state,
+                                  );
+                              final label = isComplete
+                                  ? 'Retake Hair Test'
+                                  : isInProgress
+                                  ? 'Continue Test'
+                                  : 'Free Hair Test';
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(LucideIcons.arrowRight, size: 14),
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -629,156 +649,6 @@ class _HomeViewState extends State<HomeView>
   // --- SECTION 4: ESSENTIAL PRODUCTS ---
   Widget _buildEssentialProducts(BuildContext context) {
     return const _EssentialProductsSection();
-  }
-
-  // --- SECTION 5: BASED ON YOUR CONDITION ---
-  Widget _buildConditionBasedSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: const Text(
-            'Based on Your Condition',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Pills
-        SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildFilterChip('Hair Fall', true),
-              const SizedBox(width: 8),
-              _buildFilterChip('Dandruff', false),
-              const SizedBox(width: 8),
-              _buildFilterChip('Thinning', false),
-              const SizedBox(width: 8),
-              _buildFilterChip('Crown Balding', false),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Recommendation Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
-                  width: 75,
-                  height: 75,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 75,
-                    height: 75,
-                    color: AppColors.primary5,
-                    child: const Icon(
-                      LucideIcons.package,
-                      color: AppColors.primary,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Anti-Fall Concentrate',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Targeted scalp treatment for crown thinning.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondaryDark,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          '₹1,499',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary5,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            '★ Recommended',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterChip(String label, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: isSelected ? AppColors.primary : AppColors.border,
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: isSelected ? Colors.white : AppColors.secondaryDark,
-        ),
-      ),
-    );
   }
 
   // --- SECTION 6: WHY TRUST DR. HAIR ---
@@ -1129,62 +999,92 @@ class _HomeViewState extends State<HomeView>
     );
   }
 
-  // --- SECTION 9: CTA BANNER ---
-  Widget _buildCtaBanner() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(26),
-        decoration: BoxDecoration(
-          gradient: AppColors.navyGradient,
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Start your hair recovery today',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+  // --- SECTION 9: LOCAL JOURNEY ACTION ---
+  Widget _buildJourneyCard() {
+    return BlocBuilder<HairTestCubit, HairTestState>(
+      builder: (context, hairState) => BlocBuilder<CareCubit, CareState>(
+        builder: (context, careState) {
+          final action = HomeJourneySelector.select(
+            hairState: hairState,
+            careState: careState,
+          );
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
                 color: Colors.white,
-                height: 1.25,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: AppColors.border),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x080D1B2A),
+                    blurRadius: 14,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'YOUR CARE JOURNEY',
+                    style: TextStyle(
+                      color: AppColors.secondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    action.title,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    action.description,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        switch (action.destination) {
+                          case HomeJourneyDestination.assessment:
+                            widget.onStartHairTest();
+                          case HomeJourneyDestination.routine:
+                            context.push(RouteNames.routine);
+                          case HomeJourneyDestination.progress:
+                            context.push(RouteNames.progress);
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      label: Text(action.buttonLabel),
+                    ),
+                  ),
+                  if (hairState.isCompleted && !hairState.isRetesting) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Assessment results are informational and are not a medical diagnosis.',
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Clinically Proven Results • Free 3-min Assessment',
-              style: TextStyle(fontSize: 13, color: Colors.white70),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: widget.onStartHairTest,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 4,
-              ),
-              child: const Text(
-                'Start Test',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1718,55 +1618,18 @@ class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
   int _selectedFilterIndex = 0;
   final List<String> _filters = const ['All', 'Dermatologist', 'Ayurveda'];
 
-  final List<Map<String, dynamic>> _medicines = const [
-    {
-      'title': 'Follicle Revive Serum',
-      'desc': 'Clinical Redensyl & Minoxidil 5%',
-      'price': '₹1,299',
-      'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=600',
-      'category': MedicineCategory.dermatologist,
-      'rating': 4.9,
-    },
-    {
-      'title': 'Biotin Growth Complex',
-      'desc': 'DHT blocker & keratin fortification',
-      'price': '₹999',
-      'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=600',
-      'category': MedicineCategory.dermatologist,
-      'rating': 4.8,
-    },
-    {
-      'title': 'Bhringraj Scalp Elixir',
-      'desc': 'Cold-pressed Ayurvedic root therapy',
-      'price': '₹849',
-      'image': 'https://images.unsplash.com/photo-1617897903246-719242758050?q=80&w=600',
-      'category': MedicineCategory.ayurveda,
-      'rating': 4.9,
-    },
-    {
-      'title': 'Dandruff Scalp Detox',
-      'desc': 'Ketoconazole 2% clinical wash',
-      'price': '₹749',
-      'image': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=600',
-      'category': MedicineCategory.dermatologist,
-      'rating': 4.7,
-    },
-    {
-      'title': 'Amla & Neem Hair Rasayan',
-      'desc': 'Ancient herbal follicle nourishment',
-      'price': '₹899',
-      'image': 'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?q=80&w=600',
-      'category': MedicineCategory.ayurveda,
-      'rating': 4.8,
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredMedicines {
-    if (_selectedFilterIndex == 0) return _medicines;
-    final targetCategory = _selectedFilterIndex == 1
-        ? MedicineCategory.dermatologist
-        : MedicineCategory.ayurveda;
-    return _medicines.where((m) => m['category'] == targetCategory).toList();
+  List<ProductItem> get _filteredMedicines {
+    final catalog = ProductItem.demoCatalog;
+    if (_selectedFilterIndex == 0) return catalog;
+    final selectedCategory = _selectedFilterIndex == 1
+        ? 'dermatologist'
+        : 'ayurveda';
+    return catalog
+        .where(
+          (product) =>
+              product.category.toLowerCase().contains(selectedCategory),
+        )
+        .toList(growable: false);
   }
 
   @override
@@ -1805,7 +1668,7 @@ class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
                 ],
               ),
               GestureDetector(
-                onTap: () => context.push(RouteNames.cart),
+                onTap: () => context.push(RouteNames.products),
                 child: const Text(
                   'See All',
                   style: TextStyle(
@@ -1822,86 +1685,6 @@ class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
         const SizedBox(height: 12),
 
         // Filter Chips: All, Dermatologist, Ayurveda
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: List.generate(_filters.length, (index) {
-              final isSelected = _selectedFilterIndex == index;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () => setState(() => _selectedFilterIndex = index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.border,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.25,
-                                ),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (index == 1) ...[
-                          Icon(
-                            LucideIcons.stethoscope,
-                            size: 12,
-                            color: isSelected
-                                ? Colors.white
-                                : AppColors.primary,
-                          ),
-                          const SizedBox(width: 5),
-                        ] else if (index == 2) ...[
-                          Icon(
-                            LucideIcons.leaf,
-                            size: 12,
-                            color: isSelected
-                                ? Colors.white
-                                : AppColors.success,
-                          ),
-                          const SizedBox(width: 5),
-                        ],
-                        Text(
-                          _filters[index],
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            color: isSelected
-                                ? Colors.white
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-
-        const SizedBox(height: 14),
 
         // Medicines Horizontal List
         SizedBox(
@@ -1914,14 +1697,19 @@ class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
             itemBuilder: (context, index) {
               final item = filtered[index];
               return MedicineCard(
-                title: item['title'] as String,
-                desc: item['desc'] as String,
-                price: item['price'] as String,
-                imageUrl: item['image'] as String,
-                category: item['category'] as MedicineCategory,
-                rating: (item['rating'] as num?)?.toDouble() ?? 4.8,
+                title: item.name,
+                desc: item.subtitle,
+                price: item.supplyPlans.isEmpty
+                    ? 'Price unavailable'
+                    : '₹${item.supplyPlans.first.price}',
+                imageUrl: item.images.isEmpty ? '' : item.images.first,
+                category: item.category.toLowerCase().contains('ayurveda')
+                    ? MedicineCategory.ayurveda
+                    : MedicineCategory.dermatologist,
+                rating: item.rating,
                 showAddToCart: false,
-                onTap: () => context.push(RouteNames.productDetails),
+                onTap: () =>
+                    context.push(RouteNames.productDetails, extra: item),
               );
             },
           ),

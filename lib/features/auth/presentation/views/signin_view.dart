@@ -1,4 +1,3 @@
-import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -194,11 +193,6 @@ class _SigninViewState extends State<SigninView>
   void _navigateToHome() {
     if (!mounted) return;
     try {
-      final hairTestCubit = context.read<HairTestCubit?>();
-      if (hairTestCubit != null && !hairTestCubit.state.isCompleted) {
-        context.go(RouteNames.hairTest);
-        return;
-      }
       context.go(RouteNames.mainShell);
     } catch (_) {
       if (Navigator.of(context).canPop()) {
@@ -884,7 +878,7 @@ class _SigninViewState extends State<SigninView>
                     'Resend code in 00:${countdown.toString().padLeft(2, '0')}',
                     style: const TextStyle(
                       color: AppColors.secondaryDark,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
