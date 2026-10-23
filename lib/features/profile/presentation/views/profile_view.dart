@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
@@ -268,11 +269,26 @@ class ProfileView extends StatelessWidget {
           ]),
           const SizedBox(height: 24),
           _buildSignOutButton(context),
-          const SizedBox(height: 20),
+          const SizedBox(height: 40),
           const Center(
-            child: Text(
-              'Dr.Hair · Hair care, made personal',
-              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Dr.Hair · Hair care, made personal',
+                  style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'App Version ${AppStrings.appVersion}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

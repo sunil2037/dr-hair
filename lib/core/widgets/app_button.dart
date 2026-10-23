@@ -4,19 +4,10 @@ import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 
 /// Available visual styles for [AppButton].
-enum AppButtonVariant {
-  filled,
-  outlined,
-  tonal,
-  ghost,
-}
+enum AppButtonVariant { filled, outlined, tonal, ghost }
 
 /// Available predefined sizes for [AppButton].
-enum AppButtonSize {
-  small,
-  medium,
-  large,
-}
+enum AppButtonSize { small, medium, large }
 
 /// A highly customizable, production-ready button component with smooth micro-motion,
 /// loading states, variant styling, optional gradients, and tactile haptic feedback.
@@ -123,9 +114,9 @@ class _AppButtonState extends State<AppButton> {
   double get _defaultFontSize {
     switch (widget.size) {
       case AppButtonSize.small:
-        return 13;
+        return 12;
       case AppButtonSize.medium:
-        return 14.5;
+        return 14;
       case AppButtonSize.large:
         return 16;
     }
@@ -174,11 +165,13 @@ class _AppButtonState extends State<AppButton> {
   }
 
   BorderSide _resolveBorderSide(BuildContext context) {
-    final double width = widget.borderWidth ??
+    final double width =
+        widget.borderWidth ??
         (widget.variant == AppButtonVariant.outlined ? 1.5 : 0.0);
 
     if (widget.variant == AppButtonVariant.outlined) {
-      final Color color = widget.borderColor ??
+      final Color color =
+          widget.borderColor ??
           (_effectiveDisabled ? AppColors.border : AppColors.primary);
       return BorderSide(color: color, width: width);
     }
@@ -193,8 +186,9 @@ class _AppButtonState extends State<AppButton> {
   @override
   Widget build(BuildContext context) {
     final bool disableMotion = MediaQuery.disableAnimationsOf(context);
-    final Duration motionDuration =
-        disableMotion ? Duration.zero : const Duration(milliseconds: 140);
+    final Duration motionDuration = disableMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 140);
 
     final Color bgColor = _resolveBackgroundColor(context);
     final Color fgColor = _resolveForegroundColor(context);
@@ -202,14 +196,15 @@ class _AppButtonState extends State<AppButton> {
     final BorderRadius effectiveRadius =
         widget.borderRadius ?? BorderRadius.circular(28);
 
-    final TextStyle effectiveTextStyle = (widget.textStyle ??
-            TextStyle(
-              fontFamily: 'Inter',
-              fontSize: _defaultFontSize,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-            ))
-        .copyWith(color: fgColor);
+    final TextStyle effectiveTextStyle =
+        (widget.textStyle ??
+                TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: _defaultFontSize,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ))
+            .copyWith(color: fgColor);
 
     return Semantics(
       button: true,
@@ -223,7 +218,8 @@ class _AppButtonState extends State<AppButton> {
           width: widget.width,
           decoration: BoxDecoration(
             borderRadius: effectiveRadius,
-            boxShadow: widget.boxShadow ??
+            boxShadow:
+                widget.boxShadow ??
                 (widget.variant == AppButtonVariant.filled &&
                         !_effectiveDisabled &&
                         widget.elevation != 0.0
@@ -261,7 +257,8 @@ class _AppButtonState extends State<AppButton> {
                     ? null
                     : () => setState(() => _isPressed = false),
                 onTap: _effectiveDisabled ? null : _handleTap,
-                splashColor: widget.splashColor ?? fgColor.withValues(alpha: 0.12),
+                splashColor:
+                    widget.splashColor ?? fgColor.withValues(alpha: 0.12),
                 highlightColor:
                     widget.highlightColor ?? fgColor.withValues(alpha: 0.06),
                 child: Container(
@@ -278,33 +275,33 @@ class _AppButtonState extends State<AppButton> {
                           ),
                         )
                       : (widget.child ??
-                          Row(
-                            mainAxisAlignment: widget.mainAxisAlignment,
-                            crossAxisAlignment: widget.crossAxisAlignment,
-                            mainAxisSize: widget.width == null
-                                ? MainAxisSize.min
-                                : MainAxisSize.max,
-                            children: [
-                              if (widget.icon != null) ...[
-                                widget.icon!,
-                                const SizedBox(width: 8),
-                              ],
-                              if (widget.text != null)
-                                Flexible(
-                                  child: Text(
-                                    widget.text!,
-                                    style: effectiveTextStyle,
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
+                            Row(
+                              mainAxisAlignment: widget.mainAxisAlignment,
+                              crossAxisAlignment: widget.crossAxisAlignment,
+                              mainAxisSize: widget.width == null
+                                  ? MainAxisSize.min
+                                  : MainAxisSize.max,
+                              children: [
+                                if (widget.icon != null) ...[
+                                  widget.icon!,
+                                  const SizedBox(width: 8),
+                                ],
+                                if (widget.text != null)
+                                  Flexible(
+                                    child: Text(
+                                      widget.text!,
+                                      style: effectiveTextStyle,
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
                                   ),
-                                ),
-                              if (widget.trailingIcon != null) ...[
-                                const SizedBox(width: 8),
-                                widget.trailingIcon!,
+                                if (widget.trailingIcon != null) ...[
+                                  const SizedBox(width: 8),
+                                  widget.trailingIcon!,
+                                ],
                               ],
-                            ],
-                          )),
+                            )),
                 ),
               ),
             ),

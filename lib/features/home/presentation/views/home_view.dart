@@ -24,7 +24,7 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView>
     with SingleTickerProviderStateMixin {
-  static const int _sectionCount = 15;
+  static const int _sectionCount = 13;
   late final AnimationController _entranceController;
   late final List<Animation<double>> _sectionOpacity;
   late final List<Animation<Offset>> _sectionPosition;
@@ -97,17 +97,6 @@ class _HomeViewState extends State<HomeView>
     }
   }
 
-  Future<void> _launchMaps() async {
-    final uri = Uri.parse('https://maps.app.goo.gl/HJxKSjwvvdY9pp1T7');
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        debugPrint('Could not launch Maps');
-      }
-    } catch (e) {
-      debugPrint('Error: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -121,66 +110,57 @@ class _HomeViewState extends State<HomeView>
 
           const SizedBox(height: 24),
 
-          // 4. ESSENTIAL PRODUCTS
+          // 2. ESSENTIAL PRODUCTS (on top)
           _revealSection(1, _buildEssentialProducts(context)),
 
           const SizedBox(height: 24),
 
-          // 2. URGENT CARE CARD
-          _revealSection(2, _buildUrgentCareCard()),
+          // 3. RESTORATION JOURNEY
+          _revealSection(2, _buildRestorationJourney()),
 
           const SizedBox(height: 24),
 
-          // 3. ANALYTICS & SOCIAL PROOF
-          _revealSection(3, _buildAnalyticsSection()),
+          // 4. BOOK APPOINTMENT
+          _revealSection(3, _buildAppointmentCard(context)),
 
           const SizedBox(height: 24),
 
-          // 5. BASED ON YOUR CONDITION
-          const SizedBox(height: 24),
-
-          // 6. WHY TRUST DR. HAIR
-          _revealSection(5, _buildWhyTrustDrHair()),
+          // 5. OTHER JOURNEY & CARE ACTIVITY
+          _revealSection(4, _buildJourneyCard()),
 
           const SizedBox(height: 24),
 
-          // 7. RESTORATION JOURNEY (TIMELINE)
-          _revealSection(6, _buildRestorationJourney()),
+          _revealSection(5, _buildUrgentCareCard()),
 
           const SizedBox(height: 24),
 
-          // 8. PATIENT VIDEO STORIES CAROUSEL
+          // 6. REVIEWS & VIDEO STORIES
+          _revealSection(6, _buildReviewsSection(context)),
+
+          const SizedBox(height: 24),
+
           _revealSection(7, _buildVideoStories(context)),
 
           const SizedBox(height: 24),
 
-          // 9. START HAIR TEST CTA BANNER
-          _revealSection(8, _buildJourneyCard()),
+          // 7. REMAINING SECTIONS ACCORDING TO NEED (Tips, Trust, Analytics, FAQ, Certifications)
+          _revealSection(8, _buildExpertTips()),
 
           const SizedBox(height: 24),
 
-          // 10. REVIEWS & TESTIMONIALS
-          _revealSection(9, _buildReviewsSection(context)),
+          _revealSection(9, _buildWhyTrustDrHair()),
 
           const SizedBox(height: 24),
 
-          // 11. EXPERT TIPS
-          _revealSection(10, _buildExpertTips()),
+          _revealSection(10, _buildAnalyticsSection()),
 
           const SizedBox(height: 24),
 
-          // 12. FREQUENTLY ASKED QUESTIONS
           _revealSection(11, _buildFaqSection()),
 
           const SizedBox(height: 24),
 
-          // 14. CERTIFICATIONS
           _revealSection(12, _buildCertifications()),
-
-          const SizedBox(height: 24),
-
-          // 15. CLINIC LOCATION
-          _revealSection(13, _buildLocationSection()),
 
           const SizedBox(height: 24),
         ],
@@ -284,13 +264,17 @@ class _HomeViewState extends State<HomeView>
                                   ),
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              'Clinically Approved',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
+                            const Flexible(
+                              child: Text(
+                                'Clinically Approved',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
                             ),
                           ],
@@ -353,20 +337,23 @@ class _HomeViewState extends State<HomeView>
                                   : isInProgress
                                   ? 'Continue Test'
                                   : 'Free Hair Test';
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    label,
-                                    style: const TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.3,
+                              return FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      label,
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.3,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(LucideIcons.arrowRight, size: 14),
-                                ],
+                                    const SizedBox(width: 8),
+                                    const Icon(LucideIcons.arrowRight, size: 14),
+                                  ],
+                                ),
                               );
                             },
                           ),
@@ -434,24 +421,28 @@ class _HomeViewState extends State<HomeView>
             const SizedBox(height: 16),
             InkWell(
               onTap: _launchWhatsapp,
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Consult a specialist',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+              child: const FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Consult a specialist',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(
-                    LucideIcons.arrowRight,
-                    color: AppColors.primary,
-                    size: 18,
-                  ),
-                ],
+                    SizedBox(width: 8),
+                    Icon(
+                      LucideIcons.arrowRight,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -534,41 +525,47 @@ class _HomeViewState extends State<HomeView>
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            '4.9',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Row(
-                            children: List.generate(
-                              5,
-                              (index) => const Icon(
-                                LucideIcons.star,
-                                color: AppColors.starGold,
-                                size: 16,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              '4.9',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDark,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const Text(
-                        'Google Ratings • 10,000+ Reviews',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.secondaryDark,
-                          fontWeight: FontWeight.w500,
+                            const SizedBox(width: 6),
+                            Row(
+                              children: List.generate(
+                                5,
+                                (index) => const Icon(
+                                  LucideIcons.star,
+                                  color: AppColors.starGold,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Google Ratings • 10,000+ Reviews',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.secondaryDark,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -837,7 +834,7 @@ class _HomeViewState extends State<HomeView>
                         ),
                     ],
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 24),
@@ -847,7 +844,7 @@ class _HomeViewState extends State<HomeView>
                           Text(
                             item['title']!,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: AppColors.primaryDark,
                             ),
@@ -856,7 +853,7 @@ class _HomeViewState extends State<HomeView>
                           Text(
                             item['desc']!,
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: AppColors.secondaryDark,
                               height: 1.35,
                             ),
@@ -884,14 +881,17 @@ class _HomeViewState extends State<HomeView>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Real Patient Stories',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
+              const Expanded(
+                child: Text(
+                  'Real Patient Stories',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => context.push(RouteNames.videos),
                 child: const Text(
@@ -1089,6 +1089,79 @@ class _HomeViewState extends State<HomeView>
     );
   }
 
+  Widget _buildAppointmentCard(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.primary100),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryDark.withValues(alpha: 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.primary5,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(
+                LucideIcons.calendarDays,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Prefer expert guidance?',
+                    style: TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Book an appointment with our care team.',
+                    style: TextStyle(
+                      color: AppColors.secondaryDark,
+                      fontSize: 10,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              tooltip: 'Book appointment',
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => context.push(RouteNames.coachBooking),
+              icon: const Icon(LucideIcons.arrowRight, size: 18),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // --- SECTION 10: REVIEWS ---
   Widget _buildReviewsSection(BuildContext context) {
     final reviews = [
@@ -1117,14 +1190,17 @@ class _HomeViewState extends State<HomeView>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Voices of Success',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
+              const Expanded(
+                child: Text(
+                  'Voices of Success',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => context.push(RouteNames.reviews),
                 child: const Text(
@@ -1389,13 +1465,25 @@ class _HomeViewState extends State<HomeView>
   // --- SECTION 14: CERTIFICATIONS ---
   Widget _buildCertifications() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildCertBadge('Clinically\nApproved', LucideIcons.badgeCheck),
-          _buildCertBadge('ISO\nCertified', LucideIcons.shieldPlus),
-          _buildCertBadge('Dermatologist\nVerified', LucideIcons.stethoscope),
+          Expanded(
+            child: _buildCertBadge(
+              'Clinically\nApproved',
+              LucideIcons.badgeCheck,
+            ),
+          ),
+          Expanded(
+            child: _buildCertBadge('ISO\nCertified', LucideIcons.shieldPlus),
+          ),
+          Expanded(
+            child: _buildCertBadge(
+              'Dermatologist\nVerified',
+              LucideIcons.stethoscope,
+            ),
+          ),
         ],
       ),
     );
@@ -1415,226 +1503,30 @@ class _HomeViewState extends State<HomeView>
           child: Icon(icon, color: AppColors.primary, size: 24),
         ),
         const SizedBox(height: 8),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: AppColors.secondaryDark,
-            height: 1.25,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.secondaryDark,
+              height: 1.25,
+            ),
           ),
         ),
       ],
     );
   }
-
-  // --- SECTION 15: LOCATION ---
-  Widget _buildLocationSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryDark.withValues(alpha: 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Interactive Map Preview
-            GestureDetector(
-              onTap: _launchMaps,
-              child: Stack(
-                children: [
-                  Image.asset(
-                    'assets/images/DrHairLocation.png',
-                    height: 190,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.12),
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.20),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 14,
-                    right: 14,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.94),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.externalLink,
-                            size: 13,
-                            color: AppColors.primary,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Open Map',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Clinic Information & Actions
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary5,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.primary100),
-                        ),
-                        child: const Icon(
-                          LucideIcons.mapPin,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Dr. Hair Clinical Centre',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Mansarovar, Jaipur, Rajasthan\nsupport@drhair.health',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.secondaryDark,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: ElevatedButton.icon(
-                      onPressed: _launchMaps,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      icon: const Icon(LucideIcons.map, size: 16),
-                      label: const Text(
-                        'View on Google Maps',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-class _EssentialProductsSection extends StatefulWidget {
+class _EssentialProductsSection extends StatelessWidget {
   const _EssentialProductsSection();
 
   @override
-  State<_EssentialProductsSection> createState() =>
-      _EssentialProductsSectionState();
-}
-
-class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
-  int _selectedFilterIndex = 0;
-  final List<String> _filters = const ['All', 'Dermatologist', 'Ayurveda'];
-
-  List<ProductItem> get _filteredMedicines {
-    final catalog = ProductItem.demoCatalog;
-    if (_selectedFilterIndex == 0) return catalog;
-    final selectedCategory = _selectedFilterIndex == 1
-        ? 'dermatologist'
-        : 'ayurveda';
-    return catalog
-        .where(
-          (product) =>
-              product.category.toLowerCase().contains(selectedCategory),
-        )
-        .toList(growable: false);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final filtered = _filteredMedicines;
+    final products = ProductItem.demoCatalog;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1645,28 +1537,31 @@ class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Essential Products',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryDark,
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Essential Products',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Doctor-approved formulations & therapies',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
+                    SizedBox(height: 2),
+                    Text(
+                      'Doctor-approved formulations & therapies',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => context.push(RouteNames.products),
                 child: const Text(
@@ -1684,18 +1579,16 @@ class _EssentialProductsSectionState extends State<_EssentialProductsSection> {
 
         const SizedBox(height: 12),
 
-        // Filter Chips: All, Dermatologist, Ayurveda
-
         // Medicines Horizontal List
         SizedBox(
           height: 275,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             scrollDirection: Axis.horizontal,
-            itemCount: filtered.length,
+            itemCount: products.length,
             separatorBuilder: (context, index) => const SizedBox(width: 14),
             itemBuilder: (context, index) {
-              final item = filtered[index];
+              final item = products[index];
               return MedicineCard(
                 title: item.name,
                 desc: item.subtitle,

@@ -352,14 +352,6 @@ class _ProductsViewState extends State<ProductsView>
     );
   }
 
-  void _onSearchIconPressed() {
-    if (_searchFocusNode.hasFocus) {
-      _searchFocusNode.unfocus();
-    } else {
-      _searchFocusNode.requestFocus();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -392,17 +384,19 @@ class _ProductsViewState extends State<ProductsView>
                   // 1. Cart Button with badge
                   _buildCartButton(context),
 
-                  // 2. Search Icon on right side of cart button
+                  // 2. Search Icon on right side of Cart button
                   IconButton(
                     key: const ValueKey('appbar-search-button'),
-                    icon: const Icon(
-                      LucideIcons.search,
-                      color: AppColors.primaryDark,
-                      size: 20,
-                    ),
                     tooltip: 'Search products',
-                    onPressed: _onSearchIconPressed,
+                    icon: const Icon(
+                      Icons.search_rounded,
+                      color: AppColors.primaryDark,
+                    ),
+                    onPressed: () {
+                      _searchFocusNode.requestFocus();
+                    },
                   ),
+
                   const SizedBox(width: 8),
                 ],
                 bottom: PreferredSize(
@@ -499,7 +493,11 @@ class _ProductsViewState extends State<ProductsView>
     final cartCubit = context.read<CartCubit?>();
     if (cartCubit == null) {
       return IconButton(
-        icon: const Icon(LucideIcons.shoppingBag, color: AppColors.primaryDark),
+        icon: const Icon(
+          LucideIcons.shoppingBag,
+          color: AppColors.primaryDark,
+          size: 22,
+        ),
         tooltip: 'My Cart',
         onPressed: () => context.push(RouteNames.cart),
       );

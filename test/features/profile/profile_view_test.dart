@@ -1,3 +1,4 @@
+import 'package:dr_hair/core/constants/app_strings.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_state.dart';
 import 'package:dr_hair/features/hair_test/presentation/views/assessment_result_view.dart';
@@ -47,6 +48,7 @@ void main() {
     expect(find.text('My cart'), findsOneWidget);
     expect(find.text('Orders & delivery'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
+    expect(find.text('App Version ${AppStrings.appVersion}'), findsOneWidget);
   });
 
   testWidgets(

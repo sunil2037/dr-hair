@@ -8,4 +8,5 @@ class AppStrings {
   static const String retry = 'Retry';
   static const String noDataFound = 'No data available';
   static const String generalError = 'Something went wrong. Please try again.';
+  static const String appVersion = '1.0.0 (1)';
 }

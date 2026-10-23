@@ -197,7 +197,7 @@ class _HairTestContent extends StatelessWidget {
       builder: (context, constraints) {
         final double totalWidth = constraints.maxWidth;
         const double gap = 14.0;
-        final double targetBackWidth = (totalWidth - gap) / 3.0;
+        final double targetBackWidth = (totalWidth - gap) / 2.2;
 
         return TweenAnimationBuilder<double>(
           tween: Tween<double>(begin: 0.0, end: showBack ? 1.0 : 0.0),
@@ -218,7 +218,7 @@ class _HairTestContent extends StatelessWidget {
                 if (showBack || animValue > 0.001) ...[
                   SizedBox(
                     width: currentBackWidth,
-                    height: 54,
+                    height: 50,
                     child: ClipRect(
                       child: Opacity(
                         opacity: backOpacity,
@@ -228,7 +228,7 @@ class _HairTestContent extends StatelessWidget {
                             alignment: Alignment.centerLeft,
                             child: SizedBox(
                               width: targetBackWidth,
-                              height: 54,
+                              height: 50,
                               child: AppButton(
                                 text: 'Back',
                                 variant: AppButtonVariant.outlined,
@@ -250,6 +250,7 @@ class _HairTestContent extends StatelessWidget {
                 SizedBox(
                   width: currentContinueWidth,
                   child: AppButton(
+                    height: 50,
                     text: state.currentStep == state.totalSteps - 1
                         ? 'Submit Assessment'
                         : 'Continue',
@@ -607,17 +608,17 @@ class _HairTestContent extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 21,
+            fontSize: 18,
             fontWeight: FontWeight.w800,
             color: AppColors.primaryDark,
             letterSpacing: -0.2,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Text(
           subtitle,
           style: const TextStyle(
-            fontSize: 13.5,
+            fontSize: 12,
             color: AppColors.secondaryDark,
             height: 1.45,
           ),
@@ -634,15 +635,20 @@ class _HairTestContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.04)
-                        : Colors.white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.border,
-                      width: isSelected ? 1.8 : 1.2,
+                    border: Border(
+                      left: BorderSide(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.border,
+                        width: isSelected ? 3 : 1.2,
+                      ),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -655,8 +661,8 @@ class _HairTestContent extends StatelessWidget {
                   child: Row(
                     children: [
                       Container(
-                        width: 22,
-                        height: 22,
+                        width: 20,
+                        height: 20,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -677,15 +683,13 @@ class _HairTestContent extends StatelessWidget {
                               )
                             : null,
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           opt,
                           style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                             color: isSelected
                                 ? AppColors.primary
                                 : AppColors.primaryDark,
@@ -869,10 +873,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.border,
-                    width: 1.2,
-                  ),
+                  border: Border.all(color: AppColors.border, width: 1.2),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.03),
@@ -909,7 +910,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                             child: Text(
                               'Assessment complete',
                               style: TextStyle(
-                                fontSize: 11.5,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF1B6A47),
                               ),
@@ -930,7 +931,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               Text(
                                 displayName,
                                 style: const TextStyle(
-                                  fontSize: 21,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primaryDark,
                                   letterSpacing: -0.3,
@@ -940,7 +941,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               const Text(
                                 "You've been diagnosed with",
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 10,
                                   color: AppColors.secondaryDark,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -949,7 +950,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               Text(
                                 state.diagnosedTitle,
                                 style: const TextStyle(
-                                  fontSize: 14.5,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primaryDark,
                                 ),
@@ -958,7 +959,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               const Text(
                                 'Start Seeing Results In',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 10,
                                   color: AppColors.secondaryDark,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -967,7 +968,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               Text(
                                 state.resultsTimeline,
                                 style: const TextStyle(
-                                  fontSize: 14.5,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primary,
                                 ),
@@ -1010,7 +1011,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               '93% Saw Results*',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -1062,7 +1063,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                             state.stageDescription,
                             style: const TextStyle(
                               color: Color(0xFF1F2937),
-                              fontSize: 13.5,
+                              fontSize: 12,
                               height: 1.45,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1159,6 +1160,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
 
               // Practical Actions (No Bottom Price Bar)
               AppButton(
+                height: 50,
                 text: 'Browse Recommended Regimen',
                 variant: AppButtonVariant.filled,
                 size: AppButtonSize.large,
@@ -1172,6 +1174,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
               const SizedBox(height: 12),
 
               AppButton(
+                height: 50,
                 text: 'Done',
                 variant: AppButtonVariant.outlined,
                 size: AppButtonSize.large,
@@ -1203,21 +1206,18 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: GestureDetector(
         onTap: () => setState(() => _selectedRootCauseIndex = index),
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        //   borderRadius: BorderRadius.circular(14),
+        child: Container(
           height: 98,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.05)
-                : Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
-              width: isSelected ? 1.8 : 1.0,
+              color: AppColors.border,
+              width: isSelected ? 1.2 : 1.0,
             ),
             boxShadow: [
               BoxShadow(
@@ -1238,9 +1238,11 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                   label,
                   maxLines: 1,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? AppColors.primary : AppColors.primaryDark,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.primaryDark,
                   ),
                 ),
               ),
@@ -1277,7 +1279,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                     child: Text(
                       'Root Cause: Scalp Follicle Health & Dandruff',
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF7C2D12),
                       ),
@@ -1289,7 +1291,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
               Text(
                 'Excess sebum and Malassezia yeast inflame hair roots, weakening the follicle anchor. Clearing dandruff creates the optimal sterile environment for regrowth serums to penetrate.',
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 12,
                   color: Color(0xFF9A3412),
                   height: 1.45,
                 ),
@@ -1443,7 +1445,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
   Widget _buildDisclaimerBox() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(16),
@@ -1453,7 +1455,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(LucideIcons.stethoscope, color: Color(0xFFD97706), size: 22),
-          SizedBox(width: 12),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1461,7 +1463,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                 Text(
                   'Algorithmic Assessment · Session Preview',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFFB45309),
                   ),
@@ -1491,7 +1493,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             color: AppColors.secondaryDark,
             fontWeight: FontWeight.w500,
           ),
@@ -1502,7 +1504,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
             value,
             textAlign: TextAlign.right,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               color: AppColors.primaryDark,
               fontWeight: FontWeight.w700,
             ),
