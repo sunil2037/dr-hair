@@ -74,7 +74,7 @@ class _HairTestContent extends StatelessWidget {
             centerTitle: true,
             automaticallyImplyLeading: false,
             title: const Text(
-              'Clinical Hair Analysis',
+              'Hair & Scalp Assessment',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             leading: (!isFirstStep)
@@ -252,7 +252,7 @@ class _HairTestContent extends StatelessWidget {
                   child: AppButton(
                     height: 50,
                     text: state.currentStep == state.totalSteps - 1
-                        ? 'Submit Assessment'
+                        ? 'Submit'
                         : 'Continue',
                     variant: AppButtonVariant.filled,
                     size: AppButtonSize.large,
@@ -276,16 +276,16 @@ class _HairTestContent extends StatelessWidget {
     switch (state.currentStep) {
       case 0:
         return _buildOptionSelector(
-          title: 'What is your biological gender?',
-          subtitle: 'Hair loss pathways differ significantly between male and female androgen sensitivity.',
-          options: const ['Male', 'Female'],
+          title: 'How do you describe your gender?',
+          subtitle: 'This helps us make the screening questions more relevant.',
+          options: const ['Male', 'Female', 'Prefer not to say'],
           selected: state.selectedGender,
           onSelected: (val) => cubit.selectGender(val),
         );
       case 1:
         return _buildOptionSelector(
-          title: 'Where are you experiencing hair loss?',
-          subtitle: 'Identify your hair thinning pattern to determine your clinical stage.',
+          title: 'Where have you noticed thinning?',
+          subtitle: 'Choose the pattern that best matches what you have noticed.',
           options: const [
             'Receding Hairline (Temples)',
             'Stage 1 - Receding hairline at temples',
@@ -299,39 +299,60 @@ class _HairTestContent extends StatelessWidget {
         );
       case 2:
         return _buildOptionSelector(
-          title: 'Do you have dandruff or an itchy scalp?',
-          subtitle: 'Dandruff and excess sebum clog follicles and accelerate shedding.',
+          title: 'How long have you noticed hair loss or thinning?',
+          subtitle: 'Choose the closest timeframe.',
           options: const [
-            '6 - 12 months',
-            'Severe Dandruff & Flakes',
-            'Mild flakes occasionally',
-            'No Dandruff (Clean Scalp)',
             'Less than 6 months',
+            '6 - 12 months',
             '1 - 3 years',
+            'More than 3 years',
           ],
-          selected: state.dandruff ?? state.duration,
-          onSelected: (val) {
-            cubit.selectDandruff(val);
-            cubit.selectDuration(val);
-          },
+          selected: state.duration,
+          onSelected: cubit.selectDuration,
         );
       case 3:
         return _buildOptionSelector(
-          title: 'What is your average daily stress & lifestyle level?',
-          subtitle: 'Cortisol elevation triggers vascular constriction around scalp capillaries.',
+          title: 'How is your scalp feeling lately?',
+          subtitle: 'Choose the closest description. You can discuss symptoms with a clinician.',
+          options: const [
+            'No noticeable flakes or itching',
+            'Occasional flakes or itching',
+            'Frequent flakes or itching',
+            'Not sure',
+          ],
+          selected: state.dandruff,
+          onSelected: cubit.selectDandruff,
+        );
+      case 4:
+        return _buildOptionSelector(
+          title: 'How would you describe your recent stress level?',
+          subtitle: 'There are no right or wrong answers.',
           options: const [
             'Moderate',
             'Low / Manageable',
             'High Stress',
             'Extreme',
           ],
-          selected: state.stressLevel ?? state.gutHealth,
-          onSelected: (val) {
-            cubit.selectStressLevel(val);
-            cubit.selectGutHealth(val);
-          },
+          selected: state.stressLevel,
+          onSelected: cubit.selectStressLevel,
         );
-      case 4:
+      case 5:
+        return _buildOptionSelector(
+          title: 'Any digestion or gut-health concerns?',
+          subtitle: 'Choose the option that best reflects your experience.',
+          options: const ['No', 'Sometimes', 'Often', 'Not sure'],
+          selected: state.gutHealth,
+          onSelected: cubit.selectGutHealth,
+        );
+      case 6:
+        return _buildOptionSelector(
+          title: 'Is hair thinning common in your family?',
+          subtitle: 'This is optional context for a future conversation with a clinician.',
+          options: const ['Yes', 'No', 'Not sure'],
+          selected: state.familyHistory,
+          onSelected: cubit.selectFamilyHistory,
+        );
+      case 7:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -345,7 +366,7 @@ class _HairTestContent extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Our clinical dermatologists analyze your follicle density and hairline symmetry.',
+              'Photos are optional and stay on this device in this demo. They are not automatically reviewed by a clinician.',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.secondaryDark,
@@ -390,7 +411,7 @@ class _HairTestContent extends StatelessWidget {
                   color: AppColors.primary,
                 ),
                 label: const Text(
-                  'Skip Photos & View Assessment',
+                  'Continue without photos',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -719,95 +740,6 @@ class AssessmentReportView extends StatefulWidget {
 }
 
 class _AssessmentReportViewState extends State<AssessmentReportView> {
-  int _selectedRootCauseIndex = 0; // 0: Dandruff, 1: Nutrition, 2: Lifestyle
-
-  void _showStudyBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Clinical Study & Efficacy Registry',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'In a 5-month clinical registry protocol evaluating 3,820 individuals with male pattern hair fall, 93% achieved follicular stabilization and measurable density thickening when adhering to customized Ayurvedic and dermatological formulations.',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    height: 1.5,
-                    color: AppColors.secondaryDark,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF8EE),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        LucideIcons.checkCircle2,
-                        color: Color(0xFF1B6A47),
-                        size: 20,
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Verified Dr. Hair Internal Dermatology Registry Dec 2022',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1B6A47),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                AppButton(
-                  text: 'Close',
-                  variant: AppButtonVariant.filled,
-                  size: AppButtonSize.large,
-                  width: double.infinity,
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
@@ -908,7 +840,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                           SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                              'Assessment complete',
+                              'Self-assessment complete',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -939,7 +871,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               ),
                               const SizedBox(height: 10),
                               const Text(
-                                "You've been diagnosed with",
+                                'Your answers suggest',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: AppColors.secondaryDark,
@@ -948,106 +880,35 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                state.diagnosedTitle,
+                                state.assessmentSummary,
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primaryDark,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Start Seeing Results In',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.secondaryDark,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                state.resultsTimeline,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
-                                ),
-                              ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Avatar Illustration Container
                         Container(
-                          width: 74,
-                          height: 106,
+                          width: 54,
+                          height: 54,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(14),
+                            color: AppColors.primary5,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: const _StageHairAvatar(),
+                          child: const Icon(
+                            LucideIcons.clipboardCheck,
+                            color: AppColors.primary,
+                            size: 25,
+                          ),
                         ),
                       ],
                     ),
 
                     const SizedBox(height: 18),
 
-                    // Study Banner Strip
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Flexible(
-                            child: Text(
-                              '93% Saw Results*',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: () => _showStudyBottomSheet(context),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Check Study',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(width: 3),
-                                Icon(
-                                  LucideIcons.chevronRight,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Mint Green Stage Description Box
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -1059,6 +920,15 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Text(
+                            'What this may mean',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           Text(
                             state.stageDescription,
                             style: const TextStyle(
@@ -1075,94 +945,25 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-              // Footnote Text
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  '*As per an internal clinical registry conducted by Dr. Hair Dermatology Team in December 2022',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.secondaryDark,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-
               const SizedBox(height: 24),
-
-              // Root Causes Title
-              const Text(
-                'Your Hair Loss Root Causes',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // 3 Root Causes Horizontal Cards (Responsive)
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildRootCauseCard(
-                      index: 0,
-                      label: 'Dandruff',
-                      iconWidget: const _FollicleIcon(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildRootCauseCard(
-                      index: 1,
-                      label: 'Nutrition',
-                      iconWidget: const Icon(
-                        LucideIcons.apple,
-                        size: 26,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildRootCauseCard(
-                      index: 2,
-                      label: 'Lifestyle',
-                      iconWidget: const Icon(
-                        LucideIcons.heartPulse,
-                        size: 26,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Active Root Cause Detail Card
-              _buildRootCauseDetailBox(),
-
-              const SizedBox(height: 24),
-
-              // Summary Card (Ensuring test assertions pass)
               _buildSummaryCard(state),
 
               const SizedBox(height: 16),
 
-              // Clinical Disclaimer & Honest State (Preserving honesty & test compatibility)
+              // Explain how to interpret this screening summary.
               _buildDisclaimerBox(),
+
+              const SizedBox(height: 24),
+
+              _buildPostAssessmentNextSteps(context),
 
               const SizedBox(height: 24),
 
               // Practical Actions (No Bottom Price Bar)
               AppButton(
                 height: 50,
-                text: 'Browse Recommended Regimen',
-                variant: AppButtonVariant.filled,
+                text: 'Browse demo products',
+                variant: AppButtonVariant.outlined,
                 size: AppButtonSize.large,
                 width: double.infinity,
                 onPressed: () {
@@ -1197,197 +998,177 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
     );
   }
 
-  Widget _buildRootCauseCard({
-    required int index,
-    required String label,
-    required Widget iconWidget,
-  }) {
-    final bool isSelected = _selectedRootCauseIndex == index;
+  Widget _buildPostAssessmentNextSteps(BuildContext context) {
+    final hairState = context.watch<HairTestCubit>().state;
+    final hasCompletedAssessment =
+        hairState.isCompleted && !hairState.isRetesting;
 
-    return Material(
-      color: Colors.transparent,
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedRootCauseIndex = index),
-        //   borderRadius: BorderRadius.circular(14),
-        child: Container(
-          height: 98,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.border,
-              width: isSelected ? 1.2 : 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+    if (!hasCompletedAssessment) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primary100),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Want your own care plan?',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryDark,
               ),
-            ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Complete your hair assessment to unlock your routine and progress tools.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: AppColors.secondaryDark,
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppButton(
+              text: 'Start my assessment',
+              variant: AppButtonVariant.filled,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              onPressed: () => context.push(RouteNames.hairTest),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your next steps',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryDark,
+            ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          const SizedBox(height: 6),
+          const Text(
+            'Build a simple care habit and track changes over time.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppColors.secondaryDark,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _nextStepRow('1', 'Review your daily routine'),
+          _nextStepRow('2', 'Set a reminder that works for you'),
+          _nextStepRow('3', 'Add a baseline progress photo'),
+          const SizedBox(height: 12),
+          AppButton(
+            text: 'Set up my routine',
+            variant: AppButtonVariant.filled,
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            onPressed: () => context.push(RouteNames.routine),
+          ),
+          const SizedBox(height: 8),
+          Row(
             children: [
-              iconWidget,
-              const SizedBox(height: 8),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.primaryDark,
-                  ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => context.push(RouteNames.reminders),
+                  child: const Text('Set a reminder'),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () =>
+                      context.push(RouteNames.progress, extra: true),
+                  child: const Text('Add progress photo'),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildRootCauseDetailBox() {
-    switch (_selectedRootCauseIndex) {
-      case 0:
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFDF0E7),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFFBD7C0)),
-          ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    LucideIcons.sparkles,
-                    size: 16,
-                    color: Color(0xFF9A3412),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Root Cause: Scalp Follicle Health & Dandruff',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF7C2D12),
-                      ),
-                    ),
-                  ),
-                ],
+  Widget _nextStepRow(String number, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AppColors.primary5,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
               ),
-              SizedBox(height: 6),
-              Text(
-                'Excess sebum and Malassezia yeast inflame hair roots, weakening the follicle anchor. Clearing dandruff creates the optimal sterile environment for regrowth serums to penetrate.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9A3412),
-                  height: 1.45,
-                ),
-              ),
-            ],
+            ),
           ),
-        );
-      case 1:
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0FDF4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFBBF7D0)),
-          ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(LucideIcons.apple, size: 16, color: Color(0xFF14532D)),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Root Cause: Micro-Nutrient Absorption & Diet',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF14532D),
-                      ),
-                    ),
-                  ),
-                ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
-              SizedBox(height: 6),
-              Text(
-                'Low protein, ferritin, or biotin synthesis starves growing hair fibers of keratin blocks. Correcting systemic absorption halts premature shedding.',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF166534),
-                  height: 1.45,
-                ),
-              ),
-            ],
+            ),
           ),
-        );
-      default:
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFFBEB),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFFDE68A)),
-          ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    LucideIcons.heartPulse,
-                    size: 16,
-                    color: Color(0xFF78350F),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Root Cause: Stress, Sleep & Cortisol Constriction',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF78350F),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 6),
-              Text(
-                'Elevated daily cortisol constricts micro-capillaries supplying your scalp, forcing active anagen hairs into the dormant telogen shedding phase.',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF92400E),
-                  height: 1.45,
-                ),
-              ),
-            ],
-          ),
-        );
-    }
+        ],
+      ),
+    );
   }
 
   Widget _buildSummaryCard(HairTestState state) {
     final photoCount = state.photos.length;
+    final details = <MapEntry<String, String>>[];
+
+    void addDetail(String label, String? value) {
+      final trimmedValue = value?.trim();
+      if (trimmedValue != null && trimmedValue.isNotEmpty) {
+        details.add(MapEntry(label, trimmedValue));
+      }
+    }
+
+    addDetail('Hair concern', state.primaryConcern ?? state.stage);
+    addDetail('Duration', state.duration);
+    addDetail('Scalp concern', state.dandruff);
+    addDetail('Gut health', state.gutHealth);
+    addDetail('Stress & lifestyle', state.stressLevel);
+    addDetail('Family history', state.familyHistory);
+    details.add(
+      MapEntry(
+        'Photos',
+        photoCount > 0 ? '$photoCount added' : 'Not added · optional',
+      ),
+    );
 
     return Container(
       width: double.infinity,
@@ -1408,7 +1189,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'ASSESSMENT PROFILE SUMMARY',
+            'WHAT YOU SHARED',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -1416,27 +1197,20 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
               color: AppColors.primary,
             ),
           ),
+          const SizedBox(height: 6),
+          const Text(
+            'These are the details you selected for this assessment.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppColors.secondaryDark,
+            ),
+          ),
           const SizedBox(height: 12),
-          _buildSummaryRow(
-            'Primary Concern',
-            state.primaryConcern ??
-                state.stage ??
-                'Receding Hairline (Temples)',
-          ),
-          const Divider(height: 16, color: AppColors.border),
-          _buildSummaryRow(
-            'Thinning Duration',
-            state.duration ?? '6 - 12 months',
-          ),
-          const Divider(height: 16, color: AppColors.border),
-          _buildSummaryRow('Lifestyle Stress', state.stressLevel ?? 'Moderate'),
-          const Divider(height: 16, color: AppColors.border),
-          _buildSummaryRow(
-            'Scalp Photos',
-            photoCount > 0
-                ? '$photoCount photos attached'
-                : 'No photos captured (optional)',
-          ),
+          for (var index = 0; index < details.length; index++) ...[
+            if (index > 0) const Divider(height: 16, color: AppColors.border),
+            _buildSummaryRow(details[index].key, details[index].value),
+          ],
         ],
       ),
     );
@@ -1461,7 +1235,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Algorithmic Assessment · Session Preview',
+                  'How to use this result',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -1470,7 +1244,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'This assessment is generated algorithmically for care personalization and is not a certified doctor’s clinical diagnosis. Clinician triage services (POST /api/v1/assessment/submit) are pending live backend connection.',
+                  'This summary is based on your answers and is not a medical diagnosis. A qualified clinician can assess your symptoms and discuss suitable care.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Color(0xFF92400E),
@@ -1513,226 +1287,4 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
       ],
     );
   }
-}
-
-/// Custom vector avatar matching Traya's Stage-1 patient illustration.
-class _StageHairAvatar extends StatelessWidget {
-  const _StageHairAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(86, 124),
-      painter: _StageHairAvatarPainter(),
-    );
-  }
-}
-
-class _StageHairAvatarPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-
-    final facePaint = Paint()..color = const Color(0xFFECC29C);
-    final shadowPaint = Paint()..color = const Color(0xFFDEB48D);
-
-    // Dark T-shirt / Shoulders
-    final shirtPaint = Paint()..color = const Color(0xFF333333);
-    final shirtPath = Path()
-      ..moveTo(0, h)
-      ..lineTo(w, h)
-      ..lineTo(w * 0.9, h * 0.72)
-      ..quadraticBezierTo(w * 0.5, h * 0.78, w * 0.1, h * 0.72)
-      ..close();
-    canvas.drawPath(shirtPath, shirtPaint);
-
-    // Neck
-    final neckRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(w * 0.5, h * 0.64),
-        width: w * 0.26,
-        height: h * 0.2,
-      ),
-      const Radius.circular(6),
-    );
-    canvas.drawRRect(neckRect, shadowPaint);
-
-    // Ears
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.22, h * 0.44),
-        width: w * 0.12,
-        height: h * 0.18,
-      ),
-      facePaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.78, h * 0.44),
-        width: w * 0.12,
-        height: h * 0.18,
-      ),
-      facePaint,
-    );
-
-    // Face contour
-    final faceRRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(w * 0.5, h * 0.44),
-        width: w * 0.52,
-        height: h * 0.38,
-      ),
-      const Radius.circular(18),
-    );
-    canvas.drawRRect(faceRRect, facePaint);
-
-    // Dark hair with temple recession
-    final hairPaint = Paint()..color = const Color(0xFF1F1F1F);
-    final hairPath = Path()
-      ..moveTo(w * 0.22, h * 0.42)
-      ..cubicTo(w * 0.18, h * 0.22, w * 0.35, h * 0.14, w * 0.5, h * 0.14)
-      ..cubicTo(w * 0.65, h * 0.14, w * 0.82, h * 0.22, w * 0.78, h * 0.42)
-      ..lineTo(w * 0.74, h * 0.34)
-      ..quadraticBezierTo(w * 0.66, h * 0.36, w * 0.5, h * 0.33)
-      ..quadraticBezierTo(w * 0.34, h * 0.36, w * 0.26, h * 0.34)
-      ..close();
-    canvas.drawPath(hairPath, hairPaint);
-
-    // Red highlight on the receding temple hairline
-    final highlightPaint = Paint()
-      ..color = const Color(0xFFDC2626)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-    final highlightPath = Path()
-      ..moveTo(w * 0.62, h * 0.33)
-      ..quadraticBezierTo(w * 0.70, h * 0.33, w * 0.74, h * 0.36);
-    canvas.drawPath(highlightPath, highlightPaint);
-
-    // Eyebrows
-    final featurePaint = Paint()
-      ..color = const Color(0xFF5A4533)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(
-      Offset(w * 0.33, h * 0.42),
-      Offset(w * 0.43, h * 0.41),
-      featurePaint,
-    );
-    canvas.drawLine(
-      Offset(w * 0.57, h * 0.41),
-      Offset(w * 0.67, h * 0.42),
-      featurePaint,
-    );
-
-    // Closed Calm Eyes
-    final leftEyePath = Path()
-      ..moveTo(w * 0.34, h * 0.46)
-      ..quadraticBezierTo(w * 0.38, h * 0.48, w * 0.42, h * 0.46);
-    canvas.drawPath(leftEyePath, featurePaint);
-
-    final rightEyePath = Path()
-      ..moveTo(w * 0.58, h * 0.46)
-      ..quadraticBezierTo(w * 0.62, h * 0.48, w * 0.66, h * 0.46);
-    canvas.drawPath(rightEyePath, featurePaint);
-
-    // Nose
-    canvas.drawLine(
-      Offset(w * 0.5, h * 0.47),
-      Offset(w * 0.5, h * 0.52),
-      featurePaint,
-    );
-
-    // Neutral Mouth
-    canvas.drawLine(
-      Offset(w * 0.43, h * 0.57),
-      Offset(w * 0.57, h * 0.57),
-      featurePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Custom vector follicle icon matching Traya's root cause icon.
-class _FollicleIcon extends StatelessWidget {
-  const _FollicleIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(28, 28),
-      painter: _FollicleIconPainter(),
-    );
-  }
-}
-
-class _FollicleIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final strokePaint = Paint()
-      ..color = const Color(0xFF111827)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final dotPaint = Paint()
-      ..color = const Color(0xFF111827)
-      ..style = PaintingStyle.fill;
-
-    // Hair strand sprouting upwards
-    final hairPath = Path()
-      ..moveTo(size.width * 0.5, size.height * 0.72)
-      ..cubicTo(
-        size.width * 0.48,
-        size.height * 0.45,
-        size.width * 0.54,
-        size.height * 0.30,
-        size.width * 0.58,
-        size.height * 0.12,
-      );
-    canvas.drawPath(hairPath, strokePaint);
-
-    // Follicle bulb
-    final bulbPath = Path()
-      ..moveTo(size.width * 0.35, size.height * 0.68)
-      ..quadraticBezierTo(
-        size.width * 0.5,
-        size.height * 0.88,
-        size.width * 0.65,
-        size.height * 0.68,
-      );
-    canvas.drawPath(bulbPath, strokePaint);
-
-    // Scalp horizon line
-    canvas.drawLine(
-      Offset(size.width * 0.18, size.height * 0.68),
-      Offset(size.width * 0.35, size.height * 0.68),
-      strokePaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.65, size.height * 0.68),
-      Offset(size.width * 0.82, size.height * 0.68),
-      strokePaint,
-    );
-
-    // Dandruff flakes / scalp micro-dots
-    final dots = [
-      Offset(size.width * 0.28, size.height * 0.58),
-      Offset(size.width * 0.38, size.height * 0.50),
-      Offset(size.width * 0.62, size.height * 0.50),
-      Offset(size.width * 0.72, size.height * 0.58),
-    ];
-    for (final dot in dots) {
-      canvas.drawCircle(dot, 1.2, dotPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/widgets/assessment_gate.dart';
 import '../../../care/presentation/viewmodels/care_cubit.dart';
 import '../../../care/presentation/viewmodels/care_state.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
@@ -25,7 +26,7 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView>
     with SingleTickerProviderStateMixin {
-  static const int _sectionCount = 13;
+  static const int _sectionCount = 12;
   late final AnimationController _entranceController;
   late final List<Animation<double>> _sectionOpacity;
   late final List<Animation<Offset>> _sectionPosition;
@@ -103,78 +104,52 @@ class _HomeViewState extends State<HomeView>
     return BlocBuilder<HairTestCubit, HairTestState>(
       builder: (context, hairState) {
         final completed = hairState.isCompleted && !hairState.isRetesting;
-        final first = completed
-            ? _buildRestorationJourney(assessmentComplete: true)
-            : _buildEssentialProducts(context);
-        final second = completed
-            ? _buildEssentialProducts(context)
-            : _buildRestorationJourney(assessmentComplete: false);
         return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. HERO SECTION
-          _revealSection(0, _buildHeroSection(context)),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _revealSection(0, _buildHeroSection(context)),
 
-          const SizedBox(height: 24),
+              if (completed) ...[
+                const SizedBox(height: 16),
+                _revealSection(1, _buildTodayCard(context)),
+              ],
 
-          // 2. ESSENTIAL PRODUCTS (on top)
-          _revealSection(1, first),
+              const SizedBox(height: 20),
+              _revealSection(2, _buildEssentialProducts(context)),
 
-          const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              _revealSection(3, _buildAppointmentCard(context)),
 
-          // 3. RESTORATION JOURNEY
-          _revealSection(2, second),
+              const SizedBox(height: 20),
+              _revealSection(4, _buildUrgentCareCard()),
 
-          const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              _revealSection(5, _buildReviewsSection(context)),
 
-          // 4. BOOK APPOINTMENT
-          _revealSection(3, _buildAppointmentCard(context)),
+              const SizedBox(height: 20),
+              _revealSection(6, _buildVideoStories(context)),
 
-          const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              _revealSection(7, _buildExpertTips()),
 
-          // 5. OTHER JOURNEY & CARE ACTIVITY
-          _revealSection(4, _buildJourneyCard()),
+              const SizedBox(height: 20),
+              _revealSection(8, _buildWhyTrustDrHair()),
 
-          const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              _revealSection(9, _buildAnalyticsSection()),
 
-          _revealSection(5, _buildUrgentCareCard()),
+              const SizedBox(height: 20),
+              _revealSection(10, _buildFaqSection()),
 
-          const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              _revealSection(11, _buildCertifications()),
 
-          // 6. REVIEWS & VIDEO STORIES
-          _revealSection(6, _buildReviewsSection(context)),
-
-          const SizedBox(height: 24),
-
-          _revealSection(7, _buildVideoStories(context)),
-
-          const SizedBox(height: 24),
-
-          // 7. REMAINING SECTIONS ACCORDING TO NEED (Tips, Trust, Analytics, FAQ, Certifications)
-          _revealSection(8, _buildExpertTips()),
-
-          const SizedBox(height: 24),
-
-          _revealSection(9, _buildWhyTrustDrHair()),
-
-          const SizedBox(height: 24),
-
-          _revealSection(10, _buildAnalyticsSection()),
-
-          const SizedBox(height: 24),
-
-          _revealSection(11, _buildFaqSection()),
-
-          const SizedBox(height: 24),
-
-          _revealSection(12, _buildCertifications()),
-
-          const SizedBox(height: 24),
-        ],
-      ),
+              const SizedBox(height: 24),
+            ],
+          ),
         );
       },
     );
@@ -187,9 +162,12 @@ class _HomeViewState extends State<HomeView>
     final double screenHeight = mediaQuery.size.height;
     final double screenWidth = mediaQuery.size.width;
     final double topPadding = mediaQuery.padding.top + kToolbarHeight;
-    final double bannerHeight = (screenHeight * 0.4).clamp(
-      topPadding + 160.0,
-      380.0,
+    final double imageWidth = (screenWidth * 0.50).clamp(150.0, 280.0);
+    final double minBannerHeight = topPadding + 155.0;
+    final double maxBannerHeight = math.max(minBannerHeight, 380.0);
+    final double bannerHeight = (screenHeight * 0.34).clamp(
+      minBannerHeight,
+      maxBannerHeight,
     );
 
     return Column(
@@ -216,31 +194,36 @@ class _HomeViewState extends State<HomeView>
             ),
             child: Stack(
               children: [
-                // Right-aligned model banner image
+                // Crop the image into the right-hand panel so it sits close to
+                // the headline instead of leaving a large empty image margin.
                 Positioned(
                   bottom: 0,
-                  right: -80,
-                  child: Image.asset(
-                    'assets/images/hair_bennar.png',
-                    height: (bannerHeight - topPadding).clamp(190.0, 250.0),
-                    fit: BoxFit.contain,
-                    alignment: Alignment.bottomRight,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox.shrink(),
+                  right: -60,
+
+                  child: SizedBox(
+                    height: 200,
+                    child: Image.asset(
+                      'assets/images/hair_bennar.png',
+                      // alignment: Alignment.center,
+                      height: 200,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    ),
                   ),
                 ),
 
                 // Left-aligned content (Badge, Headline, CTA)
                 Positioned(
                   left: 20,
-                  top: topPadding - 30,
-                  bottom: 20,
-                  width: screenWidth * 0.47,
+                  top: topPadding - 35,
+                  bottom: 16,
+                  width: screenWidth - imageWidth - 28,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Clinically Approved Badge
+                      // Neutral care badge; avoid unverified clinical claims.
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -265,21 +248,15 @@ class _HomeViewState extends State<HomeView>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Image.asset(
-                              'assets/icons/ApprovedIcon.png',
-                              width: 12,
-                              height: 12,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(
-                                    LucideIcons.badgeCheck,
-                                    color: AppColors.primary,
-                                    size: 12,
-                                  ),
+                            const Icon(
+                              LucideIcons.heartPulse,
+                              color: AppColors.primary,
+                              size: 12,
                             ),
                             const SizedBox(width: 6),
                             const Flexible(
                               child: Text(
-                                'Clinically Approved',
+                                'Personal Care',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -291,10 +268,9 @@ class _HomeViewState extends State<HomeView>
                               ),
                             ),
                           ],
-                        ),
+                        ), ////////
                       ),
-                      const SizedBox(height: 15),
-                      // Impact Headline
+                      const SizedBox(height: 20),
                       RichText(
                         textAlign: TextAlign.left,
                         text: const TextSpan(
@@ -306,16 +282,15 @@ class _HomeViewState extends State<HomeView>
                             letterSpacing: -0.3,
                           ),
                           children: [
-                            TextSpan(text: 'Your Journey to\n'),
-                            TextSpan(text: 'Thicker, '),
+                            TextSpan(text: 'Your hair care\n'),
+                            TextSpan(text: 'journey starts\n'),
                             TextSpan(
-                              text: 'Healthier',
+                              text: 'right here',
                               style: TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            TextSpan(text: ' Hair\nStarts with Science'),
                           ],
                         ),
                       ),
@@ -325,52 +300,55 @@ class _HomeViewState extends State<HomeView>
                         SizedBox(
                           height: 38,
                           child: ElevatedButton(
-                          onPressed: widget.onStartHairTest,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            elevation: 5,
-                            shadowColor: AppColors.primary.withValues(
-                              alpha: 0.35,
+                            onPressed: widget.onStartHairTest,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              elevation: 5,
+
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                          ),
-                          child: BlocBuilder<HairTestCubit, HairTestState>(
-                            builder: (context, state) {
-                              final isComplete =
-                                  state.isCompleted && !state.isRetesting;
-                              final isInProgress =
-                                  HomeJourneySelector.hasAssessmentProgress(
-                                    state,
-                                  );
-                              final label = isComplete
-                                  ? 'Retake Hair Test'
-                                  : isInProgress
-                                  ? 'Continue Test'
-                                  : 'Free Hair Test';
-                              return FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      label,
-                                      style: const TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.3,
+                            child: BlocBuilder<HairTestCubit, HairTestState>(
+                              builder: (context, state) {
+                                final isComplete =
+                                    state.isCompleted && !state.isRetesting;
+                                final isInProgress =
+                                    HomeJourneySelector.hasAssessmentProgress(
+                                      state,
+                                    );
+                                final label = isComplete
+                                    ? 'Retake Hair Test'
+                                    : isInProgress
+                                    ? 'Continue Test'
+                                    : 'Free Hair Test';
+                                return FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        label,
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.3,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Icon(LucideIcons.arrowRight, size: 14),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                                      const SizedBox(width: 8),
+                                      const Icon(
+                                        LucideIcons.arrowRight,
+                                        size: 14,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
                     ],
@@ -425,7 +403,7 @@ class _HomeViewState extends State<HomeView>
             ),
             const SizedBox(height: 8),
             const Text(
-              'Stop the recession before it starts. Get a clinically proven plan tailored to your scalp biology.',
+              'Talk with a specialist about your hair concerns and the care options that may suit you.',
               style: TextStyle(
                 color: AppColors.secondaryDark,
                 fontSize: 14,
@@ -570,7 +548,7 @@ class _HomeViewState extends State<HomeView>
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Google Ratings • 10,000+ Reviews',
+                            'Demo rating • sample data',
                             style: TextStyle(
                               fontSize: 10,
                               color: AppColors.secondaryDark,
@@ -662,6 +640,128 @@ class _HomeViewState extends State<HomeView>
     return const _EssentialProductsSection();
   }
 
+  Widget _buildTodayCard(BuildContext context) {
+    return BlocBuilder<CareCubit, CareState>(
+      builder: (context, state) {
+        final pendingTasks = state.routineTasks
+            .where((task) => !task.isCompleted)
+            .toList();
+        final nextTask = pendingTasks.isEmpty ? null : pendingTasks.first;
+        final isComplete = state.routineTasks.isNotEmpty && nextTask == null;
+        final routineActionLabel = state.routineTasks.isEmpty
+            ? 'Set up routine'
+            : isComplete
+            ? 'View routine'
+            : 'Continue routine';
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: AppColors.primary100),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x080D1B2A),
+                  blurRadius: 14,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary5,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        LucideIcons.sun,
+                        color: AppColors.primary,
+                        size: 19,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Your care today',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      state.routineTasks.isEmpty
+                          ? 'Set up'
+                          : '${state.completedRoutineCount}/${state.routineTasks.length}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isComplete
+                      ? 'You’ve completed today’s care steps.'
+                      : nextTask == null
+                      ? 'Add a care step to start tracking today.'
+                      : 'Next up: ${nextTask.title}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: AppColors.secondaryDark,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: state.routineProgress,
+                    minHeight: 7,
+                    backgroundColor: AppColors.primary5,
+                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: () => context.push(RouteNames.routine),
+                        icon: const Icon(LucideIcons.listChecks, size: 16),
+                        label: Text(routineActionLabel),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: () =>
+                            context.push(RouteNames.progress, extra: true),
+                        icon: const Icon(LucideIcons.camera, size: 16),
+                        label: const Text('Log progress'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   // --- SECTION 6: WHY TRUST DR. HAIR ---
   Widget _buildWhyTrustDrHair() {
     final trustPoints = [
@@ -704,6 +804,11 @@ class _HomeViewState extends State<HomeView>
               color: AppColors.primaryDark,
             ),
           ),
+          const SizedBox(height: 4),
+          const Text(
+            'Sample trust points shown for this app demo.',
+            style: TextStyle(fontSize: 11, color: AppColors.secondaryDark),
+          ),
           const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
@@ -714,44 +819,49 @@ class _HomeViewState extends State<HomeView>
               crossAxisCount: 2,
               crossAxisSpacing: 14,
               mainAxisSpacing: 14,
-              childAspectRatio: 1.25,
+              childAspectRatio: 1.0,
             ),
             itemBuilder: (context, index) {
               final item = trustPoints[index];
               return Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.primary5,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppColors.primary100),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: item['bg'] as Color,
-                        borderRadius: BorderRadius.circular(14),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: item['bg'] as Color,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          item['icon'] as IconData,
+                          color: item['color'] as Color,
+                          size: 22,
+                        ),
                       ),
-                      child: Icon(
-                        item['icon'] as IconData,
-                        color: item['color'] as Color,
-                        size: 22,
+                      const SizedBox(height: 10),
+                      Text(
+                        item['title'] as String,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      item['title'] as String,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -761,144 +871,6 @@ class _HomeViewState extends State<HomeView>
     );
   }
 
-  // --- SECTION 7: RESTORATION JOURNEY (TIMELINE) ---
-  Widget _buildRestorationJourney({required bool assessmentComplete}) {
-    final careState = context.watch<CareCubit>().state;
-    final hasRoutine = careState.routineTasks.isNotEmpty;
-    final completedRoutine = careState.routineTasks
-        .where((task) => task.isCompleted)
-        .length;
-    final steps = [
-      {
-        'step': '1',
-        'title': assessmentComplete ? 'Hair assessment complete' : 'Take the Hair Test',
-        'desc': assessmentComplete
-            ? 'Your answers are saved and guide your care journey.'
-            : 'Answer questions about your lifestyle and scalp to get started.',
-      },
-      {
-        'step': '2',
-        'title': assessmentComplete ? 'Personalized care plan' : 'Scalp analysis',
-        'desc': assessmentComplete
-            ? 'Your personalized care plan is ready to explore.'
-            : 'Continue your assessment to create a plan for your scalp.',
-      },
-      {
-        'step': '3',
-        'title': 'Daily routine',
-        'desc': assessmentComplete && hasRoutine
-            ? '$completedRoutine of ${careState.routineTasks.length} care steps completed.'
-            : 'Build a consistent routine from your personalized care steps.',
-      },
-      {
-        'step': '4',
-        'title': 'Track Progress',
-        'desc': assessmentComplete
-            ? 'Your progress journal is ready for check-ins and photo updates.'
-            : 'Track your journey with regular check-ins and photo updates.',
-      },
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Restoration Journey',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-            ),
-          ),
-          const SizedBox(height: 18),
-          ...steps.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final isLast = index == steps.length - 1;
-
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: assessmentComplete || index == 0
-                              ? AppColors.primary
-                              : AppColors.primary5,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: assessmentComplete || index == 0
-                                ? AppColors.primary
-                                : AppColors.primary100,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            item['step']!,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: assessmentComplete || index == 0
-                                  ? Colors.white
-                                  : AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (!isLast)
-                        Expanded(
-                          child: Container(
-                            width: 2,
-                            color: AppColors.primary100,
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title']!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['desc']!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.secondaryDark,
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  // --- SECTION 8: VIDEO STORIES ---
   Widget _buildVideoStories(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1022,104 +994,6 @@ class _HomeViewState extends State<HomeView>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // --- SECTION 9: LOCAL JOURNEY ACTION ---
-  Widget _buildJourneyCard() {
-    return BlocBuilder<HairTestCubit, HairTestState>(
-      builder: (context, hairState) => BlocBuilder<CareCubit, CareState>(
-        builder: (context, careState) {
-          final action = HomeJourneySelector.select(
-            hairState: hairState,
-            careState: careState,
-          );
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: AppColors.border),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x080D1B2A),
-                    blurRadius: 14,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'YOUR CARE JOURNEY',
-                    style: TextStyle(
-                      color: AppColors.secondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    action.title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    action.description,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () {
-                        switch (action.destination) {
-                          case HomeJourneyDestination.assessment:
-                            widget.onStartHairTest();
-                          case HomeJourneyDestination.routine:
-                            if (hairState.isCompleted && !hairState.isRetesting) {
-                              context.push(RouteNames.routine);
-                            } else {
-                              showAssessmentRequiredSheet(context);
-                            }
-                          case HomeJourneyDestination.progress:
-                            if (hairState.isCompleted && !hairState.isRetesting) {
-                              context.push(RouteNames.progress);
-                            } else {
-                              showAssessmentRequiredSheet(context);
-                            }
-                        }
-                      },
-                      icon: const Icon(Icons.arrow_forward_rounded),
-                      label: Text(action.buttonLabel),
-                    ),
-                  ),
-                  if (hairState.isCompleted && !hairState.isRetesting) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      'Assessment results are informational and are not a medical diagnosis.',
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: AppColors.textMuted),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -1248,6 +1122,13 @@ class _HomeViewState extends State<HomeView>
                 ),
               ),
             ],
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.only(left: 20, top: 4),
+          child: Text(
+            'Sample testimonials shown for this app demo.',
+            style: TextStyle(fontSize: 11, color: AppColors.secondaryDark),
           ),
         ),
         const SizedBox(height: 16),

@@ -25,6 +25,13 @@ class _CheckoutViewState extends State<CheckoutView> {
   List<DeliveryAddress> _addresses = DeliveryAddress.defaultAddresses();
   DeliveryAddress? _selectedAddress;
 
+  int get _checkoutAmount {
+    final cart = context.read<CartCubit?>()?.state;
+    if (cart != null && cart.items.isNotEmpty) return cart.subtotal;
+    // Keeps standalone demo previews and older route links usable.
+    return widget.amount;
+  }
+
   void _openAddressSheet() {
     DeliveryAddressBottomSheet.show(
       context: context,
@@ -58,7 +65,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     context.read<CareCubit>().saveLocalOrderPreview(
       deliveryAddress: '${address.name}, ${address.formattedAddress}, ${address.phone}',
       items: items.map((item) => '${item['title']} × ${item['quantity']}').toList(),
-      totalAmount: widget.amount,
+      totalAmount: _checkoutAmount,
     );
     AppToast.show(context, const SnackBar(content: Text('Local preview saved. No payment was taken and nothing was sent for delivery.')));
     context.push(RouteNames.orders);
@@ -66,6 +73,10 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   @override
   Widget build(BuildContext context) {
+    final cartState = context.watch<CartCubit?>()?.state;
+    final amount = cartState != null && cartState.items.isNotEmpty
+        ? cartState.subtotal
+        : widget.amount;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -105,6 +116,16 @@ class _CheckoutViewState extends State<CheckoutView> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+
+            const Text(
+              'Sample addresses are provided for this demo. Saving an order here does not arrange delivery.',
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.35,
+                color: AppColors.secondaryDark,
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -319,13 +340,13 @@ class _CheckoutViewState extends State<CheckoutView> {
               ),
               child: Column(
                 children: [
-                  _SummaryRow('Items Total', '₹${widget.amount}'),
+                  _SummaryRow('Items Total', '₹$amount'),
                   const _SummaryRow('Express Delivery', 'FREE'),
                   const _SummaryRow('Doctor Review Fee', 'WAIVED'),
                   const Divider(color: AppColors.border, height: 10),
                   _SummaryRow(
                     'Total Payable',
-                    '₹${widget.amount}',
+                    '₹$amount',
                     isTotal: true,
                   ),
                 ],
@@ -351,7 +372,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Save local order preview • ₹${widget.amount}',
+                      'Save local order preview • ₹$amount',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,

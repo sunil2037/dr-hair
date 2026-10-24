@@ -76,11 +76,11 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(status: AuthStatus.loading, clearError: true));
     await Future.delayed(const Duration(milliseconds: 300));
 
-    if (otp.length != 6 || !RegExp(r'^\d{6}$').hasMatch(otp)) {
+    if (otp.trim() != '123456') {
       emit(
         state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: 'Invalid verification code. Please enter 6 digits.',
+          errorMessage: 'Use the demo code 123456 to continue.',
         ),
       );
       return false;
@@ -179,6 +179,8 @@ class AuthCubit extends Cubit<AuthState> {
   void updateProfile({
     String? name,
     String? emailOrPhone,
+    String? email,
+    String? phone,
     String? photoUrl,
     bool clearPhoto = false,
   }) {
@@ -186,6 +188,8 @@ class AuthCubit extends Cubit<AuthState> {
     final updated = current.copyWith(
       name: name,
       emailOrPhone: emailOrPhone,
+      email: email,
+      phone: phone,
       photoUrl: photoUrl,
       clearPhotoUrl: clearPhoto,
     );

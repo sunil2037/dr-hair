@@ -21,7 +21,7 @@ void main() {
     }
 
     testWidgets(
-      'renders completion summary and honest diagnostic disclaimer when submitted',
+    'renders the assessment summary and clear screening note when submitted',
       (tester) async {
         await tester.pumpWidget(createTestApp());
         await tester.pumpAndSettle();
@@ -60,23 +60,23 @@ void main() {
 
         // Completion screen checks
         expect(find.text('Assessment complete'), findsOneWidget);
-        expect(find.text('ASSESSMENT PROFILE SUMMARY'), findsOneWidget);
+        expect(find.text('WHAT YOU SHARED'), findsOneWidget);
         expect(find.text('Receding Hairline (Temples)'), findsOneWidget);
         expect(find.text('6 - 12 months'), findsOneWidget);
         expect(find.text('Moderate'), findsOneWidget);
 
         // Honest clinical disclaimer checks
         expect(
-          find.text('Algorithmic Assessment · Session Preview'),
+          find.text('How to use this result'),
           findsOneWidget,
         );
         expect(
-          find.textContaining('not a certified doctor’s clinical diagnosis'),
+          find.textContaining('is not a medical diagnosis'),
           findsOneWidget,
         );
         expect(
-          find.textContaining('POST /api/v1/assessment/submit'),
-          findsOneWidget,
+          find.textContaining('/api/v1/assessment/submit'),
+          findsNothing,
         );
 
         // Reset on Done

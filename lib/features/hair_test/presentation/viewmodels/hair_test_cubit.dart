@@ -7,7 +7,8 @@ import '../../../../core/storage/app_local_cache.dart';
 import 'hair_test_state.dart';
 
 class HairTestCubit extends Cubit<HairTestState> {
-  static const String _draftKey = 'hair_test_draft_v1';
+  static const String _draftKey = 'hair_test_draft_v2';
+  static const String _legacyDraftKey = 'hair_test_draft_v1';
   final ImagePicker _imagePicker;
   final AppLocalCache _cache;
 
@@ -18,6 +19,9 @@ class HairTestCubit extends Cubit<HairTestState> {
 
   Future<void> loadSavedState() async {
     try {
+      // The previous draft stored duration and scalp answers in the same
+      // field. Discard it so the corrected questionnaire starts uncorrupted.
+      await _cache.remove(_legacyDraftKey);
       final hasCompleted = _cache.getBool('has_completed_hair_test') ?? false;
       var restored = state;
       final rawDraft = _cache.getString(_draftKey);
@@ -25,7 +29,9 @@ class HairTestCubit extends Cubit<HairTestState> {
         try {
           final draft = jsonDecode(rawDraft) as Map<String, dynamic>;
           restored = state.copyWith(
-            currentStep: (draft['currentStep'] as num?)?.toInt(),
+            currentStep: ((draft['currentStep'] as num?)?.toInt() ?? 0)
+                .clamp(0, state.totalSteps - 1)
+                .toInt(),
             isRetesting: draft['isRetesting'] as bool? ?? false,
             name: draft['name'] as String?,
             age: draft['age'] as String?,
@@ -88,37 +94,14 @@ class HairTestCubit extends Cubit<HairTestState> {
   }
 
   String? _validationMessageForCurrentStep() {
-    switch (state.currentStep) {
-      case 0:
-        return state.selectedGender == null
-            ? 'Choose an option to continue.'
-            : null;
-      case 1:
-        return state.stage == null && state.primaryConcern == null
-            ? 'Choose your hair fall stage or primary concern to continue.'
-            : null;
-      case 2:
-        return state.dandruff == null && state.duration == null
-            ? 'Choose your scalp condition or hair fall duration to continue.'
-            : null;
-      case 3:
-        return state.stressLevel == null && state.gutHealth == null
-            ? 'Choose your lifestyle & stress pattern to continue.'
-            : null;
-      case 4:
-        return [
-              'Front Hairline',
-              'Crown / Top',
-              'Side Profile / Temples',
-            ].every(state.hasPhoto)
-            ? null
-            : 'Add all three scalp photos before submitting.';
-      default:
-        return null;
-    }
+    return _validationMessageForState(state, state.currentStep);
   }
 
   Future<void> skipPhotosAndSubmit() async {
+    if (state.currentStep != state.totalSteps - 1) {
+      emit(state.copyWith(errorMessage: 'Complete the questions before submitting.'));
+      return;
+    }
     await submitTest();
   }
 
@@ -135,6 +118,13 @@ class HairTestCubit extends Cubit<HairTestState> {
   }
 
   Future<void> submitTest() async {
+    for (var step = 0; step < state.totalSteps - 1; step++) {
+      final message = _validationMessageForStep(step);
+      if (message != null) {
+        emit(state.copyWith(currentStep: step, errorMessage: message));
+        return;
+      }
+    }
     emit(
       state.copyWith(
         isSubmitted: true,
@@ -156,6 +146,33 @@ class HairTestCubit extends Cubit<HairTestState> {
       await _cache.put('hair_test_age', state.age);
       await _cache.put(_draftKey, jsonEncode(_draftJson()));
     } catch (_) {}
+  }
+
+  String? _validationMessageForStep(int step) {
+    final answerState = state.copyWith(currentStep: step);
+    // Keep the same validation rules for forward navigation and submission.
+    return _validationMessageForState(answerState, step);
+  }
+
+  String? _validationMessageForState(HairTestState value, int step) {
+    switch (step) {
+      case 0:
+        return value.selectedGender == null ? 'Choose an option to continue.' : null;
+      case 1:
+        return value.stage == null ? 'Choose your hair fall stage or primary concern to continue.' : null;
+      case 2:
+        return value.duration == null ? 'Choose how long you have noticed hair loss to continue.' : null;
+      case 3:
+        return value.dandruff == null ? 'Choose a scalp condition to continue.' : null;
+      case 4:
+        return value.stressLevel == null ? 'Choose a stress level to continue.' : null;
+      case 5:
+        return value.gutHealth == null ? 'Choose a digestion and gut-health option to continue.' : null;
+      case 6:
+        return null;
+      default:
+        return null;
+    }
   }
 
   void startRetest() {
@@ -317,6 +334,7 @@ class HairTestCubit extends Cubit<HairTestState> {
   Future<void> clearSavedAssessment() async {
     for (final key in [
       _draftKey,
+      _legacyDraftKey,
       'has_completed_hair_test',
       'hair_test_stage',
       'hair_test_dandruff',

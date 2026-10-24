@@ -153,7 +153,7 @@ void main() {
       expect(authCubit.state.isAuthenticated, isTrue);
       expect(find.text('Login'), findsNothing);
       expect(find.byType(HomeView), findsOneWidget);
-      expect(find.text('Clinically Approved'), findsOneWidget);
+      expect(find.text('Personal Care'), findsOneWidget);
     });
   });
 }

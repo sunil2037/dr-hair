@@ -84,7 +84,7 @@ void main() {
       // Report is displayed once submitted
       expect(find.text('Assessment Report'), findsOneWidget);
       expect(find.text('Assessment complete'), findsOneWidget);
-      expect(find.text('Browse Recommended Regimen'), findsOneWidget);
+      expect(find.text('Explore recommended products'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
 
       // Bottom price bar elements must NOT exist
@@ -118,9 +118,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Assessment Report'), findsOneWidget);
-      expect(find.text('Dandruff'), findsOneWidget);
-      expect(find.text('Nutrition'), findsOneWidget);
-      expect(find.text('Lifestyle'), findsOneWidget);
+      expect(find.text('WHAT YOU SHARED'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       cubit.close();

@@ -51,7 +51,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
     'Benefits',
     'Ingredients',
     'How to Use',
-    'Clinical Results',
+    'Sample Results',
   ];
 
   @override
@@ -393,6 +393,24 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                           color: AppColors.secondaryDark,
                           height: 1.4,
                           fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary5,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.primary100),
+                        ),
+                        child: const Text(
+                          'Demo catalog: product details and outcome figures are sample content for presentation. They are not a personal recommendation or a medical diagnosis.',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            height: 1.35,
+                            color: AppColors.secondaryDark,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -1292,7 +1310,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
           }).toList(),
         );
 
-      case 3: // Clinical Results
+      case 3: // Sample Results
       default:
         return Column(
           key: const ValueKey('clinical_tab'),

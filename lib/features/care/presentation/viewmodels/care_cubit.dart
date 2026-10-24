@@ -555,7 +555,23 @@ class CareCubit extends Cubit<CareState> {
   }
 
   // --- COACH BOOKING ACTIONS ---
-  void bookCoach({
+  bool isCoachSlotTaken({
+    required DateTime date,
+    required String timeSlot,
+    String? ignoreBookingId,
+  }) {
+    return state.coachBookings.any((booking) {
+      if (booking.id == ignoreBookingId || booking.status == 'Cancelled') {
+        return false;
+      }
+      return booking.date.year == date.year &&
+          booking.date.month == date.month &&
+          booking.date.day == date.day &&
+          booking.timeSlot == timeSlot;
+    });
+  }
+
+  bool bookCoach({
     required String coachName,
     required String role,
     required String avatarUrl,
@@ -563,7 +579,15 @@ class CareCubit extends Cubit<CareState> {
     required String timeSlot,
     required String consultationType,
     required String notes,
+    String? ignoreBookingId,
   }) {
+    if (isCoachSlotTaken(
+      date: date,
+      timeSlot: timeSlot,
+      ignoreBookingId: ignoreBookingId,
+    )) {
+      return false;
+    }
     final newBooking = CoachBooking(
       id: 'cb_${DateTime.now().millisecondsSinceEpoch}',
       coachName: coachName,
@@ -578,6 +602,7 @@ class CareCubit extends Cubit<CareState> {
 
     emit(state.copyWith(coachBookings: [newBooking, ...state.coachBookings]));
     _persistBookings();
+    return true;
   }
 
   void cancelCoachBooking(String id) {
@@ -674,6 +699,33 @@ class CareCubit extends Cubit<CareState> {
       await cache.remove(key);
     }
     await cache.put(_careDataClearedKey, true);
+  }
+
+  /// Resets interactive care flows to their original demo fixtures.
+  Future<void> resetForDemo() async {
+    final service =
+        _notificationService ?? await CareNotificationService.create();
+    for (final reminder in state.reminders) {
+      await service.cancelReminder(reminder.id);
+    }
+
+    final cache = AppLocalCache.instance;
+    for (final key in [
+      _checkInsKey,
+      _bookingsKey,
+      _ordersKey,
+      _routineHistoryKey,
+      _careDataClearedKey,
+      'care_persisted_routine_v1',
+      'care_persisted_reminders_v1',
+      'care_persisted_routine_day_v1',
+      'care_notification_permission_status',
+    ]) {
+      await cache.remove(key);
+    }
+
+    _initializeDefaultData();
+    await _initPersistence();
   }
 
   // --- DIET & WATER ACTIONS ---

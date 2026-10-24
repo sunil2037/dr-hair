@@ -1,5 +1,4 @@
-/// Represents the assessment state inspired by Traya clinical root cause analysis,
-/// diagnostics, stage classification, and persistent completion status.
+/// Holds the user's assessment answers and completion status.
 class HairTestState {
   final int currentStep;
   final int totalSteps;
@@ -22,7 +21,7 @@ class HairTestState {
 
   const HairTestState({
     this.currentStep = 0,
-    this.totalSteps = 5,
+    this.totalSteps = 8,
     this.name = 'Sahil',
     this.age = '23',
     this.selectedGender,
@@ -88,31 +87,28 @@ class HairTestState {
   bool hasPhoto(String label) =>
       photos.containsKey(label) && photos[label] != null && photos[label]!.isNotEmpty;
 
-  /// Traya-style Diagnosed Condition & Stage
-  String get diagnosedTitle {
-    if (stage != null && stage!.contains('Stage 2')) {
-      return 'Stage-2, Progressive Hair Fall';
-    } else if (stage != null && stage!.contains('Stage 3')) {
-      return 'Stage-3, Advanced Follicular Thinning';
-    }
-    return 'Stage-1, Male Pattern Hair Fall';
+  /// Plain-language summary based on the answers selected by the user.
+  String get assessmentSummary {
+    final concern = primaryConcern?.trim();
+    return stage ??
+        (concern == null || concern.isEmpty ? 'Hair concern summary' : concern);
   }
 
-  /// Estimated Timeline for Visual Regrowth
-  String get resultsTimeline {
-    if (stage != null && stage!.contains('Stage 3')) {
-      return '7 - 8 months';
-    } else if (stage != null && stage!.contains('Stage 2')) {
-      return '6 months';
-    }
-    return '5 months';
-  }
-
-  /// Description of the diagnosed stage
+  /// Cautious explanation of the selected stage, not a medical diagnosis.
   String get stageDescription {
     if (stage != null && stage!.contains('Stage 2')) {
-      return 'Stage 2 hair fall involves noticeable receding at the hairline and early thinning on the crown.\n\nFollicles are actively miniaturizing from DHT and scalp inflammation, but can be revitalized with a consistent 3-month medical regimen.';
+      return 'Your answers suggest a Stage 2 hair-thinning pattern, such as a receding hairline or early crown thinning. This screening summary cannot confirm the cause; a qualified clinician can assess it with you.';
     }
-    return 'Stage 1 male pattern hair fall is marked by minor hair thinning at the crown or front of your head.\n\nHair follicle damage is very mild at this stage and can be easily stopped from progressing further if the regimen is started early.';
+    if (stage != null && stage!.contains('Stage 3')) {
+      return 'Your answers suggest a more noticeable hair-thinning pattern. This screening summary cannot confirm the cause; a qualified clinician can assess it with you.';
+    }
+    if (stage != null && stage!.contains('Stage 1')) {
+      return 'Your answers suggest an early hair-thinning pattern. This screening summary cannot confirm the cause; a qualified clinician can assess it with you.';
+    }
+    final concern = primaryConcern?.trim();
+    if (concern != null && concern.isNotEmpty) {
+      return 'You shared $concern as your main concern. This summary is a starting point, not a diagnosis; a qualified clinician can assess it with you.';
+    }
+    return 'Your answers provide a starting point for discussing your hair concerns with a qualified clinician.';
   }
 }

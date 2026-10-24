@@ -21,6 +21,7 @@ import '../../features/static/presentation/views/contact_view.dart';
 import '../../features/static/presentation/views/policy_page_view.dart';
 import '../../features/treatment/presentation/views/treatment_details_view.dart';
 import '../../features/videos/presentation/views/videos_view.dart';
+import '../widgets/assessment_gate.dart';
 import '../../features/care/presentation/views/coach_booking_view.dart';
 import '../../features/care/presentation/views/diet_plan_view.dart';
 import '../../features/care/presentation/views/order_tracking_view.dart';
@@ -100,7 +101,9 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.assessmentResult,
-        builder: (context, state) => const AssessmentResultView(),
+        builder: (context, state) => AssessmentRequiredRoute(
+          child: const AssessmentResultView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.updateProfile,
@@ -108,7 +111,9 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.treatmentDetails,
-        builder: (context, state) => const TreatmentDetailsView(),
+        builder: (context, state) => AssessmentRequiredRoute(
+          child: const TreatmentDetailsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.cart,
@@ -151,11 +156,17 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.routine,
-        builder: (context, state) => const RoutineTrackerView(),
+        builder: (context, state) => AssessmentRequiredRoute(
+          child: const RoutineTrackerView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.progress,
-        builder: (context, state) => const ProgressTrackingView(),
+        builder: (context, state) => AssessmentRequiredRoute(
+          child: ProgressTrackingView(
+            autoOpenAddCheckIn: state.extra is bool && state.extra == true,
+          ),
+        ),
       ),
       GoRoute(
         path: RouteNames.coachBooking,
@@ -167,11 +178,15 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.dietPlan,
-        builder: (context, state) => const DietPlanView(),
+        builder: (context, state) => AssessmentRequiredRoute(
+          child: const DietPlanView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.reminders,
-        builder: (context, state) => const RemindersView(),
+        builder: (context, state) => AssessmentRequiredRoute(
+          child: const RemindersView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.orders,

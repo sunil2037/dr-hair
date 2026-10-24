@@ -840,7 +840,7 @@ class _CartViewState extends State<CartView> {
                 child: ElevatedButton(
                   onPressed: () {
                     HapticFeedback.lightImpact();
-                    context.push(RouteNames.checkout, extra: _totalAmount);
+                    context.push(RouteNames.checkout);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -191,7 +192,7 @@ class OrderTrackingView extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Step ${(animValue.clamp(0, order.currentStep) + 1).toInt()} of 5 · ${order.status}',
+                                    'Step ${(animValue.clamp(0, math.max(0, order.currentStep)) + 1).toInt()} of 5 · ${order.status}',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,

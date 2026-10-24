@@ -25,7 +25,7 @@ void main() {
   }
 
   testWidgets(
-    'HomeView renders sections in the requested hierarchy: Hero -> Products -> Restoration Journey -> Book Appointment -> Care Journey -> Urgent Care',
+    'HomeView prioritizes products and care access before optional information',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -40,31 +40,20 @@ void main() {
       // Verify the presence of key sections
       expect(find.byType(HomeView), findsOneWidget);
       expect(find.text('Essential Products'), findsOneWidget);
-      expect(find.text('Your Restoration Journey'), findsOneWidget);
       expect(find.text('Prefer expert guidance?'), findsOneWidget);
-      expect(find.text('YOUR CARE JOURNEY'), findsOneWidget);
       expect(find.text('URGENT CARE'), findsOneWidget);
+      expect(find.text('Explore Dr.Hair'), findsOneWidget);
+      expect(find.text('Free Hair Test'), findsOneWidget);
 
       // Verify vertical positioning order:
-      // Products (top content) is above Restoration Journey
       final productsTop = tester.getTopLeft(find.text('Essential Products')).dy;
-      final restorationTop =
-          tester.getTopLeft(find.text('Your Restoration Journey')).dy;
-      expect(productsTop, lessThan(restorationTop));
-
-      // Restoration Journey is above Book Appointment
       final appointmentTop =
           tester.getTopLeft(find.text('Prefer expert guidance?')).dy;
-      expect(restorationTop, lessThan(appointmentTop));
-
-      // Book Appointment is above Care Journey
-      final careJourneyTop =
-          tester.getTopLeft(find.text('YOUR CARE JOURNEY')).dy;
-      expect(appointmentTop, lessThan(careJourneyTop));
-
-      // Care Journey is above Urgent Care
       final urgentCareTop = tester.getTopLeft(find.text('URGENT CARE')).dy;
-      expect(careJourneyTop, lessThan(urgentCareTop));
+      final moreContentTop = tester.getTopLeft(find.text('Explore Dr.Hair')).dy;
+      expect(productsTop, lessThan(appointmentTop));
+      expect(appointmentTop, lessThan(urgentCareTop));
+      expect(urgentCareTop, lessThan(moreContentTop));
     },
   );
 
@@ -81,8 +70,9 @@ void main() {
     await tester.pumpWidget(buildHomeView());
     await tester.pumpAndSettle();
 
-    // Scroll down to reveal reviews and video stories
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -600));
+    // Optional editorial content stays collapsed until requested.
+    await tester.ensureVisible(find.text('Explore Dr.Hair'));
+    await tester.tap(find.text('Explore Dr.Hair'));
     await tester.pumpAndSettle();
 
     expect(find.text('Voices of Success'), findsOneWidget);

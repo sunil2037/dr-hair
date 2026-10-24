@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/routes/route_names.dart';
 import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
 import '../widgets/add_routine_task_bottom_sheet.dart';
@@ -20,6 +22,8 @@ class RoutineTrackerView extends StatelessWidget {
       builder: (context, state) {
         final progress = state.routineProgress;
         final isAllCompleted = progress >= 1.0 && state.routineTasks.isNotEmpty;
+        final today = DateTime.now();
+        final weekStart = today.subtract(Duration(days: today.weekday - 1));
 
         return CarePageScaffold(
           title: 'Daily Routine',
@@ -146,8 +150,12 @@ class RoutineTrackerView extends StatelessWidget {
                           .map((entry) {
                             final idx = entry.key;
                             final label = entry.value;
-                            final isPassed = idx < 4; // demo days
-                            final isToday = idx == 4;
+                            final date = weekStart.add(Duration(days: idx));
+                            final dayKey =
+                                '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                            final isPassed = state.routineCompletionDays
+                                .contains(dayKey);
+                            final isToday = date.weekday == today.weekday;
                             return Column(
                               children: [
                                 Container(
@@ -204,9 +212,28 @@ class RoutineTrackerView extends StatelessWidget {
                 ),
               ),
 
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () => context.push(RouteNames.reminders),
+                      icon: const Icon(LucideIcons.bell, size: 16),
+                      label: const Text('Set a reminder'),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () => context.push(RouteNames.progress),
+                      icon: const Icon(LucideIcons.camera, size: 16),
+                      label: const Text('View progress journal'),
+                    ),
+                  ),
+                ],
+              ),
+
               careSectionHeader(
                 title: 'TODAY’S CARE STEPS',
-                subtitle: 'Tap each item as you complete your treatment',
+                subtitle: 'Tap an item when you complete that step today',
               ),
 
               // Interactive Routine Steps List

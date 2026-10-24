@@ -163,14 +163,15 @@ class _CoachBookingViewState extends State<CoachBookingView> {
     final endUtc = _formatUtcForCalendar(end);
 
     final title = Uri.encodeComponent(
-      'Dr. Hair In-Clinic Visit - ${doctor['name']}',
+      'Dr. Hair demo visit - ${doctor['name']}',
     );
     final location = Uri.encodeComponent('$clinicName, $clinicAddress');
     final details = Uri.encodeComponent(
-      'Physical consultation with ${doctor['name']} (${doctor['role']}) at Dr. Hair Clinic.\n'
+      'Demo reminder only. This app preview has not booked or notified the clinic.\n'
+      'Sample consultation with ${doctor['name']} (${doctor['role']}) at Dr. Hair Clinic.\n'
       'Address: $clinicAddress\n'
       'Clinic Phone: $clinicPhone\n'
-      'Guidelines: Please arrive 10 minutes early for 60x Scalp Dermoscopy scan.',
+      'This is only a calendar reminder from the demo; the clinic has not been notified.',
     );
 
     final googleUrl = Uri.parse(
@@ -221,10 +222,10 @@ class _CoachBookingViewState extends State<CoachBookingView> {
       'DTSTAMP:$stampUtc',
       'DTSTART:$startUtc',
       'DTEND:$endUtc',
-      'SUMMARY:Dr. Hair In-Clinic Visit - ${doctor['name']}',
-      'DESCRIPTION:Physical consultation with ${doctor['name']} (${doctor['role']}) at Dr. Hair Clinic. Arrive 10 minutes prior for scalp dermoscopy scan. Phone: $clinicPhone',
+      'SUMMARY:Dr. Hair demo visit - ${doctor['name']}',
+      'DESCRIPTION:Demo reminder only. This app preview has not booked or notified the clinic. Sample consultation with ${doctor['name']} (${doctor['role']}) at Dr. Hair Clinic. Phone: $clinicPhone',
       'LOCATION:$clinicAddress',
-      'STATUS:CONFIRMED',
+      'STATUS:TENTATIVE',
       'BEGIN:VALARM',
       'TRIGGER:-PT60M',
       'ACTION:DISPLAY',
@@ -249,8 +250,8 @@ class _CoachBookingViewState extends State<CoachBookingView> {
         await SharePlus.instance.share(
           ShareParams(
             text:
-                'Dr. Hair In-Clinic Appointment with ${doctor['name']} on ${careMonthName(date.month)} ${date.day}, ${date.year} at $slot.\nLocation: $clinicAddress\nPhone: $clinicPhone',
-            subject: 'Dr. Hair Clinic Appointment - ${doctor['name']}',
+                'Demo reminder for a sample Dr. Hair visit with ${doctor['name']} on ${careMonthName(date.month)} ${date.day}, ${date.year} at $slot. The clinic has not been notified.\nLocation: $clinicAddress\nPhone: $clinicPhone',
+            subject: 'Dr. Hair Demo Visit - ${doctor['name']}',
           ),
         );
       }
@@ -259,8 +260,8 @@ class _CoachBookingViewState extends State<CoachBookingView> {
         await SharePlus.instance.share(
           ShareParams(
             text:
-                'Dr. Hair In-Clinic Appointment with ${doctor['name']} on ${careMonthName(date.month)} ${date.day}, ${date.year} at $slot.\nLocation: $clinicAddress\nPhone: $clinicPhone',
-            subject: 'Dr. Hair Clinic Appointment - ${doctor['name']}',
+                'Demo reminder for a sample Dr. Hair visit with ${doctor['name']} on ${careMonthName(date.month)} ${date.day}, ${date.year} at $slot. The clinic has not been notified.\nLocation: $clinicAddress\nPhone: $clinicPhone',
+            subject: 'Dr. Hair Demo Visit - ${doctor['name']}',
           ),
         );
       } catch (_) {
@@ -364,7 +365,7 @@ class _CoachBookingViewState extends State<CoachBookingView> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Appointment Confirmed!',
+                'Demo booking saved',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -374,7 +375,7 @@ class _CoachBookingViewState extends State<CoachBookingView> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'In-Person Consultation Pass · Jaipur Clinic',
+                'Sample appointment · not sent to the clinic',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -424,7 +425,7 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
-                            'CONFIRMED',
+                            'DEMO SAVED',
                             style: TextStyle(
                               fontSize: 9.5,
                               fontWeight: FontWeight.w800,
@@ -1212,6 +1213,15 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                     const SizedBox(height: 18),
 
                     // 4. Visit Notes (Optional)
+                    const Text(
+                      'Demo preview: this booking is saved on this device and is not sent to the clinic.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: AppColors.secondaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     careSectionHeader(title: 'VISIT NOTES (OPTIONAL)'),
                     TextField(
                       controller: _notesController,
@@ -1249,22 +1259,41 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                       width: double.infinity,
                       child: AppButton(
                         text: reschedulingBookingId == null
-                            ? 'Confirm In-Clinic Appointment'
-                            : 'Confirm New Appointment Time',
+                            ? 'Save demo appointment'
+                            : 'Save new demo time',
                         variant: AppButtonVariant.filled,
                         onPressed: () {
+                          final today = DateTime.now();
+                          final selectedDay = DateTime(
+                            _selectedDate.year,
+                            _selectedDate.month,
+                            _selectedDate.day,
+                          );
+                          final todayOnly = DateTime(
+                            today.year,
+                            today.month,
+                            today.day,
+                          );
+                          final selectedDateTime =
+                              _parseSlotDateTime(_selectedDate, _selectedSlot);
+                          if (selectedDay.isBefore(todayOnly) ||
+                              selectedDateTime.isBefore(today)) {
+                            AppToast.show(
+                              context,
+                              const SnackBar(
+                                content: Text('Choose a future appointment time.'),
+                                backgroundColor: AppColors.danger,
+                              ),
+                            );
+                            return;
+                          }
+                          final careCubit = context.read<CareCubit>();
                           final notesText = _notesController.text.trim();
                           final combinedNotes = notesText.isEmpty
                               ? 'In-person clinic consultation at Mansarovar, Jaipur.'
                               : 'In-person clinic consultation at Mansarovar, Jaipur. Note: $notesText';
 
-                          // Replace the old booking only after the new slot is confirmed.
-                          if (reschedulingBookingId != null) {
-                            context.read<CareCubit>().cancelCoachBooking(
-                              reschedulingBookingId,
-                            );
-                          }
-                          context.read<CareCubit>().bookCoach(
+                          final saved = careCubit.bookCoach(
                             coachName: doctor['name'] as String,
                             role: doctor['role'] as String,
                             avatarUrl: doctor['avatar'] as String,
@@ -1273,7 +1302,24 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                             consultationType:
                                 'Physical In-Clinic Visit · Jaipur',
                             notes: combinedNotes,
+                            ignoreBookingId: reschedulingBookingId,
                           );
+                          if (!saved) {
+                            AppToast.show(
+                              context,
+                              const SnackBar(
+                                content: Text(
+                                  'That time conflicts with a saved demo booking. Choose another slot.',
+                                ),
+                                backgroundColor: AppColors.danger,
+                              ),
+                            );
+                            return;
+                          }
+                          // Keep the old booking if the replacement slot is invalid.
+                          if (reschedulingBookingId != null) {
+                            careCubit.cancelCoachBooking(reschedulingBookingId);
+                          }
 
                           // Close booking bottom sheet
                           Navigator.pop(sheetContext);
@@ -1769,9 +1815,9 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                isAttended
-                                    ? 'Attended'
-                                    : (b.status as String? ?? 'Confirmed'),
+                                isCancelled
+                                    ? 'Cancelled'
+                                    : (isAttended ? 'Attended' : 'Demo saved'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,

@@ -42,9 +42,11 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
     _nameController = TextEditingController(
       text: authUser?.name ?? 'Yashveer Soni',
     );
-    _emailController = TextEditingController(text: 'yashveer@example.com');
+    _emailController = TextEditingController(
+      text: authUser?.email ?? 'yashveer@example.com',
+    );
     _phoneController = TextEditingController(
-      text: authUser?.emailOrPhone ?? '+91 98765 43210',
+      text: authUser?.phone ?? '+91 98765 43210',
     );
     _selectedImagePath = authUser?.photoUrl;
   }
@@ -106,12 +108,13 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
   }
 
   void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isSaving = true);
       final authCubit = context.read<AuthCubit?>();
       authCubit?.updateProfile(
         name: _nameController.text.trim(),
-        emailOrPhone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
         photoUrl: _selectedImagePath,
         clearPhoto: _isPhotoRemoved,
       );
@@ -294,6 +297,18 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                 icon: LucideIcons.phone,
                 keyboardType: TextInputType.phone,
               ),
+              const SizedBox(height: 8),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'This demo saves contact changes locally and does not verify them.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.35,
+                    color: AppColors.secondaryDark,
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 36),
 
@@ -362,9 +377,22 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          validator: (value) => value == null || value.trim().isEmpty
-              ? 'This field is required'
-              : null,
+          validator: (value) {
+            final input = value?.trim() ?? '';
+            if (input.isEmpty) return 'This field is required';
+            if (label == 'Email Address' &&
+                !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(input)) {
+              return 'Enter a valid email address';
+            }
+            if (label == 'Phone Number' &&
+                input.replaceAll(RegExp(r'\D'), '').length < 10) {
+              return 'Enter a valid phone number';
+            }
+            if (label == 'Full Name' && input.length < 2) {
+              return 'Enter at least 2 characters';
+            }
+            return null;
+          },
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
             filled: true,

@@ -6,7 +6,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../data/services/care_notification_service.dart';
 import '../../domain/models/care_models.dart';
 import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
@@ -71,7 +70,7 @@ class RemindersView extends StatelessWidget {
                   AppToast.show(context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
-                      content: Text('Reminder snoozed for 15 minutes.'),
+                      content: Text('Snooze preview set for 15 minutes. No alert will be sent in this demo.'),
                     ),
                   );
                 },
@@ -88,7 +87,7 @@ class RemindersView extends StatelessWidget {
                   AppToast.show(context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
-                      content: Text('Reminder snoozed for 1 hour.'),
+                      content: Text('Snooze preview set for 1 hour. No alert will be sent in this demo.'),
                     ),
                   );
                 },
@@ -107,7 +106,7 @@ class RemindersView extends StatelessWidget {
                   AppToast.show(context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
-                      content: Text('Reminder snoozed until 8:00 PM tonight.'),
+                      content: Text('Snooze preview set for 8:00 PM. No alert will be sent in this demo.'),
                     ),
                   );
                 },
@@ -115,36 +114,6 @@ class RemindersView extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showPermissionRecoveryDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Enable Notifications in Settings'),
-        content: Text(
-          CareNotificationService.getPermissionDeniedRecoveryAdvice(),
-          style: const TextStyle(fontSize: 14, height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Dismiss'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<CareCubit>().requestNotificationPermission(simulateDenial: false);
-            },
-            child: const Text('I Enabled It'),
-          ),
-        ],
       ),
     );
   }
@@ -174,7 +143,6 @@ class RemindersView extends StatelessWidget {
     return BlocBuilder<CareCubit, CareState>(
       builder: (context, state) {
         final reminders = state.reminders;
-        final permissionStatus = state.notificationPermissionStatus;
 
         return CarePageScaffold(
           title: 'Care Reminders',
@@ -192,123 +160,37 @@ class RemindersView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Permission / Consistency Banner
-              if (permissionStatus == NotificationPermissionStatus.denied)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.danger.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(LucideIcons.bellOff, color: AppColors.danger, size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Notifications Disabled',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.danger,
-                              ),
+              careCard(
+                backgroundColor: AppColors.primary5,
+                border: Border.all(color: AppColors.primary100),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(LucideIcons.bellRing, color: AppColors.primary, size: 22),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reminder demo',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Alerts cannot be triggered while system notifications are turned off.',
-                              style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
-                            ),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: () => _showPermissionRecoveryDialog(context),
-                              child: const Text(
-                                'How to enable in Settings →',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Schedules are saved on this device for the demo. This version does not send push notifications or trigger timed alerts.',
+                            style: TextStyle(fontSize: 12, height: 1.4, color: AppColors.secondaryDark),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )
-              else if (permissionStatus == NotificationPermissionStatus.notDetermined)
-                careCard(
-                  backgroundColor: AppColors.primary5,
-                  border: Border.all(color: AppColors.primary100),
-                  child: Row(
-                    children: [
-                      const Icon(LucideIcons.bellRing, color: AppColors.primary, size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Enable Dose Consistency Alerts',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'Get timed push alerts so active topical serums maintain continuous follicular contact.',
-                              style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () => context.read<CareCubit>().requestNotificationPermission(),
-                        child: const Text('Enable', style: TextStyle(fontWeight: FontWeight.w700)),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                careCard(
-                  backgroundColor: AppColors.primary5,
-                  border: Border.all(color: AppColors.primary100),
-                  child: const Row(
-                    children: [
-                      Icon(LucideIcons.bellRing, color: AppColors.primary, size: 22),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Smart Dose Consistency',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Notifications active. Settings persist across sessions and restart.',
-                              style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
 
               const SizedBox(height: 8),
 

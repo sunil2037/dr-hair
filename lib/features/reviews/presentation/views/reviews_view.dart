@@ -94,7 +94,7 @@ class _ReviewsViewState extends State<ReviewsView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
                       Text(
-                        'Clinical Reviews',
+                        'Patient Stories',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -104,7 +104,7 @@ class _ReviewsViewState extends State<ReviewsView> {
                       ),
                       SizedBox(height: 3),
                       Text(
-                        'Genuine feedback from verified DrHair patients',
+                        'Sample testimonials shown for this app demo',
                         style: TextStyle(
                           fontSize: 13,
                           color: AppColors.secondaryDark,
@@ -174,7 +174,7 @@ class _ReviewsViewState extends State<ReviewsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '10,000+ Verified Stories',
+                              'Demo review statistics',
                               style: TextStyle(
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w800,
@@ -183,7 +183,7 @@ class _ReviewsViewState extends State<ReviewsView> {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              '93% reported clinical reduction in shedding',
+                              'Sample outcomes · not clinical evidence',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: AppColors.secondaryDark,
@@ -366,10 +366,23 @@ class _ReviewCardState extends State<_ReviewCard> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(
-                              LucideIcons.circleCheck,
-                              color: AppColors.success,
-                              size: 15,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary5,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'DEMO',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
                             ),
                           ],
                         ),

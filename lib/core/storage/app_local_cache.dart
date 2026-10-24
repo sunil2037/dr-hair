@@ -8,6 +8,16 @@ class AppLocalCache {
 
   static const String boxName = 'dr_hair_cache';
   static const String _migrationKey = 'legacy_preferences_migrated_v1';
+  static const List<String> _legacyKeys = [
+    'has_completed_hair_test',
+    'hair_test_stage',
+    'hair_test_dandruff',
+    'hair_test_name',
+    'hair_test_age',
+    'care_notification_permission_status',
+    'care_persisted_reminders_v1',
+    'care_persisted_routine_v1',
+  ];
   static Box<dynamic>? _sharedBox;
 
   final Box<dynamic>? _box;
@@ -28,20 +38,9 @@ class AppLocalCache {
   static Future<void> _migrateLegacyPreferences(Box<dynamic> box) async {
     if (box.get(_migrationKey) == true) return;
 
-    const legacyKeys = <String>[
-      'has_completed_hair_test',
-      'hair_test_stage',
-      'hair_test_dandruff',
-      'hair_test_name',
-      'hair_test_age',
-      'care_notification_permission_status',
-      'care_persisted_reminders_v1',
-      'care_persisted_routine_v1',
-    ];
-
     try {
       final preferences = await SharedPreferences.getInstance();
-      for (final key in legacyKeys) {
+      for (final key in _legacyKeys) {
         final value = preferences.get(key);
         if (value != null && !box.containsKey(key)) {
           await box.put(key, value);
@@ -73,6 +72,21 @@ class AppLocalCache {
       await _box.delete(key);
     } else {
       _memoryStore?.remove(key);
+    }
+  }
+
+  /// Clears app-persisted user state while keeping migration from rerunning.
+  Future<void> clearAll() async {
+    if (_box != null) {
+      await _box.clear();
+      await _box.put(_migrationKey, true);
+      final preferences = await SharedPreferences.getInstance();
+      for (final key in _legacyKeys) {
+        await preferences.remove(key);
+      }
+    } else {
+      _memoryStore?.clear();
+      _memoryStore?[_migrationKey] = true;
     }
   }
 }

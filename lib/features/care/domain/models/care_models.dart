@@ -26,7 +26,7 @@ class ProgressCheckIn {
     required this.sheddingLevel,
     this.notes = '',
     this.densityRating = 4,
-    this.isDoctorReviewed = true,
+    this.isDoctorReviewed = false,
     this.doctorNote,
   });
 

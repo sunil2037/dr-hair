@@ -101,7 +101,7 @@ class _SigninViewState extends State<SigninView>
 
   void _proceedToOtp() {
     final rawPhone = _phoneController.text.trim();
-    if (rawPhone.length != 10 || !RegExp(r'^[0-9]{10}$').hasMatch(rawPhone)) {
+    if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(rawPhone)) {
       setState(() {
         _phoneError = 'Please enter a valid 10-digit mobile number';
       });
@@ -349,7 +349,8 @@ class _SigninViewState extends State<SigninView>
   // ---------------------------------------------------------------------------
   Widget _buildPhoneStep(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final isValid10Digits = _phoneController.text.trim().length == 10;
+    final isValid10Digits =
+        RegExp(r'^[6-9][0-9]{9}$').hasMatch(_phoneController.text.trim());
     final authState = context.watch<AuthCubit?>()?.state ?? const AuthState();
     final isBusy = _isLoading || authState.status == AuthStatus.loading;
 

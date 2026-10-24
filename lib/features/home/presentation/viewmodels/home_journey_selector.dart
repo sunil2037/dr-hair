@@ -29,6 +29,7 @@ class HomeJourneySelector {
       state.primaryConcern != null ||
       state.dandruff != null ||
       state.duration != null ||
+      state.familyHistory != null ||
       state.gutHealth != null ||
       state.stressLevel != null ||
       state.photos.isNotEmpty;

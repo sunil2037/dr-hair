@@ -152,7 +152,7 @@ class _AssessmentResultContentState extends State<_AssessmentResultContent> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Complete your 3-minute clinical hair analysis to view your personalized root cause diagnosis, stage assessment, and customized doctor regimen.',
+                        'Complete your hair assessment to review your answers and explore care options.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,

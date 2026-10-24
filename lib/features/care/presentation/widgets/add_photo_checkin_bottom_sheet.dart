@@ -331,6 +331,24 @@ class _AddPhotoCheckInBottomSheetState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 3-Angle Upload Section
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary5,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.primary100),
+                      ),
+                      child: const Text(
+                        'For easier comparison, use the same angles, distance, and lighting each time. Photos stay on this device in the demo and are not reviewed by a clinician.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: AppColors.secondaryDark,
+                        ),
+                      ),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/storage/app_local_cache.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../../../../core/widgets/assessment_gate.dart';
@@ -105,6 +107,45 @@ class ProfileView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _resetDemoData(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reset demo data?'),
+        content: const Text(
+          'This clears saved assessment answers and progress, resets your profile and cart, and restores the sample care records. You can run through the app again from the beginning.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Reset demo'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final hairCubit = context.read<HairTestCubit?>();
+    final careCubit = context.read<CareCubit?>();
+    final cartCubit = context.read<CartCubit?>();
+    final authCubit = context.read<AuthCubit?>();
+
+    await AppLocalCache.instance.clearAll();
+    await hairCubit?.clearSavedAssessment();
+    await careCubit?.resetForDemo();
+    cartCubit?.clear();
+    authCubit?.signOut();
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+
+    if (!context.mounted) return;
+    context.go(RouteNames.signin);
   }
 
   void _openPersonalizedFeature(BuildContext context, String route) {
@@ -235,7 +276,7 @@ class ProfileView extends StatelessWidget {
               iconColor: const Color(0xFF0D9488),
               iconBgColor: const Color(0xFFF0FDFA),
               title: 'Assessment result',
-              subtitle: 'View your clinical hair diagnosis report',
+              subtitle: 'Review your assessment answers and summary',
               onTap: () => context.push(RouteNames.assessmentResult),
             ),
             _ProfileMenuTile(
@@ -376,6 +417,10 @@ class ProfileView extends StatelessWidget {
           ]),
           const SizedBox(height: 24),
           _buildSignOutButton(context),
+          if (kDebugMode) ...[
+            const SizedBox(height: 10),
+            _buildDebugResetButton(context),
+          ],
           const SizedBox(height: 40),
           const Center(
             child: Column(
@@ -445,6 +490,25 @@ class ProfileView extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugResetButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _resetDemoData(context),
+        icon: const Icon(LucideIcons.rotateCcw, size: 17),
+        label: const Text('Reset demo data'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.secondaryDark,
+          side: const BorderSide(color: AppColors.border),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),

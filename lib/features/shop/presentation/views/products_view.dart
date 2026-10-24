@@ -427,6 +427,27 @@ class _ProductsViewState extends State<ProductsView>
                           context,
                         ),
                       ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+                        sliver: SliverToBoxAdapter(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary5,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.primary100),
+                            ),
+                            child: const Text(
+                              'Demo catalog: product details and outcome figures are sample content for presentation.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                height: 1.35,
+                                color: AppColors.secondaryDark,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       if (products.isEmpty)
                         SliverFillRemaining(
                           hasScrollBody: false,

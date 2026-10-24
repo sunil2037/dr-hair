@@ -16,7 +16,9 @@ import '../widgets/care_widgets.dart';
 /// Displays date-wise treatment photo check-in cards with 3 clinical angles
 /// (Front, Top, Back) and an animated spring expand/shrink FAB in bottom center.
 class ProgressTrackingView extends StatefulWidget {
-  const ProgressTrackingView({super.key});
+  final bool autoOpenAddCheckIn;
+
+  const ProgressTrackingView({super.key, this.autoOpenAddCheckIn = false});
 
   @override
   State<ProgressTrackingView> createState() => _ProgressTrackingViewState();
@@ -31,6 +33,11 @@ class _ProgressTrackingViewState extends State<ProgressTrackingView> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    if (widget.autoOpenAddCheckIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) AddPhotoCheckInBottomSheet.show(context);
+      });
+    }
   }
 
   @override
@@ -519,6 +526,61 @@ class _ProgressTrackingViewState extends State<ProgressTrackingView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              careCard(
+                backgroundColor: AppColors.primary5,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      LucideIcons.lightbulb,
+                      color: AppColors.primary,
+                      size: 19,
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Make comparisons easier',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Use similar lighting, distance, and angles each time. A monthly check-in can help you compare changes over time.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              height: 1.4,
+                              color: AppColors.secondaryDark,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            'Sample timeline entries are demo data. New photos are saved on this device and are not reviewed by a clinician.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              height: 1.35,
+                              color: AppColors.secondaryDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => AddPhotoCheckInBottomSheet.show(context),
+                  icon: const Icon(LucideIcons.camera, size: 15),
+                  label: const Text('Add check-in'),
+                ),
+              ),
               if (sortedCheckIns.isEmpty)
                 careCard(
                   child: Center(
