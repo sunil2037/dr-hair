@@ -63,10 +63,10 @@ class HomeJourneySelector {
 
     if (careState.routineTasks.isEmpty) {
       return const HomeJourneyAction(
-        title: 'Review your assessment summary',
-        description: 'Revisit your informational summary and explore care options when you’re ready.',
-        buttonLabel: 'View assessment',
-        destination: HomeJourneyDestination.assessment,
+        title: 'Your restoration journey is ready',
+        description: 'Start your daily care routine and track your progress over time.',
+        buttonLabel: 'Start daily routine',
+        destination: HomeJourneyDestination.routine,
       );
     }
 

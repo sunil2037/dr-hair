@@ -12,6 +12,7 @@ class CareNotificationService {
   static const String _permissionKey = 'care_notification_permission_status';
   static const String _remindersStorageKey = 'care_persisted_reminders_v1';
   static const String _routineStorageKey = 'care_persisted_routine_v1';
+  static const String _routineDayKey = 'care_persisted_routine_day_v1';
 
   final AppLocalCache? _cache;
 
@@ -110,6 +111,12 @@ class CareNotificationService {
       debugPrint('Failed to load routine tasks: $e');
       return null;
     }
+  }
+
+  String? loadRoutineDay() => _cache?.getString(_routineDayKey);
+
+  Future<void> saveRoutineDay(String day) async {
+    await _cache?.put(_routineDayKey, day);
   }
 
   /// Schedules a notification for a reminder without duplicates.

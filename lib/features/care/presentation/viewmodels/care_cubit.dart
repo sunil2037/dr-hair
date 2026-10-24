@@ -1,11 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/services/care_notification_service.dart';
 import '../../domain/models/care_models.dart';
+import '../../../../core/storage/app_local_cache.dart';
 import 'care_state.dart';
 
 class CareCubit extends Cubit<CareState> {
+  static const _checkInsKey = 'care_checkins_v1';
+  static const _bookingsKey = 'care_bookings_v1';
+  static const _ordersKey = 'care_orders_v1';
+  static const _routineHistoryKey = 'care_routine_completion_days_v1';
+  static const _careDataClearedKey = 'care_personal_data_cleared_v1';
   final CareNotificationService? _notificationService;
 
   CareCubit([this._notificationService]) : super(const CareState()) {
@@ -14,63 +22,85 @@ class CareCubit extends Cubit<CareState> {
   }
 
   Future<void> _initPersistence() async {
-    final service = _notificationService ?? await CareNotificationService.create();
+    final service =
+        _notificationService ?? await CareNotificationService.create();
     final status = service.getPermissionStatus();
     final persistedReminders = service.loadReminders();
     final persistedTasks = service.loadRoutineTasks();
+    final today = _localDayKey(DateTime.now());
+    final storedRoutineDay = service.loadRoutineDay();
+    final routineTasks = (persistedTasks ?? state.routineTasks)
+        .map(
+          (task) => storedRoutineDay == today
+              ? task
+              : task.copyWith(isCompleted: false),
+        )
+        .toList();
+    await service.saveRoutineTasks(routineTasks);
+    await service.saveRoutineDay(today);
+    final cache = AppLocalCache.instance;
+    final checkIns = _readList(
+      cache.getString(_checkInsKey),
+      ProgressCheckIn.fromJson,
+    );
+    final bookings = _readList(
+      cache.getString(_bookingsKey),
+      CoachBooking.fromJson,
+    );
+    final orders = _readList(cache.getString(_ordersKey), CareOrder.fromJson);
+    final routineDays = _readList<String>(
+      cache.getString(_routineHistoryKey),
+      (json) => json['day'] as String? ?? '',
+    );
 
     emit(
       state.copyWith(
         notificationPermissionStatus: status,
         reminders: persistedReminders ?? state.reminders,
-        routineTasks: persistedTasks ?? state.routineTasks,
+        routineTasks: routineTasks,
+        checkIns: checkIns ?? state.checkIns,
+        coachBookings: bookings ?? state.coachBookings,
+        orders: orders ?? state.orders,
+        routineCompletionDays: routineDays ?? state.routineCompletionDays,
       ),
     );
   }
 
   void _initializeDefaultData() {
+    if (AppLocalCache.instance.getBool(_careDataClearedKey) == true) return;
     final defaultCheckIns = [
       ProgressCheckIn(
         id: 'ci_1',
         date: DateTime.now().subtract(const Duration(days: 4)),
-        imagePath:
-            'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600',
+        imagePath: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600',
         scalpRegion: 'Crown / Vertex',
         sheddingLevel: 'Low / Normal',
-        notes:
-            'Noticeable increase in hair shaft thickness. Baby hairs visible around follicle borders.',
+        notes: 'Noticeable increase in hair shaft thickness. Baby hairs visible around follicle borders.',
         densityRating: 4,
         isDoctorReviewed: true,
-        doctorNote:
-            'Follicular miniaturization is reversing nicely. Maintain current 5% topical solution frequency.',
+        doctorNote: 'Follicular miniaturization is reversing nicely. Maintain current 5% topical solution frequency.',
       ),
       ProgressCheckIn(
         id: 'ci_2',
         date: DateTime.now().subtract(const Duration(days: 35)),
-        imagePath:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600',
+        imagePath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600',
         scalpRegion: 'Frontal Hairline',
         sheddingLevel: 'Moderate',
-        notes:
-            'Shedding during evening shampoo significantly reduced. Scalp irritation is gone.',
+        notes: 'Shedding during evening shampoo significantly reduced. Scalp irritation is gone.',
         densityRating: 3,
         isDoctorReviewed: true,
-        doctorNote:
-            'Good cellular response to the DHT blocker. Consistency is key during month 2-3.',
+        doctorNote: 'Good cellular response to the DHT blocker. Consistency is key during month 2-3.',
       ),
       ProgressCheckIn(
         id: 'ci_3',
         date: DateTime.now().subtract(const Duration(days: 75)),
-        imagePath:
-            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600',
+        imagePath: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600',
         scalpRegion: 'Crown / Vertex',
         sheddingLevel: 'Noticeable',
-        notes:
-            'Baseline consultation photo before starting customized formulation.',
+        notes: 'Baseline consultation photo before starting customized formulation.',
         densityRating: 2,
         isDoctorReviewed: true,
-        doctorNote:
-            'Baseline captured. Target: Stage 2 androgenetic thinning.',
+        doctorNote: 'Baseline captured. Target: Stage 2 androgenetic thinning.',
       ),
     ];
 
@@ -81,7 +111,7 @@ class CareCubit extends Cubit<CareState> {
         subtitle: 'Apply 1ml with dropper evenly on crown and hairline',
         category: 'Clinical Topical',
         timeOfDay: 'Evening',
-        isCompleted: true,
+        isCompleted: false,
       ),
       const RoutineTask(
         id: 'rt_2',
@@ -89,7 +119,7 @@ class CareCubit extends Cubit<CareState> {
         subtitle: '1 tablet post-breakfast with water',
         category: 'Oral Supplement',
         timeOfDay: 'Morning',
-        isCompleted: true,
+        isCompleted: false,
       ),
       const RoutineTask(
         id: 'rt_3',
@@ -149,8 +179,7 @@ class CareCubit extends Cubit<CareState> {
         id: 'cb_1',
         coachName: 'Dr. Priya Verma',
         role: 'Senior Trichologist & Clinical Lead',
-        avatarUrl:
-            'https://images.unsplash.com/photo-1594824813637-883a9e652a6a?q=80&w=300',
+        avatarUrl: 'https://images.unsplash.com/photo-1594824813637-883a9e652a6a?q=80&w=300',
         date: DateTime.now().add(const Duration(days: 2)),
         timeSlot: '11:30 AM',
         consultationType: 'Video Consultation (15 mins)',
@@ -166,32 +195,28 @@ class CareCubit extends Cubit<CareState> {
           type: 'Breakfast',
           name: 'Sprouted Moong & Paneer Omelette / Scramble',
           nutrients: 'Protein (22g) · Biotin · Iron',
-          benefit:
-              'Provides sulfur-rich amino acids required to produce keratin protein chains.',
+          benefit: 'Provides sulfur-rich amino acids required to produce keratin protein chains.',
           isCompleted: true,
         ),
         const DietMeal(
           type: 'Lunch',
           name: 'Palak Dal with Brown Rice & Raw Salad',
           nutrients: 'Folate · Zinc · Plant Iron',
-          benefit:
-              'Enhances red blood cell hemoglobin for optimal oxygen supply to roots.',
+          benefit: 'Enhances red blood cell hemoglobin for optimal oxygen supply to roots.',
           isCompleted: true,
         ),
         const DietMeal(
           type: 'Evening Snack',
           name: 'Roasted Pumpkin & Sunflower Seeds with Walnuts',
           nutrients: 'Omega-3 · Zinc · Magnesium',
-          benefit:
-              'Natural 5-alpha reductase enzyme inhibitor to counter follicular sensitivity.',
+          benefit: 'Natural 5-alpha reductase enzyme inhibitor to counter follicular sensitivity.',
           isCompleted: false,
         ),
         const DietMeal(
           type: 'Dinner',
           name: 'Steamed Greens with Soya Chunks or Grilled Fish',
           nutrients: 'Keratin building blocks · Vitamin E',
-          benefit:
-              'Supports nocturnal follicle matrix cellular regeneration.',
+          benefit: 'Supports nocturnal follicle matrix cellular regeneration.',
           isCompleted: false,
         ),
       ],
@@ -209,24 +234,21 @@ class CareCubit extends Cubit<CareState> {
           type: 'Lunch',
           name: 'Rajma / Chickpea Curry with Cucumber Raita',
           nutrients: 'Protein (18g) · B-Complex',
-          benefit:
-              'Aids DNA replication and active anagen phase elongation.',
+          benefit: 'Aids DNA replication and active anagen phase elongation.',
           isCompleted: false,
         ),
         const DietMeal(
           type: 'Evening Snack',
           name: 'Amla (Indian Gooseberry) Juice with Flax Crackers',
           nutrients: 'Vitamin C · Collagen Co-factor',
-          benefit:
-              'Powers scalp collagen synthesis and increases non-heme iron absorption.',
+          benefit: 'Powers scalp collagen synthesis and increases non-heme iron absorption.',
           isCompleted: false,
         ),
         const DietMeal(
           type: 'Dinner',
           name: 'Mixed Vegetable Khichdi with Ghee & Curd',
           nutrients: 'Butyric acid · Probiotics',
-          benefit:
-              'Healthy gut microbiome ensures complete micronutrient assimilation.',
+          benefit: 'Healthy gut microbiome ensures complete micronutrient assimilation.',
           isCompleted: false,
         ),
       ],
@@ -244,24 +266,21 @@ class CareCubit extends Cubit<CareState> {
           type: 'Lunch',
           name: 'Methi (Fenugreek) Roti with Black Chana Curry',
           nutrients: 'Nicotinic Acid · Iron · Lecithin',
-          benefit:
-              'Strengthens hair shafts and minimizes breakage.',
+          benefit: 'Strengthens hair shafts and minimizes breakage.',
           isCompleted: false,
         ),
         const DietMeal(
           type: 'Evening Snack',
           name: 'Greek Yogurt with Crushed Brazil Nuts',
           nutrients: 'Selenium · Calcium',
-          benefit:
-              'Supports thyroid hormone balance vital for healthy shedding cycle.',
+          benefit: 'Supports thyroid hormone balance vital for healthy shedding cycle.',
           isCompleted: false,
         ),
         const DietMeal(
           type: 'Dinner',
           name: 'Paneer / Tofu Bhurji with Sauted Bell Peppers',
           nutrients: 'Vitamin A · Carotenoids',
-          benefit:
-              'Normalizes sebum secretion across scalp for healthy follicle breathing.',
+          benefit: 'Normalizes sebum secretion across scalp for healthy follicle breathing.',
           isCompleted: false,
         ),
       ],
@@ -324,11 +343,13 @@ class CareCubit extends Cubit<CareState> {
       sheddingLevel: sheddingLevel,
       notes: notes,
       densityRating: densityRating,
-      isDoctorReviewed: true,
-      doctorNote: 'Clinical review pending. Photo logged successfully.',
+      isDoctorReviewed: false,
+      doctorNote:
+          'Saved on this device. No clinician has reviewed this check-in.',
     );
 
     emit(state.copyWith(checkIns: [newCheckIn, ...state.checkIns]));
+    _persistCheckIns();
   }
 
   void deleteProgressCheckIn(String id) {
@@ -337,6 +358,7 @@ class CareCubit extends Cubit<CareState> {
         checkIns: state.checkIns.where((ci) => ci.id != id).toList(),
       ),
     );
+    _persistCheckIns();
   }
 
   // --- ROUTINE ACTIONS ---
@@ -350,6 +372,8 @@ class CareCubit extends Cubit<CareState> {
 
     emit(state.copyWith(routineTasks: updated));
     _notificationService?.saveRoutineTasks(updated);
+    _saveRoutineDay();
+    _recordRoutineCompletionIfDone(updated);
   }
 
   void addCustomRoutineTask({
@@ -370,6 +394,8 @@ class CareCubit extends Cubit<CareState> {
     final updated = [...state.routineTasks, newTask];
     emit(state.copyWith(routineTasks: updated));
     _notificationService?.saveRoutineTasks(updated);
+    _saveRoutineDay();
+    _recordRoutineCompletionIfDone(updated);
   }
 
   void resetTodayRoutine() {
@@ -378,17 +404,49 @@ class CareCubit extends Cubit<CareState> {
         .toList();
     emit(state.copyWith(routineTasks: reset));
     _notificationService?.saveRoutineTasks(reset);
+    _saveRoutineDay();
+    _recordRoutineCompletionIfDone(reset);
+  }
+
+  String _localDayKey(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  void _saveRoutineDay() {
+    _notificationService?.saveRoutineDay(_localDayKey(DateTime.now()));
+  }
+
+  void _recordRoutineCompletionIfDone(List<RoutineTask> tasks) {
+    final day = _localDayKey(DateTime.now());
+    final updatedDays = Set<String>.from(state.routineCompletionDays);
+    if (tasks.isNotEmpty && tasks.every((task) => task.isCompleted)) {
+      updatedDays.add(day);
+    } else {
+      updatedDays.remove(day);
+    }
+    final days = updatedDays.toList()..sort();
+    emit(state.copyWith(routineCompletionDays: days));
+    AppLocalCache.instance.put(
+      _routineHistoryKey,
+      jsonEncode(days.map((entry) => {'day': entry}).toList()),
+    );
   }
 
   // --- REMINDER ACTIONS ---
-  Future<void> requestNotificationPermission({bool simulateDenial = false}) async {
-    final service = _notificationService ?? await CareNotificationService.create();
-    final status = await service.requestPermission(simulateDenial: simulateDenial);
+  Future<void> requestNotificationPermission({
+    bool simulateDenial = false,
+  }) async {
+    final service =
+        _notificationService ?? await CareNotificationService.create();
+    final status = await service.requestPermission(
+      simulateDenial: simulateDenial,
+    );
     emit(state.copyWith(notificationPermissionStatus: status));
   }
 
   void saveReminder(CareReminder reminder) {
-    final existingIndex = state.reminders.indexWhere((r) => r.id == reminder.id);
+    final existingIndex = state.reminders.indexWhere(
+      (r) => r.id == reminder.id,
+    );
     List<CareReminder> updated;
     if (existingIndex >= 0) {
       updated = List<CareReminder>.from(state.reminders);
@@ -444,7 +502,10 @@ class CareCubit extends Cubit<CareState> {
     _notificationService?.saveReminders(updated);
   }
 
-  void snoozeReminder(String id, {Duration duration = const Duration(minutes: 15)}) {
+  void snoozeReminder(
+    String id, {
+    Duration duration = const Duration(minutes: 15),
+  }) {
     final until = DateTime.now().add(duration);
     final updated = state.reminders.map((rem) {
       if (rem.id == id) {
@@ -460,10 +521,7 @@ class CareCubit extends Cubit<CareState> {
   void toggleReminderCompletion(String id) {
     final updated = state.reminders.map((rem) {
       if (rem.id == id) {
-        return rem.copyWith(
-          isCompleted: !rem.isCompleted,
-          clearSnooze: true,
-        );
+        return rem.copyWith(isCompleted: !rem.isCompleted, clearSnooze: true);
       }
       return rem;
     }).toList();
@@ -519,6 +577,7 @@ class CareCubit extends Cubit<CareState> {
     );
 
     emit(state.copyWith(coachBookings: [newBooking, ...state.coachBookings]));
+    _persistBookings();
   }
 
   void cancelCoachBooking(String id) {
@@ -530,6 +589,91 @@ class CareCubit extends Cubit<CareState> {
     }).toList();
 
     emit(state.copyWith(coachBookings: updated));
+    _persistBookings();
+  }
+
+  void saveLocalOrderPreview({
+    required String deliveryAddress,
+    required List<String> items,
+    required int totalAmount,
+  }) {
+    final now = DateTime.now();
+    final preview = CareOrder(
+      orderId: 'PREVIEW-${now.millisecondsSinceEpoch}',
+      orderDate: '${now.day}/${now.month}/${now.year}',
+      estimatedDelivery: 'Not scheduled',
+      status: 'Preview only · not submitted',
+      currentStep: 0,
+      courierName: '',
+      trackingNumber: '',
+      deliveryAddress: deliveryAddress,
+      items: items,
+      totalAmount: totalAmount,
+    );
+    emit(state.copyWith(orders: [preview, ...state.orders]));
+    AppLocalCache.instance.put(
+      _ordersKey,
+      jsonEncode(state.orders.map((item) => item.toJson()).toList()),
+    );
+  }
+
+  static List<T>? _readList<T>(
+    String? raw,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return (jsonDecode(raw) as List<dynamic>)
+          .map((item) => fromJson(Map<String, dynamic>.from(item as Map)))
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _persistCheckIns() {
+    AppLocalCache.instance.put(
+      _checkInsKey,
+      jsonEncode(state.checkIns.map((item) => item.toJson()).toList()),
+    );
+  }
+
+  void _persistBookings() {
+    AppLocalCache.instance.put(
+      _bookingsKey,
+      jsonEncode(state.coachBookings.map((item) => item.toJson()).toList()),
+    );
+  }
+
+  Future<void> clearPersonalCareData() async {
+    final service =
+        _notificationService ?? await CareNotificationService.create();
+    for (final reminder in state.reminders) {
+      await service.cancelReminder(reminder.id);
+    }
+    emit(
+      state.copyWith(
+        checkIns: const [],
+        routineTasks: const [],
+        reminders: const [],
+        coachBookings: const [],
+        routineCompletionDays: const [],
+        orders: const [],
+      ),
+    );
+    final cache = AppLocalCache.instance;
+    for (final key in [
+      _checkInsKey,
+      _bookingsKey,
+      _routineHistoryKey,
+      'care_persisted_routine_v1',
+      'care_persisted_reminders_v1',
+      'care_persisted_routine_day_v1',
+      'care_notification_permission_status',
+    ]) {
+      await cache.remove(key);
+    }
+    await cache.put(_careDataClearedKey, true);
   }
 
   // --- DIET & WATER ACTIONS ---

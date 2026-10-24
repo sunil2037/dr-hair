@@ -6,7 +6,11 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../data/models/delivery_address_model.dart';
 import '../widgets/delivery_address_bottom_sheet.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/widgets/app_toast.dart';
+import '../../../care/presentation/viewmodels/care_cubit.dart';
+import '../viewmodels/cart_cubit.dart';
 
 class CheckoutView extends StatefulWidget {
   final int amount;
@@ -41,13 +45,23 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   void _handlePlaceOrder() {
-    AppToast.show(context,
-      const SnackBar(
-        content: Text(
-          'Checkout is unavailable until address, order, and payment services are connected.',
-        ),
-      ),
+    final address = _selectedAddress;
+    final items = context.read<CartCubit>().state.items;
+    if (address == null) {
+      AppToast.show(context, const SnackBar(content: Text('Select a delivery address first.')));
+      return;
+    }
+    if (items.isEmpty) {
+      AppToast.show(context, const SnackBar(content: Text('Your cart is empty. Add a product before checkout.')));
+      return;
+    }
+    context.read<CareCubit>().saveLocalOrderPreview(
+      deliveryAddress: '${address.name}, ${address.formattedAddress}, ${address.phone}',
+      items: items.map((item) => '${item['title']} × ${item['quantity']}').toList(),
+      totalAmount: widget.amount,
     );
+    AppToast.show(context, const SnackBar(content: Text('Local preview saved. No payment was taken and nothing was sent for delivery.')));
+    context.push(RouteNames.orders);
   }
 
   @override
@@ -337,7 +351,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Payment setup required • ₹${widget.amount}',
+                      'Save local order preview • ₹${widget.amount}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -365,7 +379,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Demo Checkout: Live payment processor (Razorpay/Cashfree) and address verification API contract required for live transactions.',
+                      'Preview only: this records the cart and address on this device. Payment and delivery are not submitted or confirmed.',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.secondaryDark,

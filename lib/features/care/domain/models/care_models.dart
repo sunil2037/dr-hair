@@ -30,6 +30,36 @@ class ProgressCheckIn {
     this.doctorNote,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'date': date.toIso8601String(),
+    'imagePath': imagePath,
+    'frontImagePath': frontImagePath,
+    'backImagePath': backImagePath,
+    'topImagePath': topImagePath,
+    'scalpRegion': scalpRegion,
+    'sheddingLevel': sheddingLevel,
+    'notes': notes,
+    'densityRating': densityRating,
+    'isDoctorReviewed': isDoctorReviewed,
+    'doctorNote': doctorNote,
+  };
+
+  factory ProgressCheckIn.fromJson(Map<String, dynamic> json) => ProgressCheckIn(
+    id: json['id'] as String? ?? '',
+    date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+    imagePath: json['imagePath'] as String? ?? '',
+    frontImagePath: json['frontImagePath'] as String?,
+    backImagePath: json['backImagePath'] as String?,
+    topImagePath: json['topImagePath'] as String?,
+    scalpRegion: json['scalpRegion'] as String? ?? 'Scalp',
+    sheddingLevel: json['sheddingLevel'] as String? ?? 'Not recorded',
+    notes: json['notes'] as String? ?? '',
+    densityRating: (json['densityRating'] as num?)?.toInt() ?? 3,
+    isDoctorReviewed: json['isDoctorReviewed'] as bool? ?? false,
+    doctorNote: json['doctorNote'] as String?,
+  );
+
   String get effectiveFrontImage => frontImagePath ?? imagePath;
   String get effectiveTopImage => topImagePath ?? imagePath;
   String get effectiveBackImage => backImagePath ?? imagePath;
@@ -291,6 +321,30 @@ class CoachBooking {
     this.notes = '',
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'coachName': coachName,
+    'role': role,
+    'avatarUrl': avatarUrl,
+    'date': date.toIso8601String(),
+    'timeSlot': timeSlot,
+    'consultationType': consultationType,
+    'status': status,
+    'notes': notes,
+  };
+
+  factory CoachBooking.fromJson(Map<String, dynamic> json) => CoachBooking(
+    id: json['id'] as String? ?? '',
+    coachName: json['coachName'] as String? ?? '',
+    role: json['role'] as String? ?? '',
+    avatarUrl: json['avatarUrl'] as String? ?? '',
+    date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+    timeSlot: json['timeSlot'] as String? ?? '',
+    consultationType: json['consultationType'] as String? ?? '',
+    status: json['status'] as String? ?? 'Confirmed',
+    notes: json['notes'] as String? ?? '',
+  );
+
   CoachBooking copyWith({
     String? id,
     String? coachName,
@@ -374,4 +428,30 @@ class CareOrder {
     required this.items,
     required this.totalAmount,
   });
+
+  Map<String, dynamic> toJson() => {
+    'orderId': orderId,
+    'orderDate': orderDate,
+    'estimatedDelivery': estimatedDelivery,
+    'status': status,
+    'currentStep': currentStep,
+    'courierName': courierName,
+    'trackingNumber': trackingNumber,
+    'deliveryAddress': deliveryAddress,
+    'items': items,
+    'totalAmount': totalAmount,
+  };
+
+  factory CareOrder.fromJson(Map<String, dynamic> json) => CareOrder(
+    orderId: json['orderId'] as String? ?? '',
+    orderDate: json['orderDate'] as String? ?? '',
+    estimatedDelivery: json['estimatedDelivery'] as String? ?? '',
+    status: json['status'] as String? ?? '',
+    currentStep: (json['currentStep'] as num?)?.toInt() ?? 0,
+    courierName: json['courierName'] as String? ?? '',
+    trackingNumber: json['trackingNumber'] as String? ?? '',
+    deliveryAddress: json['deliveryAddress'] as String? ?? '',
+    items: (json['items'] as List<dynamic>? ?? const []).cast<String>(),
+    totalAmount: (json['totalAmount'] as num?)?.toInt() ?? 0,
+  );
 }

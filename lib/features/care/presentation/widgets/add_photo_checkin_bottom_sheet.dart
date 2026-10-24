@@ -455,16 +455,22 @@ class _AddPhotoCheckInBottomSheetState
                     text: 'Save Progress Photos',
                     variant: AppButtonVariant.filled,
                     onPressed: () {
-                      final primaryImage =
-                          _frontImagePath ??
-                          _topImagePath ??
-                          _backImagePath ??
-                          'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600';
+                      final primaryImage = _frontImagePath ??
+                          _topImagePath ?? _backImagePath;
+                      if (primaryImage == null) {
+                        AppToast.show(
+                          context,
+                          const SnackBar(
+                            content: Text('Add at least one photo before saving your check-in.'),
+                          ),
+                        );
+                        return;
+                      }
 
                       context.read<CareCubit>().addProgressCheckIn(
                         date: DateTime.now(),
                         imagePath: primaryImage,
-                        frontImagePath: _frontImagePath ?? primaryImage,
+                        frontImagePath: _frontImagePath,
                         topImagePath: _topImagePath,
                         backImagePath: _backImagePath,
                         scalpRegion: _region,

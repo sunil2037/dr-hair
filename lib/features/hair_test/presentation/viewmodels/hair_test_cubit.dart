@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -5,6 +7,7 @@ import '../../../../core/storage/app_local_cache.dart';
 import 'hair_test_state.dart';
 
 class HairTestCubit extends Cubit<HairTestState> {
+  static const String _draftKey = 'hair_test_draft_v1';
   final ImagePicker _imagePicker;
   final AppLocalCache _cache;
 
@@ -16,6 +19,33 @@ class HairTestCubit extends Cubit<HairTestState> {
   Future<void> loadSavedState() async {
     try {
       final hasCompleted = _cache.getBool('has_completed_hair_test') ?? false;
+      var restored = state;
+      final rawDraft = _cache.getString(_draftKey);
+      if (rawDraft != null) {
+        try {
+          final draft = jsonDecode(rawDraft) as Map<String, dynamic>;
+          restored = state.copyWith(
+            currentStep: (draft['currentStep'] as num?)?.toInt(),
+            isRetesting: draft['isRetesting'] as bool? ?? false,
+            name: draft['name'] as String?,
+            age: draft['age'] as String?,
+            selectedGender: draft['selectedGender'] as String?,
+            stage: draft['stage'] as String?,
+            primaryConcern: draft['primaryConcern'] as String?,
+            duration: draft['duration'] as String?,
+            dandruff: draft['dandruff'] as String?,
+            gutHealth: draft['gutHealth'] as String?,
+            stressLevel: draft['stressLevel'] as String?,
+            familyHistory: draft['familyHistory'] as String?,
+            photos: (draft['photos'] as Map?)?.map(
+                  (key, value) => MapEntry(key.toString(), value.toString()),
+                ) ??
+                const {},
+          );
+        } catch (_) {
+          await _cache.remove(_draftKey);
+        }
+      }
       final savedStage = _cache.getString('hair_test_stage');
       final savedDandruff = _cache.getString('hair_test_dandruff');
       final savedName = _cache.getString('hair_test_name') ?? 'Sahil';
@@ -23,7 +53,7 @@ class HairTestCubit extends Cubit<HairTestState> {
 
       if (hasCompleted) {
         emit(
-          state.copyWith(
+          restored.copyWith(
             isCompleted: true,
             name: savedName,
             age: savedAge,
@@ -31,6 +61,8 @@ class HairTestCubit extends Cubit<HairTestState> {
             dandruff: savedDandruff ?? 'Severe Dandruff & Flakes',
           ),
         );
+      } else if (rawDraft != null) {
+        emit(restored);
       }
     } catch (_) {}
   }
@@ -49,6 +81,7 @@ class HairTestCubit extends Cubit<HairTestState> {
           clearErrorMessage: true,
         ),
       );
+      _saveDraft();
     } else {
       submitTest();
     }
@@ -97,6 +130,7 @@ class HairTestCubit extends Cubit<HairTestState> {
           clearErrorMessage: true,
         ),
       );
+      _saveDraft();
     }
   }
 
@@ -120,6 +154,7 @@ class HairTestCubit extends Cubit<HairTestState> {
       }
       await _cache.put('hair_test_name', state.name);
       await _cache.put('hair_test_age', state.age);
+      await _cache.put(_draftKey, jsonEncode(_draftJson()));
     } catch (_) {}
   }
 
@@ -132,6 +167,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         clearErrorMessage: true,
       ),
     );
+    _saveDraft();
   }
 
   void dismissReport() {
@@ -153,10 +189,12 @@ class HairTestCubit extends Cubit<HairTestState> {
         clearErrorMessage: true,
       ),
     );
+    _saveDraft();
   }
 
   void selectGender(String gender) {
     emit(state.copyWith(selectedGender: gender, clearErrorMessage: true));
+    _saveDraft();
   }
 
   void selectStage(String stage) {
@@ -167,6 +205,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         clearErrorMessage: true,
       ),
     );
+    _saveDraft();
   }
 
   void selectPrimaryConcern(String concern) {
@@ -177,26 +216,32 @@ class HairTestCubit extends Cubit<HairTestState> {
         clearErrorMessage: true,
       ),
     );
+    _saveDraft();
   }
 
   void selectDandruff(String condition) {
     emit(state.copyWith(dandruff: condition, clearErrorMessage: true));
+    _saveDraft();
   }
 
   void selectGutHealth(String gut) {
     emit(state.copyWith(gutHealth: gut, clearErrorMessage: true));
+    _saveDraft();
   }
 
   void selectStressLevel(String level) {
     emit(state.copyWith(stressLevel: level, clearErrorMessage: true));
+    _saveDraft();
   }
 
   void selectFamilyHistory(String history) {
     emit(state.copyWith(familyHistory: history, clearErrorMessage: true));
+    _saveDraft();
   }
 
   void selectDuration(String duration) {
     emit(state.copyWith(duration: duration, clearErrorMessage: true));
+    _saveDraft();
   }
 
   Future<void> pickPhoto({
@@ -216,6 +261,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         final updatedPhotos = Map<String, String>.from(state.photos);
         updatedPhotos[label] = pickedFile.path;
         emit(state.copyWith(photos: updatedPhotos, isPickingImage: false));
+        _saveDraft();
       } else {
         emit(state.copyWith(isPickingImage: false));
       }
@@ -233,15 +279,52 @@ class HairTestCubit extends Cubit<HairTestState> {
     final updatedPhotos = Map<String, String>.from(state.photos);
     updatedPhotos[label] = path;
     emit(state.copyWith(photos: updatedPhotos, clearErrorMessage: true));
+    _saveDraft();
   }
 
   void removePhoto(String label) {
     final updatedPhotos = Map<String, String>.from(state.photos);
     updatedPhotos.remove(label);
     emit(state.copyWith(photos: updatedPhotos, clearErrorMessage: true));
+    _saveDraft();
+  }
+
+  Map<String, dynamic> _draftJson() => {
+    'currentStep': state.currentStep,
+    'isRetesting': state.isRetesting,
+    'name': state.name,
+    'age': state.age,
+    'selectedGender': state.selectedGender,
+    'stage': state.stage,
+    'primaryConcern': state.primaryConcern,
+    'duration': state.duration,
+    'dandruff': state.dandruff,
+    'gutHealth': state.gutHealth,
+    'stressLevel': state.stressLevel,
+    'familyHistory': state.familyHistory,
+    'photos': state.photos,
+  };
+
+  void _saveDraft() {
+    _cache.put(_draftKey, jsonEncode(_draftJson()));
   }
 
   void reset() {
+    emit(const HairTestState());
+    _saveDraft();
+  }
+
+  Future<void> clearSavedAssessment() async {
+    for (final key in [
+      _draftKey,
+      'has_completed_hair_test',
+      'hair_test_stage',
+      'hair_test_dandruff',
+      'hair_test_name',
+      'hair_test_age',
+    ]) {
+      await _cache.remove(key);
+    }
     emit(const HairTestState());
   }
 }

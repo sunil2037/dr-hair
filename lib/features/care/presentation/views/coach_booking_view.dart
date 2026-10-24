@@ -705,7 +705,10 @@ class _CoachBookingViewState extends State<CoachBookingView> {
   }
 
   // --- BOOKING BOTTOM SHEET (Opens strictly after tapping any specialist card) ---
-  void _openBookingBottomSheet(Map<String, dynamic> doctor) {
+  void _openBookingBottomSheet(
+    Map<String, dynamic> doctor, {
+    String? reschedulingBookingId,
+  }) {
     HapticFeedback.lightImpact();
 
     showModalBottomSheet(
@@ -1245,7 +1248,9 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                     SizedBox(
                       width: double.infinity,
                       child: AppButton(
-                        text: 'Confirm In-Clinic Appointment',
+                        text: reschedulingBookingId == null
+                            ? 'Confirm In-Clinic Appointment'
+                            : 'Confirm New Appointment Time',
                         variant: AppButtonVariant.filled,
                         onPressed: () {
                           final notesText = _notesController.text.trim();
@@ -1253,7 +1258,12 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                               ? 'In-person clinic consultation at Mansarovar, Jaipur.'
                               : 'In-person clinic consultation at Mansarovar, Jaipur. Note: $notesText';
 
-                          // Update Cubit
+                          // Replace the old booking only after the new slot is confirmed.
+                          if (reschedulingBookingId != null) {
+                            context.read<CareCubit>().cancelCoachBooking(
+                              reschedulingBookingId,
+                            );
+                          }
                           context.read<CareCubit>().bookCoach(
                             coachName: doctor['name'] as String,
                             role: doctor['role'] as String,
@@ -1799,6 +1809,42 @@ class _CoachBookingViewState extends State<CoachBookingView> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          side: const BorderSide(color: AppColors.primary),
+                        ),
+                        onPressed: () {
+                          final doctor = _doctors.firstWhere(
+                            (item) => item['name'] == b.coachName,
+                            orElse: () => _doctors.first,
+                          );
+                          _openBookingBottomSheet(
+                            doctor,
+                            reschedulingBookingId: b.id as String,
+                          );
+                        },
+                        icon: const Icon(
+                          LucideIcons.calendarClock,
+                          size: 13,
+                          color: AppColors.primary,
+                        ),
+                        label: const Text(
+                          'Reschedule',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(

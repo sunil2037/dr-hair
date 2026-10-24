@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../care/presentation/viewmodels/care_cubit.dart';
+import '../../../care/presentation/viewmodels/care_state.dart';
+import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
+import '../../../hair_test/presentation/viewmodels/hair_test_state.dart';
 
 class TreatmentDetailsView extends StatelessWidget {
   const TreatmentDetailsView({super.key});
@@ -52,7 +57,7 @@ class TreatmentDetailsView extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Text(
-                          'CLINICALLY VERIFIED',
+                          'LOCAL ASSESSMENT SUMMARY',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -62,7 +67,7 @@ class TreatmentDetailsView extends StatelessWidget {
                         ),
                       ),
                       const Text(
-                        'Ref: #DH-94821',
+                        'Saved on this device',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 12,
@@ -72,17 +77,19 @@ class TreatmentDetailsView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'Androgenetic Alopecia - Grade 2',
+                  BlocBuilder<HairTestCubit, HairTestState>(
+                    builder: (context, state) => Text(
+                    state.stage ?? 'Your assessment summary',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Early crown miniaturization with frontal hairline recession. Follicles remain viable for medical reactivation.',
+                    'This summary reflects the answers you provided. It is informational and is not a medical diagnosis.',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -95,39 +102,8 @@ class TreatmentDetailsView extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            // Scalp Photos Gallery
             const Text(
-              'Submitted Scalp Analysis',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildScalpImage(
-                    'Frontal View',
-                    'https://images.unsplash.com/photo-1774979517558-a9dfa07cf8d0?q=80&w=400',
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _buildScalpImage(
-                    'Crown Area',
-                    'https://images.unsplash.com/photo-1775126964224-99c03c0e439c?q=80&w=400',
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-
-            // Prescribed Treatments
-            const Text(
-              'Prescribed Formulations',
+              'Your Daily Care Steps',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -136,23 +112,17 @@ class TreatmentDetailsView extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            _buildTreatmentItem(
-              title: 'Follicle Booster Serum (5% Procapil)',
-              dosage: 'Apply 1ml at night directly to crown & hairline',
-              status: 'Active Daily Routine',
-              icon: LucideIcons.flaskConical,
-            ),
-            _buildTreatmentItem(
-              title: 'Micro-Exfoliating Scalp Shampoo',
-              dosage: 'Use 3x weekly to remove sebum & DHT buildup',
-              status: 'Cleansing Protocol',
-              icon: LucideIcons.hand,
-            ),
-            _buildTreatmentItem(
-              title: 'Targeted Keratin & Biotin Complex',
-              dosage: '1 tablet daily after breakfast',
-              status: 'Nutritional Support',
-              icon: LucideIcons.pillBottle,
+            BlocBuilder<CareCubit, CareState>(
+              builder: (context, state) => state.routineTasks.isEmpty
+                  ? const Text('No routine steps have been added yet.')
+                  : Column(
+                      children: state.routineTasks.map((task) => _buildTreatmentItem(
+                        title: task.title,
+                        dosage: task.subtitle,
+                        status: '${task.timeOfDay} · ${task.isCompleted ? 'Done today' : 'Not done yet'}',
+                        icon: LucideIcons.clipboardCheck,
+                      )).toList(),
+                    ),
             ),
 
             const SizedBox(height: 28),
@@ -177,7 +147,7 @@ class TreatmentDetailsView extends StatelessWidget {
                       ),
                       SizedBox(width: 10),
                       Text(
-                        'Dermatologist Clinical Notes',
+                        'Care plan safety note',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -188,7 +158,7 @@ class TreatmentDetailsView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    '"Patient exhibits classic pattern thinning. Recommended 4 months of rigorous topical and oral therapy. Follow-up digital photography check-in scheduled for month 2."',
+                    'Follow instructions from your licensed clinician. Do not start, stop, or change medication based only on this app. Contact your clinic if you have a reaction or new symptoms.',
                     style: TextStyle(
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -198,7 +168,7 @@ class TreatmentDetailsView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Dr. Jai Bansal, MD Dermatology\nReg: #MED-84920',
+                    'No clinician review is attached to this local care plan.',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -213,32 +183,6 @@ class TreatmentDetailsView extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildScalpImage(String label, String url) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Image.network(
-            url,
-            height: 140,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.secondaryDark,
-          ),
-        ),
-      ],
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/widgets/assessment_gate.dart';
 import '../../../care/presentation/viewmodels/care_cubit.dart';
 import '../../../care/presentation/viewmodels/care_state.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
@@ -99,7 +100,16 @@ class _HomeViewState extends State<HomeView>
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return BlocBuilder<HairTestCubit, HairTestState>(
+      builder: (context, hairState) {
+        final completed = hairState.isCompleted && !hairState.isRetesting;
+        final first = completed
+            ? _buildRestorationJourney(assessmentComplete: true)
+            : _buildEssentialProducts(context);
+        final second = completed
+            ? _buildEssentialProducts(context)
+            : _buildRestorationJourney(assessmentComplete: false);
+        return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -111,12 +121,12 @@ class _HomeViewState extends State<HomeView>
           const SizedBox(height: 24),
 
           // 2. ESSENTIAL PRODUCTS (on top)
-          _revealSection(1, _buildEssentialProducts(context)),
+          _revealSection(1, first),
 
           const SizedBox(height: 24),
 
           // 3. RESTORATION JOURNEY
-          _revealSection(2, _buildRestorationJourney()),
+          _revealSection(2, second),
 
           const SizedBox(height: 24),
 
@@ -165,11 +175,14 @@ class _HomeViewState extends State<HomeView>
           const SizedBox(height: 24),
         ],
       ),
+        );
+      },
     );
   }
 
   // --- SECTION 1: HERO SECTION ---
   Widget _buildHeroSection(BuildContext context) {
+    final hairState = context.watch<HairTestCubit>().state;
     final mediaQuery = MediaQuery.of(context);
     final double screenHeight = mediaQuery.size.height;
     final double screenWidth = mediaQuery.size.width;
@@ -308,9 +321,10 @@ class _HomeViewState extends State<HomeView>
                       ),
                       const SizedBox(height: 15),
                       // CTA Button
-                      SizedBox(
-                        height: 38,
-                        child: ElevatedButton(
+                      if (!hairState.isCompleted || hairState.isRetesting)
+                        SizedBox(
+                          height: 38,
+                          child: ElevatedButton(
                           onPressed: widget.onStartHairTest,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
@@ -357,8 +371,8 @@ class _HomeViewState extends State<HomeView>
                               );
                             },
                           ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -748,27 +762,40 @@ class _HomeViewState extends State<HomeView>
   }
 
   // --- SECTION 7: RESTORATION JOURNEY (TIMELINE) ---
-  Widget _buildRestorationJourney() {
+  Widget _buildRestorationJourney({required bool assessmentComplete}) {
+    final careState = context.watch<CareCubit>().state;
+    final hasRoutine = careState.routineTasks.isNotEmpty;
+    final completedRoutine = careState.routineTasks
+        .where((task) => task.isCompleted)
+        .length;
     final steps = [
       {
         'step': '1',
-        'title': 'Take the Hair Test',
-        'desc': 'Answer 15 clinical questions about your lifestyle and scalp.',
+        'title': assessmentComplete ? 'Hair assessment complete' : 'Take the Hair Test',
+        'desc': assessmentComplete
+            ? 'Your answers are saved and guide your care journey.'
+            : 'Answer questions about your lifestyle and scalp to get started.',
       },
       {
         'step': '2',
-        'title': 'AI Scalp Analysis',
-        'desc': 'Upload photos for deep-learning follicle density evaluation.',
+        'title': assessmentComplete ? 'Personalized care plan' : 'Scalp analysis',
+        'desc': assessmentComplete
+            ? 'Your personalized care plan is ready to explore.'
+            : 'Continue your assessment to create a plan for your scalp.',
       },
       {
         'step': '3',
-        'title': 'Custom Growth Plan',
-        'desc': 'Receive a dermatologist-approved treatment kit at your door.',
+        'title': 'Daily routine',
+        'desc': assessmentComplete && hasRoutine
+            ? '$completedRoutine of ${careState.routineTasks.length} care steps completed.'
+            : 'Build a consistent routine from your personalized care steps.',
       },
       {
         'step': '4',
         'title': 'Track Progress',
-        'desc': 'Monthly doctor check-ins and formulation updates.',
+        'desc': assessmentComplete
+            ? 'Your progress journal is ready for check-ins and photo updates.'
+            : 'Track your journey with regular check-ins and photo updates.',
       },
     ];
 
@@ -801,12 +828,12 @@ class _HomeViewState extends State<HomeView>
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: index == 0
+                          color: assessmentComplete || index == 0
                               ? AppColors.primary
                               : AppColors.primary5,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: index == 0
+                            color: assessmentComplete || index == 0
                                 ? AppColors.primary
                                 : AppColors.primary100,
                           ),
@@ -817,7 +844,7 @@ class _HomeViewState extends State<HomeView>
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: index == 0
+                              color: assessmentComplete || index == 0
                                   ? Colors.white
                                   : AppColors.primary,
                             ),
@@ -1063,9 +1090,17 @@ class _HomeViewState extends State<HomeView>
                           case HomeJourneyDestination.assessment:
                             widget.onStartHairTest();
                           case HomeJourneyDestination.routine:
-                            context.push(RouteNames.routine);
+                            if (hairState.isCompleted && !hairState.isRetesting) {
+                              context.push(RouteNames.routine);
+                            } else {
+                              showAssessmentRequiredSheet(context);
+                            }
                           case HomeJourneyDestination.progress:
-                            context.push(RouteNames.progress);
+                            if (hairState.isCompleted && !hairState.isRetesting) {
+                              context.push(RouteNames.progress);
+                            } else {
+                              showAssessmentRequiredSheet(context);
+                            }
                         }
                       },
                       icon: const Icon(Icons.arrow_forward_rounded),

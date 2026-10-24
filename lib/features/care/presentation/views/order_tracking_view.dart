@@ -20,6 +20,8 @@ class OrderTrackingView extends StatelessWidget {
     return BlocBuilder<CareCubit, CareState>(
       builder: (context, state) {
         final order = state.orders.isNotEmpty ? state.orders.first : null;
+        final isPreviewOrder =
+            order?.status.startsWith('Preview only') ?? false;
 
         return CarePageScaffold(
           title: 'Orders & Deliveries',
@@ -115,14 +117,18 @@ class OrderTrackingView extends StatelessWidget {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          const Icon(
-                            LucideIcons.truck,
+                          Icon(
+                            isPreviewOrder ? LucideIcons.package : LucideIcons.truck,
                             size: 16,
-                            color: Color(0xFF059669),
+                            color: isPreviewOrder
+                                ? AppColors.primary
+                                : const Color(0xFF059669),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Estimated Arrival: ${order.estimatedDelivery}',
+                            isPreviewOrder
+                                ? 'Preview saved locally · no delivery scheduled'
+                                : 'Estimated Arrival: ${order.estimatedDelivery}',
                             style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -135,6 +141,7 @@ class OrderTrackingView extends StatelessWidget {
                   ),
                 ),
 
+                if (!isPreviewOrder) ...[
                 careSectionHeader(title: 'DISPATCH TIMELINE'),
 
                 // Delivery Stepper with TweenAnimationBuilder
@@ -294,15 +301,29 @@ class OrderTrackingView extends StatelessWidget {
                     ],
                   ),
                 ),
+                ] else
+                  careCard(
+                    backgroundColor: AppColors.primary5,
+                    child: const Text(
+                      'This is a local preview only. No payment was taken, the order was not sent to the shop, and there is no courier tracking yet.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.45,
+                        color: AppColors.secondaryDark,
+                      ),
+                    ),
+                  ),
 
                 // Order items breakdown
                 careCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Items in this shipment',
-                        style: TextStyle(
+                      Text(
+                        isPreviewOrder
+                            ? 'Items in this preview'
+                            : 'Items in this shipment',
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                         ),
@@ -333,9 +354,11 @@ class OrderTrackingView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Total Paid',
-                            style: TextStyle(
+                          Text(
+                            isPreviewOrder
+                                ? 'Estimated total (not paid)'
+                                : 'Total Paid',
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                             ),
@@ -355,7 +378,7 @@ class OrderTrackingView extends StatelessWidget {
                 ),
 
                 // Support button
-                SizedBox(
+                if (!isPreviewOrder) SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
