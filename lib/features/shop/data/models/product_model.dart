@@ -433,7 +433,8 @@ class ProductItem {
         ProductUsageStep(
           step: 1,
           title: 'Direct Application',
-          description: 'Apply directly onto scalp sections at night 3 times a week.',
+          description:
+              'Apply directly onto scalp sections at night 3 times a week.',
         ),
       ],
       clinicalMetrics: [
@@ -447,7 +448,8 @@ class ProductItem {
     ProductItem(
       id: 'gut-health-probiotics',
       name: 'Gut Health Probiotics & Enzymes',
-      subtitle: '15 Billion CFU Multi-Strain Probiotics for Nutrient Absorption',
+      subtitle:
+          '15 Billion CFU Multi-Strain Probiotics for Nutrient Absorption',
       category: 'Clinical Nutrition',
       rootCause: 'Gut',
       rating: 4.88,
@@ -489,7 +491,8 @@ class ProductItem {
         ProductUsageStep(
           step: 1,
           title: 'Morning Dose',
-          description: 'Take 1 capsule on an empty stomach 30 mins before breakfast.',
+          description:
+              'Take 1 capsule on an empty stomach 30 mins before breakfast.',
         ),
       ],
       clinicalMetrics: [
@@ -503,7 +506,8 @@ class ProductItem {
     ProductItem(
       id: 'triphala-gut-elixir',
       name: 'Ayurvedic Triphala Detox Elixir',
-      subtitle: 'Cold-Pressed Amla, Haritaki & Bibhitaki for Gut Agni & Cleansing',
+      subtitle:
+          'Cold-Pressed Amla, Haritaki & Bibhitaki for Gut Agni & Cleansing',
       category: 'Ayurvedic Therapy',
       rootCause: 'Gut',
       rating: 4.82,
@@ -643,7 +647,8 @@ class ProductItem {
         ProductUsageStep(
           step: 1,
           title: 'Gentle Scalp Press',
-          description: 'Apply 5-8 drops on crown chakra and temples before bed.',
+          description:
+              'Apply 5-8 drops on crown chakra and temples before bed.',
         ),
       ],
       clinicalMetrics: [
@@ -769,7 +774,8 @@ class ProductItem {
     ProductItem(
       id: 'dht-blocker-max-capsules',
       name: 'Max DHT Blocker & Saw Palmetto',
-      subtitle: 'Standardized Saw Palmetto 500mg, Beta-Sitosterol & Stinging Nettle',
+      subtitle:
+          'Standardized Saw Palmetto 500mg, Beta-Sitosterol & Stinging Nettle',
       category: 'Clinical Nutrition',
       rootCause: 'Hormone',
       rating: 4.91,

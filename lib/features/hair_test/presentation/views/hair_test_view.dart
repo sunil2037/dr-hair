@@ -283,20 +283,7 @@ class _HairTestContent extends StatelessWidget {
           onSelected: (val) => cubit.selectGender(val),
         );
       case 1:
-        return _buildOptionSelector(
-          title: 'Where have you noticed thinning?',
-          subtitle: 'Choose the pattern that best matches what you have noticed.',
-          options: const [
-            'Receding Hairline (Temples)',
-            'Stage 1 - Receding hairline at temples',
-            'Stage 2 - Receding temples & crown thinning',
-            'Stage 3 - Crown thinning & vertex scalp visible',
-            'Crown Thinning',
-            'Overall Density Loss',
-          ],
-          selected: state.stage ?? state.primaryConcern,
-          onSelected: (val) => cubit.selectStage(val),
-        );
+        return _buildHairPatternSelector(state, cubit);
       case 2:
         return _buildOptionSelector(
           title: 'How long have you noticed hair loss or thinning?',
@@ -366,7 +353,7 @@ class _HairTestContent extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Photos are optional and stay on this device in this demo. They are not automatically reviewed by a clinician.',
+              'Optional photos are separate from the illustrated choices. In this demo, they stay on this device as part of your assessment preview; they are not analyzed, sent to a clinician, or automatically reviewed.',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.secondaryDark,
@@ -727,6 +714,222 @@ class _HairTestContent extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildHairPatternSelector(HairTestState state, HairTestCubit cubit) {
+    const stages = <(String, String)>[
+      ('Stage 1', 'assets/images/hair_assessment/stage_1.png'),
+      ('Stage 2', 'assets/images/hair_assessment/stage_2.png'),
+      ('Stage 3', 'assets/images/hair_assessment/stage_3.png'),
+      ('Stage 4', 'assets/images/hair_assessment/stage_4.png'),
+      ('Stage 5', 'assets/images/hair_assessment/stage_5.png'),
+      ('Patchy hair loss', 'assets/images/hair_assessment/patchy_loss.png'),
+      ('Hair shedding', 'assets/images/hair_assessment/hair_fall.png'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Which image looks closest to what you have noticed?',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryDark,
+            letterSpacing: -0.2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Choose the closest example. These illustrations are for guidance only and do not determine a diagnosis.',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.secondaryDark,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 18),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = (constraints.maxWidth - 12) / 2;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final (label, imageAsset) in stages.take(5))
+                      _buildHairPatternCard(
+                        label: label,
+                        imageAsset: imageAsset,
+                        selected:
+                            state.primaryConcern == label ||
+                            state.stage == label,
+                        width: cardWidth,
+                        onTap: () => cubit.selectPrimaryConcern(label),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Other concerns',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final (label, imageAsset) in stages.skip(5))
+                      _buildHairPatternCard(
+                        label: label,
+                        imageAsset: imageAsset,
+                        selected:
+                            state.primaryConcern == label ||
+                            state.stage == label,
+                        width: cardWidth,
+                        onTap: () => cubit.selectPrimaryConcern(label),
+                      ),
+                    _buildNotSureCard(
+                      selected: state.primaryConcern == 'Not sure',
+                      onTap: () => cubit.selectPrimaryConcern('Not sure'),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHairPatternCard({
+    required String label,
+    required String imageAsset,
+    required bool selected,
+    required double width,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: SizedBox(
+        width: width,
+        height: 142,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border(
+                  left: BorderSide(
+                    color: selected ? AppColors.primary : AppColors.border,
+                    width: selected ? 3 : 1,
+                  ),
+                ),
+              ),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 84,
+                    height: 78,
+                    child: Image.asset(
+                      imageAsset,
+                      fit: BoxFit.contain,
+                      excludeFromSemantics: true,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.2,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.primaryDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotSureCard({
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Not sure',
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: selected ? AppColors.primary5 : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: selected ? AppColors.primary : AppColors.border,
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    selected ? LucideIcons.circleCheck : LucideIcons.circleHelp,
+                    size: 19,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.secondaryDark,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Not sure',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.primaryDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// The Clinical Assessment Report View meticulously matching the user's uploaded screenshot.
@@ -743,6 +946,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    final selectedPattern = _selectedPatternIllustration(state);
     final String trimmedName = state.name.trim();
     final String displayName = trimmedName.isNotEmpty
         ? '${trimmedName[0].toUpperCase()}${trimmedName.substring(1)}, ${state.age}'
@@ -851,6 +1055,12 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                         ],
                       ),
                     ),
+
+                    if (selectedPattern != null) ...[
+                      const SizedBox(height: 4),
+                      _buildSelectedPatternCard(selectedPattern),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Patient Header Row with Avatar (Responsive layout)
                     Row(
@@ -994,6 +1204,65 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedPatternCard(({String label, String asset}) pattern) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary5,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 82,
+            height: 86,
+            child: Image.asset(
+              pattern.asset,
+              fit: BoxFit.contain,
+              excludeFromSemantics: true,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your selected pattern',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.secondaryDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  pattern.label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'This is the illustration you selected.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.35,
+                    color: AppColors.secondaryDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1287,4 +1556,42 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
       ],
     );
   }
+}
+
+({String label, String asset})? _selectedPatternIllustration(
+  HairTestState state,
+) {
+  final selected = state.primaryConcern?.trim();
+  final value = selected == null || selected.isEmpty
+      ? state.stage?.trim()
+      : selected;
+  if (value == null || value.isEmpty || value == 'Not sure') return null;
+
+  const stageAssets = <String, String>{
+    'Stage 1': 'assets/images/hair_assessment/stage_1.png',
+    'Stage 2': 'assets/images/hair_assessment/stage_2.png',
+    'Stage 3': 'assets/images/hair_assessment/stage_3.png',
+    'Stage 4': 'assets/images/hair_assessment/stage_4.png',
+    'Stage 5': 'assets/images/hair_assessment/stage_5.png',
+  };
+  for (final entry in stageAssets.entries) {
+    if (value == entry.key || value.startsWith('${entry.key} -')) {
+      return (label: entry.key, asset: entry.value);
+    }
+  }
+
+  final normalized = value.toLowerCase();
+  if (normalized.contains('patch')) {
+    return (
+      label: 'Patchy hair loss',
+      asset: 'assets/images/hair_assessment/patchy_loss.png',
+    );
+  }
+  if (normalized.contains('shed') || normalized.contains('hair fall')) {
+    return (
+      label: 'Hair shedding',
+      asset: 'assets/images/hair_assessment/hair_fall.png',
+    );
+  }
+  return null;
 }

@@ -93,9 +93,19 @@ class _HomeViewState extends State<HomeView>
     try {
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         debugPrint('Could not launch WhatsApp');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open WhatsApp. Please try again.')),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open WhatsApp. Please try again.')),
+        );
+      }
     }
   }
 
@@ -158,6 +168,10 @@ class _HomeViewState extends State<HomeView>
   // --- SECTION 1: HERO SECTION ---
   Widget _buildHeroSection(BuildContext context) {
     final hairState = context.watch<HairTestCubit>().state;
+    final hasCompletedAssessment =
+        hairState.isCompleted && !hairState.isRetesting;
+    final hasAssessmentProgress =
+        HomeJourneySelector.hasAssessmentProgress(hairState);
     final mediaQuery = MediaQuery.of(context);
     final double screenHeight = mediaQuery.size.height;
     final double screenWidth = mediaQuery.size.width;
@@ -296,61 +310,52 @@ class _HomeViewState extends State<HomeView>
                       ),
                       const SizedBox(height: 15),
                       // CTA Button
-                      if (!hairState.isCompleted || hairState.isRetesting)
-                        SizedBox(
-                          height: 38,
-                          child: ElevatedButton(
-                            onPressed: widget.onStartHairTest,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              elevation: 5,
-
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
-                              ),
+                      SizedBox(
+                        height: 38,
+                        child: ElevatedButton(
+                          onPressed: hasCompletedAssessment
+                              ? _launchWhatsapp
+                              : widget.onStartHairTest,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
                             ),
-                            child: BlocBuilder<HairTestCubit, HairTestState>(
-                              builder: (context, state) {
-                                final isComplete =
-                                    state.isCompleted && !state.isRetesting;
-                                final isInProgress =
-                                    HomeJourneySelector.hasAssessmentProgress(
-                                      state,
-                                    );
-                                final label = isComplete
-                                    ? 'Retake Hair Test'
-                                    : isInProgress
-                                    ? 'Continue Test'
-                                    : 'Free Hair Test';
-                                return FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        label,
-                                        style: const TextStyle(
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Icon(
-                                        LucideIcons.arrowRight,
-                                        size: 14,
-                                      ),
-                                    ],
+                            elevation: 5,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  hasCompletedAssessment
+                                      ? 'Connect with us'
+                                      : hasAssessmentProgress
+                                      ? 'Continue Test'
+                                      : 'Free Hair Test',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.3,
                                   ),
-                                );
-                              },
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  hasCompletedAssessment
+                                      ? LucideIcons.messageCircle
+                                      : LucideIcons.arrowRight,
+                                  size: 14,
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),

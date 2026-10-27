@@ -58,12 +58,16 @@ class HairTestCubit extends Cubit<HairTestState> {
       final savedAge = _cache.getString('hair_test_age') ?? '23';
 
       if (hasCompleted) {
+        final hasObservedPattern = restored.primaryConcern != null;
         emit(
           restored.copyWith(
             isCompleted: true,
             name: savedName,
             age: savedAge,
-            stage: savedStage ?? 'Stage 1 - Mild temple thinning',
+            stage: hasObservedPattern
+                ? null
+                : savedStage ?? 'Stage 1 - Mild temple thinning',
+            clearStage: hasObservedPattern,
             dandruff: savedDandruff ?? 'Severe Dandruff & Flakes',
           ),
         );
@@ -138,6 +142,8 @@ class HairTestCubit extends Cubit<HairTestState> {
       await _cache.put('has_completed_hair_test', true);
       if (state.stage != null) {
         await _cache.put('hair_test_stage', state.stage!);
+      } else {
+        await _cache.remove('hair_test_stage');
       }
       if (state.dandruff != null) {
         await _cache.put('hair_test_dandruff', state.dandruff!);
@@ -159,7 +165,9 @@ class HairTestCubit extends Cubit<HairTestState> {
       case 0:
         return value.selectedGender == null ? 'Choose an option to continue.' : null;
       case 1:
-        return value.stage == null ? 'Choose your hair fall stage or primary concern to continue.' : null;
+        return value.primaryConcern == null && value.stage == null
+            ? 'Choose an illustration, or select “Not sure.”'
+            : null;
       case 2:
         return value.duration == null ? 'Choose how long you have noticed hair loss to continue.' : null;
       case 3:
@@ -229,7 +237,7 @@ class HairTestCubit extends Cubit<HairTestState> {
     emit(
       state.copyWith(
         primaryConcern: concern,
-        stage: concern,
+        clearStage: true,
         clearErrorMessage: true,
       ),
     );

@@ -349,8 +349,8 @@ class _SigninViewState extends State<SigninView>
   // ---------------------------------------------------------------------------
   Widget _buildPhoneStep(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final isValid10Digits =
-        RegExp(r'^[6-9][0-9]{9}$').hasMatch(_phoneController.text.trim());
+    final isValid10Digits = RegExp(r'^[6-9][0-9]{9}$')
+        .hasMatch(_phoneController.text.trim());
     final authState = context.watch<AuthCubit?>()?.state ?? const AuthState();
     final isBusy = _isLoading || authState.status == AuthStatus.loading;
 
@@ -552,7 +552,7 @@ class _SigninViewState extends State<SigninView>
                 'OR',
                 style: TextStyle(
                   color: AppColors.secondaryDark.withValues(alpha: 0.6),
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -562,58 +562,10 @@ class _SigninViewState extends State<SigninView>
           ],
         ),
 
-        const SizedBox(height: 10),
+        // const SizedBox(height: 10),
 
         // Demo Mode Credentials & API Contract Notice
-        if (kDebugMode) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.primary5,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.primary100),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(top: 2),
-                  child: Icon(
-                    LucideIcons.info,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Preview / Demo Authentication Active',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Use demo code 123456 to verify. Requires backend SMS Gateway endpoints POST /api/v1/auth/otp/send and /verify for production delivery.',
-                        style: TextStyle(
-                          fontSize: 11,
-                          height: 1.3,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
+        if (!kReleaseMode) ...[
           // Continue as Guest
           Center(
             child: TextButton(
@@ -746,49 +698,55 @@ class _SigninViewState extends State<SigninView>
           ),
         ),
 
-        const SizedBox(height: 16),
+        if (!kReleaseMode) ...[
+          const SizedBox(height: 16),
 
-        // Demo Helper Pill
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.primary5,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primary100),
-          ),
-          child: Row(
-            children: [
-              const Icon(LucideIcons.info, size: 16, color: AppColors.primary),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Demo OTP: 123456',
-                  style: TextStyle(
-                    color: AppColors.secondaryDark,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+          // Demo Helper Pill
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary5,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary100),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.info,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Demo OTP: 123456',
+                    style: TextStyle(
+                      color: AppColors.secondaryDark,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              TextButton(
-                onPressed: _fillDemoOtp,
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                child: const Text(
-                  'Auto-fill',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                    fontSize: 12,
+                TextButton(
+                  onPressed: _fillDemoOtp,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: const Text(
+                    'Auto-fill',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
 
         const SizedBox(height: 18),
 

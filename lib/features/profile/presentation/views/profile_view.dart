@@ -417,7 +417,7 @@ class ProfileView extends StatelessWidget {
           ]),
           const SizedBox(height: 24),
           _buildSignOutButton(context),
-          if (kDebugMode) ...[
+          if (!kReleaseMode) ...[
             const SizedBox(height: 10),
             _buildDebugResetButton(context),
           ],
