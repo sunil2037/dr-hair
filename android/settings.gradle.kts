@@ -6,13 +6,7 @@ pluginManagement {
             if (localProps.exists()) {
                 localProps.reader(Charsets.UTF_8).use { properties.load(it) }
             }
-            var path = properties.getProperty("flutter.sdk")
-            val devSdk = java.io.File("/Users/sunilsharma/Developer/flutter")
-            if (path == null || path.contains("Documents") || path.contains("Sunil’s")) {
-                if (devSdk.exists()) {
-                    path = devSdk.absolutePath
-                }
-            }
+            val path = properties.getProperty("flutter.sdk")
             require(path != null) { "flutter.sdk not set in local.properties" }
             path
         }
@@ -33,14 +27,8 @@ val flutterSdkPath =
         if (localProps.exists()) {
             localProps.reader(Charsets.UTF_8).use { properties.load(it) }
         }
-        var path = properties.getProperty("flutter.sdk")
-        val devSdk = java.io.File("/Users/sunilsharma/Developer/flutter")
-        if (path == null || path.contains("Documents") || path.contains("Sunil’s")) {
-            if (devSdk.exists()) {
-                path = devSdk.absolutePath
-            }
-        }
-        path ?: "/Users/sunilsharma/Developer/flutter"
+        val path = properties.getProperty("flutter.sdk")
+        path ?: "/Users/sunil/Documents/all_sdk/flutter"
     }
 
 extra["flutterSdkPath"] = flutterSdkPath
