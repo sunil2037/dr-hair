@@ -1,7 +1,5 @@
 import 'dart:io';
 
-export 'doctor_selection_card.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -161,10 +159,7 @@ class CareHorizontalTabBar extends StatelessWidget {
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 9,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
             decoration: BoxDecoration(
               color: isSelected ? AppColors.primary : Colors.white,
               borderRadius: BorderRadius.circular(14),
@@ -284,7 +279,11 @@ Widget careStatPill({
 }
 
 /// Helper to render cached network image or local file image.
-Widget buildCarePhotoWidget(String path, {double height = 180, BoxFit fit = BoxFit.cover}) {
+Widget buildCarePhotoWidget(
+  String path, {
+  double height = 180,
+  BoxFit fit = BoxFit.cover,
+}) {
   if (path.startsWith('http')) {
     return CustomCachedImage(
       imageUrl: path,
@@ -295,12 +294,7 @@ Widget buildCarePhotoWidget(String path, {double height = 180, BoxFit fit = BoxF
   }
   final file = File(path);
   if (file.existsSync()) {
-    return Image.file(
-      file,
-      height: height,
-      width: double.infinity,
-      fit: fit,
-    );
+    return Image.file(file, height: height, width: double.infinity, fit: fit);
   }
   return Container(
     height: height,

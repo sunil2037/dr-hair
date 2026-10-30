@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/views/signin_view.dart';
+import '../../features/appointments/presentation/clinic_appointment_view.dart';
 import '../../features/auth/presentation/views/splash_view.dart';
 import '../../features/hair_test/presentation/views/assessment_result_view.dart';
 import '../../features/hair_test/presentation/views/hair_test_view.dart';
@@ -22,7 +24,6 @@ import '../../features/static/presentation/views/policy_page_view.dart';
 import '../../features/treatment/presentation/views/treatment_details_view.dart';
 import '../../features/videos/presentation/views/videos_view.dart';
 import '../widgets/assessment_gate.dart';
-import '../../features/care/presentation/views/coach_booking_view.dart';
 import '../../features/care/presentation/views/diet_plan_view.dart';
 import '../../features/care/presentation/views/order_tracking_view.dart';
 import '../../features/care/presentation/views/progress_tracking_view.dart';
@@ -101,9 +102,8 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.assessmentResult,
-        builder: (context, state) => AssessmentRequiredRoute(
-          child: const AssessmentResultView(),
-        ),
+        builder: (context, state) =>
+            AssessmentRequiredRoute(child: const AssessmentResultView()),
       ),
       GoRoute(
         path: RouteNames.updateProfile,
@@ -111,9 +111,8 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.treatmentDetails,
-        builder: (context, state) => AssessmentRequiredRoute(
-          child: const TreatmentDetailsView(),
-        ),
+        builder: (context, state) =>
+            AssessmentRequiredRoute(child: const TreatmentDetailsView()),
       ),
       GoRoute(
         path: RouteNames.cart,
@@ -128,15 +127,48 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.productDetails,
+        redirect: (context, state) =>
+            state.extra is ProductItem ? null : RouteNames.products,
         builder: (context, state) {
-          final product = state.extra as ProductItem?;
+          final product = state.extra as ProductItem;
+          return ProductDetailsView(initialProduct: product);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.productById,
+        builder: (context, state) {
+          final id = state.pathParameters['productId'];
+          ProductItem? product;
+          for (final item in ProductItem.demoCatalog) {
+            if (item.id == id) {
+              product = item;
+              break;
+            }
+          }
+          if (product == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Product unavailable')),
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('This product is no longer available.'),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () => context.go(RouteNames.products),
+                      child: const Text('Browse products'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
           return ProductDetailsView(initialProduct: product);
         },
       ),
       GoRoute(
         path: RouteNames.checkout,
-        builder: (context, state) =>
-            CheckoutView(amount: state.extra as int? ?? 2048),
+        builder: (context, state) => const CheckoutView(),
       ),
       GoRoute(
         path: RouteNames.products,
@@ -156,9 +188,8 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.routine,
-        builder: (context, state) => AssessmentRequiredRoute(
-          child: const RoutineTrackerView(),
-        ),
+        builder: (context, state) =>
+            AssessmentRequiredRoute(child: const RoutineTrackerView()),
       ),
       GoRoute(
         path: RouteNames.progress,
@@ -169,24 +200,18 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: RouteNames.coachBooking,
-        builder: (context, state) => const CoachBookingView(),
-      ),
-      GoRoute(
-        path: RouteNames.appointmentBooking,
-        builder: (context, state) => const CoachBookingView(),
+        path: RouteNames.clinicAppointment,
+        builder: (context, state) => const ClinicAppointmentView(),
       ),
       GoRoute(
         path: RouteNames.dietPlan,
-        builder: (context, state) => AssessmentRequiredRoute(
-          child: const DietPlanView(),
-        ),
+        builder: (context, state) =>
+            AssessmentRequiredRoute(child: const DietPlanView()),
       ),
       GoRoute(
         path: RouteNames.reminders,
-        builder: (context, state) => AssessmentRequiredRoute(
-          child: const RemindersView(),
-        ),
+        builder: (context, state) =>
+            AssessmentRequiredRoute(child: const RemindersView()),
       ),
       GoRoute(
         path: RouteNames.orders,
@@ -195,7 +220,8 @@ class AppRouter {
       GoRoute(
         path: RouteNames.policy,
         builder: (context, state) {
-          final policyType = state.extra as PolicyType? ??
+          final policyType =
+              state.extra as PolicyType? ??
               PolicyType.fromSlug(state.uri.queryParameters['type']);
           return PolicyPageView(initialType: policyType);
         },

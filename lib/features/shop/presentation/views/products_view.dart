@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/routes/app_destination.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../../data/models/product_model.dart';
 import '../viewmodels/cart_cubit.dart';
@@ -480,7 +481,7 @@ class _ProductsViewState extends State<ProductsView>
                                       : 2,
                                   crossAxisSpacing: 8,
                                   mainAxisSpacing: 8,
-                                  mainAxisExtent: 244,
+                                  mainAxisExtent: 225,
                                 ),
                             delegate: SliverChildBuilderDelegate((
                               context,
@@ -490,8 +491,8 @@ class _ProductsViewState extends State<ProductsView>
                               return _ProductGridCard(
                                 product: product,
                                 onTap: () => context.push(
-                                  RouteNames.productDetails,
-                                  extra: product,
+                                  AppDestination.product(product.id).location ??
+                                      RouteNames.products,
                                 ),
                                 onAddToCart: () => _handleAddToCart(product),
                               );

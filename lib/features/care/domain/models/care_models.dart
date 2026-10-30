@@ -45,20 +45,22 @@ class ProgressCheckIn {
     'doctorNote': doctorNote,
   };
 
-  factory ProgressCheckIn.fromJson(Map<String, dynamic> json) => ProgressCheckIn(
-    id: json['id'] as String? ?? '',
-    date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
-    imagePath: json['imagePath'] as String? ?? '',
-    frontImagePath: json['frontImagePath'] as String?,
-    backImagePath: json['backImagePath'] as String?,
-    topImagePath: json['topImagePath'] as String?,
-    scalpRegion: json['scalpRegion'] as String? ?? 'Scalp',
-    sheddingLevel: json['sheddingLevel'] as String? ?? 'Not recorded',
-    notes: json['notes'] as String? ?? '',
-    densityRating: (json['densityRating'] as num?)?.toInt() ?? 3,
-    isDoctorReviewed: json['isDoctorReviewed'] as bool? ?? false,
-    doctorNote: json['doctorNote'] as String?,
-  );
+  factory ProgressCheckIn.fromJson(Map<String, dynamic> json) =>
+      ProgressCheckIn(
+        id: json['id'] as String? ?? '',
+        date:
+            DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+        imagePath: json['imagePath'] as String? ?? '',
+        frontImagePath: json['frontImagePath'] as String?,
+        backImagePath: json['backImagePath'] as String?,
+        topImagePath: json['topImagePath'] as String?,
+        scalpRegion: json['scalpRegion'] as String? ?? 'Scalp',
+        sheddingLevel: json['sheddingLevel'] as String? ?? 'Not recorded',
+        notes: json['notes'] as String? ?? '',
+        densityRating: (json['densityRating'] as num?)?.toInt() ?? 3,
+        isDoctorReviewed: json['isDoctorReviewed'] as bool? ?? false,
+        doctorNote: json['doctorNote'] as String?,
+      );
 
   String get effectiveFrontImage => frontImagePath ?? imagePath;
   String get effectiveTopImage => topImagePath ?? imagePath;
@@ -213,16 +215,17 @@ class CareReminder {
       6: 'Sat',
       7: 'Sun',
     };
-    return sorted.map((d) => dayNames[d] ?? '').where((s) => s.isNotEmpty).join(', ');
+    return sorted
+        .map((d) => dayNames[d] ?? '')
+        .where((s) => s.isNotEmpty)
+        .join(', ');
   }
 
   String get timeFormatted {
     final hour = time.hour;
     final minute = time.minute.toString().padLeft(2, '0');
     final period = hour >= 12 ? 'PM' : 'AM';
-    final formattedHour = hour == 0
-        ? 12
-        : (hour > 12 ? hour - 12 : hour);
+    final formattedHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
     return '$formattedHour:$minute $period';
   }
 
@@ -274,7 +277,9 @@ class CareReminder {
 
   factory CareReminder.fromJson(Map<String, dynamic> json) {
     return CareReminder(
-      id: json['id'] as String? ?? 'rem_${DateTime.now().millisecondsSinceEpoch}',
+      id:
+          json['id'] as String? ??
+          'rem_${DateTime.now().millisecondsSinceEpoch}',
       title: json['title'] as String? ?? '',
       subtitle: json['subtitle'] as String? ?? '',
       time: TimeOfDay(
@@ -284,7 +289,8 @@ class CareReminder {
       isEnabled: json['isEnabled'] as bool? ?? true,
       frequency: json['frequency'] as String? ?? 'Daily',
       treatmentType: json['treatmentType'] as String? ?? 'Topical Serum',
-      repeatDays: (json['repeatDays'] as List<dynamic>?)
+      repeatDays:
+          (json['repeatDays'] as List<dynamic>?)
               ?.map((e) => (e as num).toInt())
               .toList() ??
           const [1, 2, 3, 4, 5, 6, 7],
@@ -293,79 +299,6 @@ class CareReminder {
       snoozedUntil: json['snoozedUntil'] != null
           ? DateTime.tryParse(json['snoozedUntil'] as String)
           : null,
-    );
-  }
-}
-
-/// Represents a scheduled guidance consultation with a specialist.
-class CoachBooking {
-  final String id;
-  final String coachName;
-  final String role;
-  final String avatarUrl;
-  final DateTime date;
-  final String timeSlot;
-  final String consultationType;
-  final String status;
-  final String notes;
-
-  const CoachBooking({
-    required this.id,
-    required this.coachName,
-    required this.role,
-    required this.avatarUrl,
-    required this.date,
-    required this.timeSlot,
-    required this.consultationType,
-    this.status = 'Confirmed',
-    this.notes = '',
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'coachName': coachName,
-    'role': role,
-    'avatarUrl': avatarUrl,
-    'date': date.toIso8601String(),
-    'timeSlot': timeSlot,
-    'consultationType': consultationType,
-    'status': status,
-    'notes': notes,
-  };
-
-  factory CoachBooking.fromJson(Map<String, dynamic> json) => CoachBooking(
-    id: json['id'] as String? ?? '',
-    coachName: json['coachName'] as String? ?? '',
-    role: json['role'] as String? ?? '',
-    avatarUrl: json['avatarUrl'] as String? ?? '',
-    date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
-    timeSlot: json['timeSlot'] as String? ?? '',
-    consultationType: json['consultationType'] as String? ?? '',
-    status: json['status'] as String? ?? 'Confirmed',
-    notes: json['notes'] as String? ?? '',
-  );
-
-  CoachBooking copyWith({
-    String? id,
-    String? coachName,
-    String? role,
-    String? avatarUrl,
-    DateTime? date,
-    String? timeSlot,
-    String? consultationType,
-    String? status,
-    String? notes,
-  }) {
-    return CoachBooking(
-      id: id ?? this.id,
-      coachName: coachName ?? this.coachName,
-      role: role ?? this.role,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      date: date ?? this.date,
-      timeSlot: timeSlot ?? this.timeSlot,
-      consultationType: consultationType ?? this.consultationType,
-      status: status ?? this.status,
-      notes: notes ?? this.notes,
     );
   }
 }

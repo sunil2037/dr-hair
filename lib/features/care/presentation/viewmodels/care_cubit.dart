@@ -10,7 +10,6 @@ import 'care_state.dart';
 
 class CareCubit extends Cubit<CareState> {
   static const _checkInsKey = 'care_checkins_v1';
-  static const _bookingsKey = 'care_bookings_v1';
   static const _ordersKey = 'care_orders_v1';
   static const _routineHistoryKey = 'care_routine_completion_days_v1';
   static const _careDataClearedKey = 'care_personal_data_cleared_v1';
@@ -43,10 +42,6 @@ class CareCubit extends Cubit<CareState> {
       cache.getString(_checkInsKey),
       ProgressCheckIn.fromJson,
     );
-    final bookings = _readList(
-      cache.getString(_bookingsKey),
-      CoachBooking.fromJson,
-    );
     final orders = _readList(cache.getString(_ordersKey), CareOrder.fromJson);
     final routineDays = _readList<String>(
       cache.getString(_routineHistoryKey),
@@ -59,7 +54,6 @@ class CareCubit extends Cubit<CareState> {
         reminders: persistedReminders ?? state.reminders,
         routineTasks: routineTasks,
         checkIns: checkIns ?? state.checkIns,
-        coachBookings: bookings ?? state.coachBookings,
         orders: orders ?? state.orders,
         routineCompletionDays: routineDays ?? state.routineCompletionDays,
       ),
@@ -171,20 +165,6 @@ class CareCubit extends Cubit<CareState> {
         time: TimeOfDay(hour: 11, minute: 0),
         isEnabled: false,
         frequency: 'Monthly',
-      ),
-    ];
-
-    final defaultBookings = [
-      CoachBooking(
-        id: 'cb_1',
-        coachName: 'Dr. Priya Verma',
-        role: 'Senior Trichologist & Clinical Lead',
-        avatarUrl: 'https://images.unsplash.com/photo-1594824813637-883a9e652a6a?q=80&w=300',
-        date: DateTime.now().add(const Duration(days: 2)),
-        timeSlot: '11:30 AM',
-        consultationType: 'Video Consultation (15 mins)',
-        status: 'Confirmed',
-        notes: 'Month 2 routine adjustment and scalp density review.',
       ),
     ];
 
@@ -311,7 +291,6 @@ class CareCubit extends Cubit<CareState> {
         checkIns: defaultCheckIns,
         routineTasks: defaultTasks,
         reminders: defaultReminders,
-        coachBookings: defaultBookings,
         dietPlans: defaultDiet,
         currentDietDay: 0,
         waterCups: 6,
@@ -554,69 +533,6 @@ class CareCubit extends Cubit<CareState> {
     saveReminder(newReminder);
   }
 
-  // --- COACH BOOKING ACTIONS ---
-  bool isCoachSlotTaken({
-    required DateTime date,
-    required String timeSlot,
-    String? ignoreBookingId,
-  }) {
-    return state.coachBookings.any((booking) {
-      if (booking.id == ignoreBookingId || booking.status == 'Cancelled') {
-        return false;
-      }
-      return booking.date.year == date.year &&
-          booking.date.month == date.month &&
-          booking.date.day == date.day &&
-          booking.timeSlot == timeSlot;
-    });
-  }
-
-  bool bookCoach({
-    required String coachName,
-    required String role,
-    required String avatarUrl,
-    required DateTime date,
-    required String timeSlot,
-    required String consultationType,
-    required String notes,
-    String? ignoreBookingId,
-  }) {
-    if (isCoachSlotTaken(
-      date: date,
-      timeSlot: timeSlot,
-      ignoreBookingId: ignoreBookingId,
-    )) {
-      return false;
-    }
-    final newBooking = CoachBooking(
-      id: 'cb_${DateTime.now().millisecondsSinceEpoch}',
-      coachName: coachName,
-      role: role,
-      avatarUrl: avatarUrl,
-      date: date,
-      timeSlot: timeSlot,
-      consultationType: consultationType,
-      status: 'Confirmed',
-      notes: notes,
-    );
-
-    emit(state.copyWith(coachBookings: [newBooking, ...state.coachBookings]));
-    _persistBookings();
-    return true;
-  }
-
-  void cancelCoachBooking(String id) {
-    final updated = state.coachBookings.map((b) {
-      if (b.id == id) {
-        return b.copyWith(status: 'Cancelled');
-      }
-      return b;
-    }).toList();
-
-    emit(state.copyWith(coachBookings: updated));
-    _persistBookings();
-  }
-
   void saveLocalOrderPreview({
     required String deliveryAddress,
     required List<String> items,
@@ -663,13 +579,6 @@ class CareCubit extends Cubit<CareState> {
     );
   }
 
-  void _persistBookings() {
-    AppLocalCache.instance.put(
-      _bookingsKey,
-      jsonEncode(state.coachBookings.map((item) => item.toJson()).toList()),
-    );
-  }
-
   Future<void> clearPersonalCareData() async {
     final service =
         _notificationService ?? await CareNotificationService.create();
@@ -681,7 +590,6 @@ class CareCubit extends Cubit<CareState> {
         checkIns: const [],
         routineTasks: const [],
         reminders: const [],
-        coachBookings: const [],
         routineCompletionDays: const [],
         orders: const [],
       ),
@@ -689,7 +597,7 @@ class CareCubit extends Cubit<CareState> {
     final cache = AppLocalCache.instance;
     for (final key in [
       _checkInsKey,
-      _bookingsKey,
+      'care_bookings_v1',
       _routineHistoryKey,
       'care_persisted_routine_v1',
       'care_persisted_reminders_v1',
@@ -712,7 +620,7 @@ class CareCubit extends Cubit<CareState> {
     final cache = AppLocalCache.instance;
     for (final key in [
       _checkInsKey,
-      _bookingsKey,
+      'care_bookings_v1',
       _ordersKey,
       _routineHistoryKey,
       _careDataClearedKey,

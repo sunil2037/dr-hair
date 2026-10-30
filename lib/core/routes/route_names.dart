@@ -13,6 +13,9 @@ class RouteNames {
   static const String cart = '/cart';
   static const String notifications = '/notifications';
   static const String productDetails = '/product-details';
+  static const String productById = '/products/:productId';
+  static String productPath(String productId) =>
+      '/products/${Uri.encodeComponent(productId)}';
   static const String checkout = '/checkout';
   static const String signin = '/signin';
   static const String otp = '/otp';
@@ -20,8 +23,7 @@ class RouteNames {
   static const String contact = '/contact';
   static const String routine = '/routine';
   static const String progress = '/progress';
-  static const String coachBooking = '/coach-booking';
-  static const String appointmentBooking = '/book-appointment';
+  static const String clinicAppointment = '/clinic-appointment';
   static const String dietPlan = '/diet-plan';
   static const String reminders = '/reminders';
   static const String orders = '/orders';
@@ -30,7 +32,6 @@ class RouteNames {
   static const String terms = '/terms';
   static const String returnsRefunds = '/returns-refunds';
   static const String cancellationPolicy = '/cancellation-policy';
-  static const String guarantee = '/guarantee';
   static const String products = '/products';
   static const String assessmentResult = '/assessment-result';
 }

@@ -10,6 +10,7 @@ import 'core/storage/app_local_cache.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
 import 'features/auth/presentation/viewmodels/auth_cubit.dart';
+import 'features/appointments/presentation/clinic_appointment_cubit.dart';
 import 'features/care/presentation/viewmodels/care_cubit.dart';
 import 'features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'features/shop/presentation/viewmodels/cart_cubit.dart';
@@ -63,6 +64,9 @@ class MyApp extends StatelessWidget {
             create: (_) => AuthCubit()..checkAuthStatus(),
           ),
         BlocProvider<CartCubit>(create: (_) => CartCubit()),
+        BlocProvider<ClinicAppointmentCubit>(
+          create: (_) => ClinicAppointmentCubit()..load(),
+        ),
         BlocProvider<CareCubit>(create: (_) => CareCubit()),
         BlocProvider<HairTestCubit>(
           create: (_) => HairTestCubit()..loadSavedState(),

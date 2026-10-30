@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
+import '../../data/models/coupon_model.dart';
 import '../viewmodels/cart_cubit.dart';
 
 class CartView extends StatefulWidget {
@@ -24,7 +25,18 @@ class _CartViewState extends State<CartView> {
       context.read<CartCubit?>()?.state.items ?? _localItems;
 
   final TextEditingController _couponController = TextEditingController();
-  bool _couponApplied = false;
+  CouponRule? _appliedCoupon;
+  String? _couponError;
+
+  CouponEvaluation? get _couponEvaluation =>
+      _appliedCoupon?.evaluate(subtotal: _subtotal, items: _items);
+
+  bool get _couponApplied => _couponEvaluation?.isValid ?? false;
+  String? get _couponMessage {
+    final result = _couponEvaluation;
+    if (result != null && !result.isValid) return result.message;
+    return _couponError;
+  }
 
   @override
   void initState() {
@@ -65,7 +77,7 @@ class _CartViewState extends State<CartView> {
   int get _totalItemCount =>
       _items.fold(0, (sum, item) => sum + (item['quantity'] as int));
 
-  int get _discount => _couponApplied ? 200 : 0;
+  int get _discount => _couponEvaluation?.discount ?? 0;
 
   int get _totalAmount {
     final total = _subtotal - _discount;
@@ -126,11 +138,17 @@ class _CartViewState extends State<CartView> {
     final sharedCart = context.read<CartCubit?>();
     if (sharedCart != null) {
       sharedCart.clear();
-      setState(() => _couponApplied = false);
+      setState(() {
+        _appliedCoupon = null;
+        _couponError = null;
+        _couponController.clear();
+      });
     } else {
       setState(() {
         _localItems.clear();
-        _couponApplied = false;
+        _appliedCoupon = null;
+        _couponError = null;
+        _couponController.clear();
       });
     }
     HapticFeedback.mediumImpact();
@@ -138,21 +156,29 @@ class _CartViewState extends State<CartView> {
 
   void _applyCoupon() {
     final code = _couponController.text.trim().toUpperCase();
-    if (code == 'FIRSTDR') {
+    final matchingRules = demoCouponRules.where(
+      (coupon) => coupon.code == code,
+    );
+    if (matchingRules.isEmpty) {
       setState(() {
-        _couponApplied = true;
+        _appliedCoupon = null;
+        _couponError = 'That coupon code is not available.';
       });
-      HapticFeedback.lightImpact();
-    } else {
-      setState(() {
-        _couponApplied = false;
-      });
+      return;
     }
+    final coupon = matchingRules.first;
+    final result = coupon.evaluate(subtotal: _subtotal, items: _items);
+    setState(() {
+      _appliedCoupon = result.isValid ? coupon : null;
+      _couponError = result.isValid ? null : result.message;
+    });
+    if (result.isValid) HapticFeedback.lightImpact();
   }
 
   void _removeCoupon() {
     setState(() {
-      _couponApplied = false;
+      _appliedCoupon = null;
+      _couponError = null;
       _couponController.clear();
     });
     HapticFeedback.selectionClick();
@@ -622,7 +648,7 @@ class _CartViewState extends State<CartView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Apply Sanctuary Reward',
+                  'Apply a coupon',
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w800,
@@ -636,6 +662,16 @@ class _CartViewState extends State<CartView> {
                       child: TextField(
                         controller: _couponController,
                         textCapitalization: TextCapitalization.characters,
+                        onChanged: (value) {
+                          setState(() {
+                            if (_appliedCoupon != null &&
+                                value.trim().toUpperCase() !=
+                                    _appliedCoupon!.code) {
+                              _appliedCoupon = null;
+                            }
+                            _couponError = null;
+                          });
+                        },
                         decoration: InputDecoration(
                           hintText: 'Enter coupon code',
                           hintStyle: const TextStyle(
@@ -705,7 +741,7 @@ class _CartViewState extends State<CartView> {
                 ),
                 if (_couponApplied) ...[
                   const SizedBox(height: 8),
-                  const Row(
+                  Row(
                     children: [
                       Icon(
                         LucideIcons.checkCircle2,
@@ -714,8 +750,8 @@ class _CartViewState extends State<CartView> {
                       ),
                       SizedBox(width: 6),
                       Text(
-                        'FIRSTDR applied. ₹200 saved.',
-                        style: TextStyle(
+                        '${_appliedCoupon?.code ?? 'Coupon'} applied. ₹$_discount saved.',
+                        style: const TextStyle(
                           color: AppColors.success,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -725,10 +761,12 @@ class _CartViewState extends State<CartView> {
                   ),
                 ] else if (_couponController.text.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  const Text(
-                    'Enter FIRSTDR to apply the available reward.',
+                  Text(
+                    _couponMessage ?? 'Try FIRSTDR, GROW15, or SERUM300.',
                     style: TextStyle(
-                      color: AppColors.secondaryDark,
+                      color: _couponMessage == null
+                          ? AppColors.secondaryDark
+                          : AppColors.danger,
                       fontSize: 12,
                     ),
                   ),
@@ -762,7 +800,7 @@ class _CartViewState extends State<CartView> {
                 _buildSummaryRow('Subtotal', '₹$_subtotal'),
                 if (_couponApplied)
                   _buildSummaryRow(
-                    'Sanctuary Reward (FIRSTDR)',
+                    'Coupon (${_appliedCoupon?.code ?? 'Offer'})',
                     '- ₹$_discount',
                     isDiscount: true,
                   ),

@@ -7,7 +7,6 @@ export '../widgets/add_routine_task_bottom_sheet.dart';
 export '../widgets/add_reminder_bottom_sheet.dart';
 
 // Feature Views
-export 'coach_booking_view.dart';
 export 'diet_plan_view.dart';
 export 'order_tracking_view.dart';
 export 'progress_tracking_view.dart';

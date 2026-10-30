@@ -13,9 +13,7 @@ import '../../../care/presentation/viewmodels/care_cubit.dart';
 import '../viewmodels/cart_cubit.dart';
 
 class CheckoutView extends StatefulWidget {
-  final int amount;
-
-  const CheckoutView({super.key, this.amount = 2048});
+  const CheckoutView({super.key});
 
   @override
   State<CheckoutView> createState() => _CheckoutViewState();
@@ -28,8 +26,7 @@ class _CheckoutViewState extends State<CheckoutView> {
   int get _checkoutAmount {
     final cart = context.read<CartCubit?>()?.state;
     if (cart != null && cart.items.isNotEmpty) return cart.subtotal;
-    // Keeps standalone demo previews and older route links usable.
-    return widget.amount;
+    return 0;
   }
 
   void _openAddressSheet() {
@@ -74,9 +71,7 @@ class _CheckoutViewState extends State<CheckoutView> {
   @override
   Widget build(BuildContext context) {
     final cartState = context.watch<CartCubit?>()?.state;
-    final amount = cartState != null && cartState.items.isNotEmpty
-        ? cartState.subtotal
-        : widget.amount;
+    final amount = cartState?.subtotal ?? 0;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(

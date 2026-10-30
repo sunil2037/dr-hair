@@ -5,7 +5,6 @@ class CareState {
   final List<ProgressCheckIn> checkIns;
   final List<RoutineTask> routineTasks;
   final List<CareReminder> reminders;
-  final List<CoachBooking> coachBookings;
   final List<List<DietMeal>> dietPlans;
   final int currentDietDay;
   final int waterCups;
@@ -18,13 +17,13 @@ class CareState {
     this.checkIns = const [],
     this.routineTasks = const [],
     this.reminders = const [],
-    this.coachBookings = const [],
     this.dietPlans = const [],
     this.currentDietDay = 0,
     this.waterCups = 6,
     this.routineCompletionDays = const [],
     this.orders = const [],
-    this.notificationPermissionStatus = NotificationPermissionStatus.notDetermined,
+    this.notificationPermissionStatus =
+        NotificationPermissionStatus.notDetermined,
     this.isLoadingReminders = false,
   });
 
@@ -40,7 +39,8 @@ class CareState {
     final today = DateTime.now();
     for (var offset = 0; offset < 365; offset++) {
       final date = today.subtract(Duration(days: offset));
-      final key = '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final key =
+          '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       if (!days.contains(key)) break;
       streak++;
     }
@@ -51,7 +51,6 @@ class CareState {
     List<ProgressCheckIn>? checkIns,
     List<RoutineTask>? routineTasks,
     List<CareReminder>? reminders,
-    List<CoachBooking>? coachBookings,
     List<List<DietMeal>>? dietPlans,
     int? currentDietDay,
     int? waterCups,
@@ -64,11 +63,11 @@ class CareState {
       checkIns: checkIns ?? this.checkIns,
       routineTasks: routineTasks ?? this.routineTasks,
       reminders: reminders ?? this.reminders,
-      coachBookings: coachBookings ?? this.coachBookings,
       dietPlans: dietPlans ?? this.dietPlans,
       currentDietDay: currentDietDay ?? this.currentDietDay,
       waterCups: waterCups ?? this.waterCups,
-      routineCompletionDays: routineCompletionDays ?? this.routineCompletionDays,
+      routineCompletionDays:
+          routineCompletionDays ?? this.routineCompletionDays,
       orders: orders ?? this.orders,
       notificationPermissionStatus:
           notificationPermissionStatus ?? this.notificationPermissionStatus,

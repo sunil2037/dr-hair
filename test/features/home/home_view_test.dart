@@ -16,9 +16,7 @@ void main() {
       child: MaterialApp(
         theme: AppTheme.lightTheme,
         home: Scaffold(
-          body: HomeView(
-            onStartHairTest: onStartHairTest ?? () {},
-          ),
+          body: HomeView(onStartHairTest: onStartHairTest ?? () {}),
         ),
       ),
     );
@@ -40,19 +38,17 @@ void main() {
       // Verify the presence of key sections
       expect(find.byType(HomeView), findsOneWidget);
       expect(find.text('Essential Products'), findsOneWidget);
-      expect(find.text('Prefer expert guidance?'), findsOneWidget);
+      expect(find.text('Prefer expert guidance?'), findsNothing);
+      expect(find.text('Visit Dr. Jai Bansal'), findsOneWidget);
       expect(find.text('URGENT CARE'), findsOneWidget);
       expect(find.text('Explore Dr.Hair'), findsOneWidget);
       expect(find.text('Free Hair Test'), findsOneWidget);
 
       // Verify vertical positioning order:
       final productsTop = tester.getTopLeft(find.text('Essential Products')).dy;
-      final appointmentTop =
-          tester.getTopLeft(find.text('Prefer expert guidance?')).dy;
       final urgentCareTop = tester.getTopLeft(find.text('URGENT CARE')).dy;
       final moreContentTop = tester.getTopLeft(find.text('Explore Dr.Hair')).dy;
-      expect(productsTop, lessThan(appointmentTop));
-      expect(appointmentTop, lessThan(urgentCareTop));
+      expect(productsTop, lessThan(urgentCareTop));
       expect(urgentCareTop, lessThan(moreContentTop));
     },
   );

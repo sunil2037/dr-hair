@@ -7,7 +7,7 @@ void main() {
   group('CheckoutView Demo Behavior & Policy Links Tests', () {
     Widget createTestApp() {
       return const MaterialApp(
-        home: CheckoutView(amount: 2048),
+        home: CheckoutView(),
       );
     }
 
@@ -21,7 +21,7 @@ void main() {
       expect(find.text('PAYMENT METHOD'), findsOneWidget);
       expect(find.text('Payment provider connection required to continue'), findsOneWidget);
       expect(find.text('Items Total'), findsOneWidget);
-      expect(find.text('₹2048'), findsWidgets);
+      expect(find.text('₹0'), findsWidgets);
     });
 
     testWidgets('displays demo checkout transparency note and never claims payment success', (tester) async {

@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/routes/app_destination.dart';
 import '../../../care/presentation/viewmodels/care_cubit.dart';
 import '../../../care/presentation/viewmodels/care_state.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
@@ -95,7 +96,9 @@ class _HomeViewState extends State<HomeView>
         debugPrint('Could not launch WhatsApp');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open WhatsApp. Please try again.')),
+            const SnackBar(
+              content: Text('Could not open WhatsApp. Please try again.'),
+            ),
           );
         }
       }
@@ -103,7 +106,9 @@ class _HomeViewState extends State<HomeView>
       debugPrint('Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open WhatsApp. Please try again.')),
+          const SnackBar(
+            content: Text('Could not open WhatsApp. Please try again.'),
+          ),
         );
       }
     }
@@ -131,7 +136,7 @@ class _HomeViewState extends State<HomeView>
               _revealSection(2, _buildEssentialProducts(context)),
 
               const SizedBox(height: 20),
-              _revealSection(3, _buildAppointmentCard(context)),
+              _revealSection(3, _buildClinicAppointmentCard(context)),
 
               const SizedBox(height: 20),
               _revealSection(4, _buildUrgentCareCard()),
@@ -170,8 +175,9 @@ class _HomeViewState extends State<HomeView>
     final hairState = context.watch<HairTestCubit>().state;
     final hasCompletedAssessment =
         hairState.isCompleted && !hairState.isRetesting;
-    final hasAssessmentProgress =
-        HomeJourneySelector.hasAssessmentProgress(hairState);
+    final hasAssessmentProgress = HomeJourneySelector.hasAssessmentProgress(
+      hairState,
+    );
     final mediaQuery = MediaQuery.of(context);
     final double screenHeight = mediaQuery.size.height;
     final double screenWidth = mediaQuery.size.width;
@@ -319,9 +325,7 @@ class _HomeViewState extends State<HomeView>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             elevation: 5,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25),
@@ -372,7 +376,7 @@ class _HomeViewState extends State<HomeView>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.primary5,
           borderRadius: BorderRadius.circular(24),
@@ -464,18 +468,18 @@ class _HomeViewState extends State<HomeView>
             const Text(
               'Trusted by Thousands',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppColors.primaryDark,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             const Text(
               'Real results backed by expertise and experience',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.secondaryDark),
+              style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Stat Grid
             Row(
@@ -600,7 +604,7 @@ class _HomeViewState extends State<HomeView>
     required String title,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -746,7 +750,10 @@ class _HomeViewState extends State<HomeView>
                       child: TextButton.icon(
                         onPressed: () => context.push(RouteNames.routine),
                         icon: const Icon(LucideIcons.listChecks, size: 16),
-                        label: Text(routineActionLabel),
+                        label: Text(
+                          routineActionLabel,
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ),
                     Expanded(
@@ -754,7 +761,10 @@ class _HomeViewState extends State<HomeView>
                         onPressed: () =>
                             context.push(RouteNames.progress, extra: true),
                         icon: const Icon(LucideIcons.camera, size: 16),
-                        label: const Text('Log progress'),
+                        label: const Text(
+                          'Log progress',
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ),
                   ],
@@ -824,7 +834,7 @@ class _HomeViewState extends State<HomeView>
               crossAxisCount: 2,
               crossAxisSpacing: 14,
               mainAxisSpacing: 14,
-              childAspectRatio: 1.0,
+              childAspectRatio: 1.4,
             ),
             itemBuilder: (context, index) {
               final item = trustPoints[index];
@@ -1003,78 +1013,53 @@ class _HomeViewState extends State<HomeView>
     );
   }
 
-  Widget _buildAppointmentCard(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.primary100),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryDark.withValues(alpha: 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primary5,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const Icon(
-                LucideIcons.calendarDays,
-                color: AppColors.primary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Prefer expert guidance?',
-                    style: TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Book an appointment with our care team.',
-                    style: TextStyle(
-                      color: AppColors.secondaryDark,
-                      fontSize: 10,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              tooltip: 'Book appointment',
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => context.push(RouteNames.coachBooking),
-              icon: const Icon(LucideIcons.arrowRight, size: 18),
-            ),
-          ],
-        ),
+  Widget _buildClinicAppointmentCard(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary100),
       ),
-    );
-  }
+      child: Row(
+        children: [
+          const CircleAvatar(
+            backgroundColor: AppColors.primary5,
+            child: Icon(LucideIcons.calendarDays, color: AppColors.primary),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Visit Dr. Jai Bansal',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Request a physical clinic appointment.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.secondaryDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton.filled(
+            tooltip: 'Request clinic appointment',
+            onPressed: () => context.push(RouteNames.clinicAppointment),
+            icon: const Icon(LucideIcons.arrowRight, size: 18),
+          ),
+        ],
+      ),
+    ),
+  );
 
   // --- SECTION 10: REVIEWS ---
   Widget _buildReviewsSection(BuildContext context) {
@@ -1148,7 +1133,7 @@ class _HomeViewState extends State<HomeView>
               final r = reviews[index];
               return Container(
                 width: 280,
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.primary5,
                   borderRadius: BorderRadius.circular(22),
@@ -1359,7 +1344,7 @@ class _HomeViewState extends State<HomeView>
             title: Text(
               question,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primaryDark,
               ),
@@ -1522,8 +1507,10 @@ class _EssentialProductsSection extends StatelessWidget {
                     : MedicineCategory.dermatologist,
                 rating: item.rating,
                 showAddToCart: false,
-                onTap: () =>
-                    context.push(RouteNames.productDetails, extra: item),
+                onTap: () => context.push(
+                  AppDestination.product(item.id).location ??
+                      RouteNames.products,
+                ),
               );
             },
           ),

@@ -23,6 +23,7 @@ import '../../../shop/presentation/viewmodels/cart_cubit.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_state.dart';
 import '../../../care/presentation/viewmodels/care_cubit.dart';
+import '../../../appointments/presentation/clinic_appointment_cubit.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -30,6 +31,9 @@ class ProfileView extends StatelessWidget {
   Future<void> _exportLocalData(BuildContext context) async {
     final assessment = context.read<HairTestCubit?>()?.state;
     final care = context.read<CareCubit?>()?.state;
+    final appointmentCubit = context.read<ClinicAppointmentCubit?>();
+    final patientId =
+        context.read<AuthCubit?>()?.state.user?.patientId ?? 'GUEST';
     final export = {
       'exportedAt': DateTime.now().toIso8601String(),
       'assessment': assessment == null
@@ -49,8 +53,11 @@ class ProfileView extends StatelessWidget {
             },
       'routine': care?.routineTasks.map((task) => task.toJson()).toList(),
       'checkIns': care?.checkIns.map((item) => item.toJson()).toList(),
-      'appointments': care?.coachBookings.map((item) => item.toJson()).toList(),
       'orders': care?.orders.map((item) => item.toJson()).toList(),
+      'clinicAppointmentRequests': appointmentCubit
+          ?.forPatient(patientId)
+          .map((item) => item.toJson())
+          .toList(),
       'reminders': care?.reminders.map((item) => item.toJson()).toList(),
       'note': 'Photo files are stored on this device and are not included in this export.',
     };
@@ -67,9 +74,23 @@ class ProfileView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Your data on this device', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
+            const Text(
+              'Your data on this device',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryDark,
+              ),
+            ),
             const SizedBox(height: 8),
-            const Text('Assessment answers, routine steps, reminders, check-ins, and appointment records are stored locally. Export a copy or delete this care data from the device.', style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.secondaryDark)),
+            const Text(
+              'Assessment answers, routine steps, reminders, check-ins, and clinic appointment requests are stored locally. Export or delete this care data from the device.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: AppColors.secondaryDark,
+              ),
+            ),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(LucideIcons.share2, color: AppColors.primary),
@@ -88,18 +109,32 @@ class ProfileView extends StatelessWidget {
                   context: context,
                   builder: (dialogContext) => AlertDialog(
                     title: const Text('Delete care data?'),
-                    content: const Text('This removes saved assessment answers, check-ins, reminders, routine steps, and appointment records from this device.'),
+                    content: const Text(
+                      'This removes saved assessment answers, check-ins, reminders, routine steps, and clinic appointment requests from this device.',
+                    ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Keep data')),
-                      FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Delete data')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('Keep data'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        child: const Text('Delete data'),
+                      ),
                     ],
                   ),
                 );
                 if (confirmed == true && context.mounted) {
                   final hairCubit = context.read<HairTestCubit?>();
                   final careCubit = context.read<CareCubit?>();
+                  final appointmentCubit = context
+                      .read<ClinicAppointmentCubit?>();
+                  final patientId =
+                      context.read<AuthCubit?>()?.state.user?.patientId ??
+                      'GUEST';
                   await hairCubit?.clearSavedAssessment();
                   await careCubit?.clearPersonalCareData();
+                  await appointmentCubit?.clearForPatient(patientId);
                 }
               },
             ),
@@ -280,12 +315,12 @@ class ProfileView extends StatelessWidget {
               onTap: () => context.push(RouteNames.assessmentResult),
             ),
             _ProfileMenuTile(
-              icon: LucideIcons.calendarClock,
-              iconColor: const Color(0xFF0891B2),
-              iconBgColor: const Color(0xFFECFEFF),
-              title: 'Appointments',
-              subtitle: 'Schedule in-clinic consultation & scalp scan',
-              onTap: () => context.push(RouteNames.coachBooking),
+              icon: LucideIcons.calendarDays,
+              iconColor: AppColors.primary,
+              iconBgColor: AppColors.primary5,
+              title: 'Clinic appointments',
+              subtitle: 'Request a physical visit with Dr. Jai Bansal',
+              onTap: () => context.push(RouteNames.clinicAppointment),
             ),
             _ProfileMenuTile(
               icon: LucideIcons.clipboardPlus,
@@ -293,7 +328,10 @@ class ProfileView extends StatelessWidget {
               iconBgColor: AppColors.primary5,
               title: 'Treatment plan',
               subtitle: 'View your regimen and dosage',
-              onTap: () => _openPersonalizedFeature(context, RouteNames.treatmentDetails),
+              onTap: () => _openPersonalizedFeature(
+                context,
+                RouteNames.treatmentDetails,
+              ),
             ),
             _ProfileMenuTile(
               icon: LucideIcons.calendarCheck,
@@ -301,7 +339,8 @@ class ProfileView extends StatelessWidget {
               iconBgColor: const Color(0xFFECFDF5),
               title: 'Daily routine',
               subtitle: 'Check off today’s care steps',
-              onTap: () => _openPersonalizedFeature(context, RouteNames.routine),
+              onTap: () =>
+                  _openPersonalizedFeature(context, RouteNames.routine),
             ),
             _ProfileMenuTile(
               icon: LucideIcons.chartNoAxesCombined,
@@ -309,7 +348,8 @@ class ProfileView extends StatelessWidget {
               iconBgColor: const Color(0xFFF5F3FF),
               title: 'Progress journal',
               subtitle: 'Review your check-ins over time',
-              onTap: () => _openPersonalizedFeature(context, RouteNames.progress),
+              onTap: () =>
+                  _openPersonalizedFeature(context, RouteNames.progress),
             ),
             _ProfileMenuTile(
               icon: LucideIcons.apple,
@@ -317,7 +357,8 @@ class ProfileView extends StatelessWidget {
               iconBgColor: const Color(0xFFFFF7ED),
               title: 'Nutrition guide',
               subtitle: 'See daily meal ideas',
-              onTap: () => _openPersonalizedFeature(context, RouteNames.dietPlan),
+              onTap: () =>
+                  _openPersonalizedFeature(context, RouteNames.dietPlan),
             ),
             _ProfileMenuTile(
               icon: LucideIcons.bell,
@@ -325,7 +366,8 @@ class ProfileView extends StatelessWidget {
               iconBgColor: const Color(0xFFFEFCE8),
               title: 'Care reminders',
               subtitle: 'Manage your reminder preferences',
-              onTap: () => _openPersonalizedFeature(context, RouteNames.reminders),
+              onTap: () =>
+                  _openPersonalizedFeature(context, RouteNames.reminders),
               showDivider: false,
             ),
           ]),
@@ -401,7 +443,7 @@ class ProfileView extends StatelessWidget {
               iconColor: const Color(0xFFD97706),
               iconBgColor: const Color(0xFFFFFBEB),
               title: 'Cancellation Policy',
-              subtitle: 'Order cutoff & appointment rescheduling',
+              subtitle: 'Order cancellation timelines',
               onTap: () => context.push(RouteNames.cancellationPolicy),
               showDivider: true,
             ),

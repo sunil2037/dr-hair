@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/routes/app_destination.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../viewmodels/cart_cubit.dart';
 import '../viewmodels/product_details_cubit.dart';
@@ -824,8 +825,8 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                 product: item,
                                 onTap: () {
                                   context.push(
-                                    RouteNames.productDetails,
-                                    extra: item,
+                                    AppDestination.product(item.id).location ??
+                                        RouteNames.products,
                                   );
                                 },
                               );

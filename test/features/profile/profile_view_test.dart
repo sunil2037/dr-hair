@@ -8,8 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _MockCompletedHairTestCubit extends HairTestCubit {
-  _MockCompletedHairTestCubit()
-    : super() {
+  _MockCompletedHairTestCubit() : super() {
     emit(
       const HairTestState(
         isCompleted: true,
@@ -44,7 +43,7 @@ void main() {
     expect(find.text('Progress journal'), findsOneWidget);
     expect(find.text('Nutrition guide'), findsOneWidget);
     expect(find.text('Care reminders'), findsOneWidget);
-    expect(find.text('Appointments'), findsOneWidget);
+    expect(find.text('Clinic appointments'), findsOneWidget);
     expect(find.text('My cart'), findsOneWidget);
     expect(find.text('Orders & delivery'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);

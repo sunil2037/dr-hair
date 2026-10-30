@@ -35,7 +35,10 @@ void main() {
       );
 
       expect(cubit.state.checkIns.length, equals(initialCount + 1));
-      expect(cubit.state.checkIns.first.imagePath, equals('/mock/path/scalp.jpg'));
+      expect(
+        cubit.state.checkIns.first.imagePath,
+        equals('/mock/path/scalp.jpg'),
+      );
       expect(cubit.state.checkIns.first.densityRating, equals(5));
     });
 
@@ -53,7 +56,9 @@ void main() {
       final wasCompleted = task.isCompleted;
 
       cubit.toggleRoutineTask(task.id);
-      final updated = cubit.state.routineTasks.firstWhere((t) => t.id == task.id);
+      final updated = cubit.state.routineTasks.firstWhere(
+        (t) => t.id == task.id,
+      );
       expect(updated.isCompleted, equals(!wasCompleted));
     });
 
@@ -94,43 +99,23 @@ void main() {
       );
     });
 
-    test('bookCoach and cancelCoachBooking manage specialist bookings', () {
-      final initialCount = cubit.state.coachBookings.length;
-      cubit.bookCoach(
-        coachName: 'Dr. Priya Verma',
-        role: 'Senior Trichologist',
-        avatarUrl: 'https://example.com/avatar.jpg',
-        date: DateTime.now().add(const Duration(days: 3)),
-        timeSlot: '02:00 PM',
-        consultationType: 'Video Consultation',
-        notes: 'Scalp itching inquiry',
-      );
+    test(
+      'toggleDietMeal and water intake functions update state correctly',
+      () {
+        cubit.selectDietDay(1);
+        expect(cubit.state.currentDietDay, equals(1));
 
-      expect(cubit.state.coachBookings.length, equals(initialCount + 1));
-      final newBooking = cubit.state.coachBookings.first;
-      expect(newBooking.status, equals('Confirmed'));
+        final wasMealDone = cubit.state.dietPlans[1][0].isCompleted;
+        cubit.toggleDietMeal(1, 0);
+        expect(cubit.state.dietPlans[1][0].isCompleted, equals(!wasMealDone));
 
-      cubit.cancelCoachBooking(newBooking.id);
-      expect(
-        cubit.state.coachBookings.firstWhere((b) => b.id == newBooking.id).status,
-        equals('Cancelled'),
-      );
-    });
+        final initialWater = cubit.state.waterCups;
+        cubit.incrementWater();
+        expect(cubit.state.waterCups, equals(initialWater + 1));
 
-    test('toggleDietMeal and water intake functions update state correctly', () {
-      cubit.selectDietDay(1);
-      expect(cubit.state.currentDietDay, equals(1));
-
-      final wasMealDone = cubit.state.dietPlans[1][0].isCompleted;
-      cubit.toggleDietMeal(1, 0);
-      expect(cubit.state.dietPlans[1][0].isCompleted, equals(!wasMealDone));
-
-      final initialWater = cubit.state.waterCups;
-      cubit.incrementWater();
-      expect(cubit.state.waterCups, equals(initialWater + 1));
-
-      cubit.decrementWater();
-      expect(cubit.state.waterCups, equals(initialWater));
-    });
+        cubit.decrementWater();
+        expect(cubit.state.waterCups, equals(initialWater));
+      },
+    );
   });
 }
