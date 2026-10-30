@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/constants/app_strings.dart';
+import 'core/notifications/firebase_push_service.dart';
 import 'core/routes/app_router.dart';
 import 'core/storage/app_local_cache.dart';
 import 'core/theme/app_theme.dart';
@@ -14,9 +16,14 @@ import 'features/appointments/presentation/clinic_appointment_cubit.dart';
 import 'features/care/presentation/viewmodels/care_cubit.dart';
 import 'features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'features/shop/presentation/viewmodels/cart_cubit.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await FirebasePushService.initialize();
   await AppLocalCache.initialize();
   Bloc.observer = AppBlocObserver();
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "141443100024",
+    "project_id": "dr-hair-fcad1",
+    "storage_bucket": "dr-hair-fcad1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:141443100024:android:6d6627a7f61968daa62c8d",
+        "android_client_info": {
+          "package_name": "com.drhair.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhHEIKU_YWIYFEo0amjAXskiaSzZmmcG4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
