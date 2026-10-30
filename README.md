@@ -1,21 +1,21 @@
-# Dr Hair
+# Dr Hair Flutter app
 
-A new Flutter project for Dr Hair.
+## Run against the local API
 
-## Getting Started
+Start the Express backend on port `5001`, then choose a URL reachable from the device:
 
-This project is a starting point for a Flutter application.
+```bash
+# Flutter web or iOS simulator
+flutter run -d chrome --dart-define=DRHAIR_BACKEND_URL=http://localhost:5001
 
-A few resources to get you started if this is your first Flutter project:
+# Android emulator
+flutter run --dart-define=DRHAIR_BACKEND_URL=http://10.0.2.2:5001
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+For a physical device, use the computer's LAN address and allow that origin in backend `CORS_ORIGINS`. Production builds must pass the deployed HTTPS API origin through `DRHAIR_BACKEND_URL`.
 
-## API Documentation
+## API documentation
 
-Detailed specifications for all backend APIs used across Dr. Hair (endpoints, payloads, responses, auth headers, and Flutter Dio references) can be found in [API_DOCUMENTATION.md](file:///Users/sunilsharma/Documents/Documents%20-%20Sunil%E2%80%99s%20Mac%20mini/project/drhair/flutter_app/API_DOCUMENTATION.md).
+The canonical OpenAPI contract is in `../backend/docs/openapi.yaml` and is served by the backend at `/api/openapi.yaml` (interactive docs: `/api/docs`). Flutter integration notes are in [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+OTP verification returns the registered profile in the same response; restoring a session returns the profile in one request. Media uses the authenticated `POST /api/v1/media/upload` multipart endpoint for up to five mixed images/videos per request, then each returned URL is saved through the relevant profile/content API.

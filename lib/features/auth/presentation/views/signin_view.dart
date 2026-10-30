@@ -99,8 +99,9 @@ class _SigninViewState extends State<SigninView>
     }
   }
 
-  void _proceedToOtp() {
+  Future<void> _proceedToOtp() async {
     final rawPhone = _phoneController.text.trim();
+    if (_isLoading) return;
     if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(rawPhone)) {
       setState(() {
         _phoneError = 'Please enter a valid 10-digit mobile number';
@@ -110,13 +111,27 @@ class _SigninViewState extends State<SigninView>
 
     setState(() {
       _phoneError = null;
-      _currentStep = _LoginStep.otp;
+      _isLoading = true;
     });
 
-    final authCubit = context.read<AuthCubit?>();
+    final authCubit = context.read<AuthCubit>();
     final fullPhone = '$_countryCode $rawPhone';
-    if (authCubit != null) {
-      authCubit.sendOtp(fullPhone);
+    final sent = await authCubit.sendOtp(fullPhone);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (sent) _currentStep = _LoginStep.otp;
+    });
+    if (!sent) {
+      AppToast.show(
+        context,
+        SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text(
+            authCubit.state.errorMessage ?? 'Could not send the code.',
+          ),
+        ),
+      );
     }
   }
 
@@ -138,10 +153,21 @@ class _SigninViewState extends State<SigninView>
     setState(() {});
   }
 
-  void _resendOtp() {
-    final authCubit = context.read<AuthCubit?>();
-    if (authCubit != null) {
-      authCubit.resendOtp();
+  Future<void> _resendOtp() async {
+    final authCubit = context.read<AuthCubit>();
+    final sent = await authCubit.resendOtp();
+    if (!mounted) return;
+    if (!sent) {
+      AppToast.show(
+        context,
+        SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text(
+            authCubit.state.errorMessage ?? 'Could not resend the code.',
+          ),
+        ),
+      );
+      return;
     }
     final phoneDisplay = '$_countryCode ${_phoneController.text.trim()}';
     AppToast.show(
@@ -167,21 +193,30 @@ class _SigninViewState extends State<SigninView>
     }
 
     setState(() => _isLoading = true);
-    final authCubit = context.read<AuthCubit?>();
+    final authCubit = context.read<AuthCubit>();
     final phone = '$_countryCode ${_phoneController.text.trim()}';
 
-    bool success = false;
-    if (authCubit != null) {
-      success = await authCubit.verifyOtp(otp: code, phoneNumber: phone);
-    } else {
-      success = true;
-    }
+    final success = await authCubit.verifyOtp(otp: code, phoneNumber: phone);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
-      _navigateToHome();
+      if (authCubit.state.requiresProfileCompletion) {
+        context.go(RouteNames.completeProfile);
+      } else {
+        _navigateToHome();
+      }
+    } else {
+      AppToast.show(
+        context,
+        SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text(
+            authCubit.state.errorMessage ?? 'Code verification failed.',
+          ),
+        ),
+      );
     }
   }
 
@@ -351,7 +386,7 @@ class _SigninViewState extends State<SigninView>
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final isValid10Digits = RegExp(r'^[6-9][0-9]{9}$')
         .hasMatch(_phoneController.text.trim());
-    final authState = context.watch<AuthCubit?>()?.state ?? const AuthState();
+    final authState = context.watch<AuthCubit>().state;
     final isBusy = _isLoading || authState.status == AuthStatus.loading;
 
     return Column(
@@ -635,7 +670,7 @@ class _SigninViewState extends State<SigninView>
   // ---------------------------------------------------------------------------
   Widget _buildOtpStep(BuildContext context) {
     final phoneDisplay = '$_countryCode ${_phoneController.text.trim()}';
-    final authState = context.watch<AuthCubit?>()?.state ?? const AuthState();
+    final authState = context.watch<AuthCubit>().state;
     final countdown = authState.resendCountdown;
     final isBusy = _isLoading || authState.status == AuthStatus.loading;
 

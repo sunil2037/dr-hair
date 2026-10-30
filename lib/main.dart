@@ -4,14 +4,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/constants/app_strings.dart';
+import 'core/network/dio_client.dart';
 import 'core/notifications/firebase_push_service.dart';
 import 'core/routes/app_router.dart';
 import 'core/storage/app_local_cache.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
 import 'features/auth/presentation/viewmodels/auth_cubit.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/appointments/presentation/clinic_appointment_cubit.dart';
 import 'features/care/presentation/viewmodels/care_cubit.dart';
 import 'features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
@@ -20,9 +23,12 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Falls back gracefully if .env is missing or packaged differently
+  }
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebasePushService.initialize();
   await AppLocalCache.initialize();
   Bloc.observer = AppBlocObserver();
@@ -57,7 +63,7 @@ class MyApp extends StatelessWidget {
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           behavior: HitTestBehavior.translucent,
-          child: child ?? const SizedBox.shrink(),
+          child: GlobalDioLoadingOverlay(child: child ?? const SizedBox.shrink()),
         );
       },
     );
@@ -68,7 +74,8 @@ class MyApp extends StatelessWidget {
           BlocProvider<AuthCubit>.value(value: authCubit!)
         else
           BlocProvider<AuthCubit>(
-            create: (_) => AuthCubit()..checkAuthStatus(),
+            create: (_) =>
+                AuthCubit(repository: AuthRepositoryImpl())..restoreSession(),
           ),
         BlocProvider<CartCubit>(create: (_) => CartCubit()),
         BlocProvider<ClinicAppointmentCubit>(

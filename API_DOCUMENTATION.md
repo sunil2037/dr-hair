@@ -1,6 +1,6 @@
 # Dr. Hair API Documentation
 
-This document provides a comprehensive specification of all backend APIs used in the Dr. Hair application (extracted from the reference React Native implementation) for implementation and integration into the **Flutter** application (`flutter_app`).
+This document provides Flutter integration notes for the Express backend. The canonical, current request and response contract is `../backend/docs/openapi.yaml`.
 
 ---
 
@@ -15,11 +15,12 @@ This document provides a comprehensive specification of all backend APIs used in
    - [4. Register User](#4-register-user)
    - [5. Get User Profile](#5-get-user-profile)
    - [6. Update User Profile](#6-update-user-profile)
-   - [7. Update Profile Picture](#7-update-profile-picture)
+   - [7. Upload Image or Video](#7-upload-image-or-video)
    - [8. Submit Hair Test Form](#8-submit-hair-test-form)
    - [9. Get Hair Test History](#9-get-hair-test-history)
    - [10. Get Treatment History by Test ID](#10-get-treatment-history-by-test-id)
    - [11. Get Reviews](#11-get-reviews)
+   - [12. Get Patient Clinical Record](#12-get-patient-clinical-record)
 5. [External Services & Deep Links](#external-services--deep-links)
 6. [Flutter Dio / Endpoints Implementation Reference](#flutter-dio--endpoints-implementation-reference)
 
@@ -28,8 +29,10 @@ This document provides a comprehensive specification of all backend APIs used in
 ## ⚙️ General Configuration & Setup
 
 ### Base URLs
-- **Local / Development**: `http://192.168.1.8/drhair`
-- **Production**: `https://drhair.health`
+- Local web/iOS simulator: `http://localhost:5001`
+- Android emulator: `http://10.0.2.2:5001`
+- Physical device: computer LAN IP with backend CORS configured
+- Production: pass the deployed HTTPS origin through `DRHAIR_BACKEND_URL`.
 
 ### Headers & Authentication
 - **Content-Type**:
@@ -81,11 +84,13 @@ sequenceDiagram
 | 4 | `/Admin/loginSignup` | `POST` | `multipart/form-data` | ❌ / Optional | `features/auth` / `features/hair_test` |
 | 5 | `/Admin/get_profile` | `POST` | `multipart/form-data` | ✅ | `features/profile` / `features/treatment` |
 | 6 | `/Admin/updateProfile` | `POST` | `multipart/form-data` | ✅ | `features/profile` |
-| 7 | `/Admin/profileUpdate` | `POST` | `multipart/form-data` | ✅ | `features/profile` |
+| 7 | `/api/v1/media/upload` | `POST` | `multipart/form-data` | ✅ | `features/profile`, future media screens |
 | 8 | `/HairTest/submit_form` | `POST` | `multipart/form-data` | ✅ | `features/hair_test` |
 | 9 | `/HairTest/hair_test` | `POST` | `application/json` | ✅ | `features/treatment` |
 | 10 | `/HairTest/get_treatment_history/{id}` | `GET` | `application/json` | ✅ | `features/treatment` |
 | 11 | `/Review/review_get` | `POST` | `application/json` | ❌ | `features/home` / `features/reviews` |
+| 12 | `/api/v1/patient/clinical-record` | `GET` | `application/json` | ✅ | `features/treatment` |
+| 13 | `/api/v1/patient/reports/{reportId}/download` | `GET` | `application/json` | ✅ | `features/treatment` |
 
 ---
 
@@ -247,29 +252,16 @@ Updates basic profile text details (name, email, contact).
 
 ---
 
-### 7. Update Profile Picture
-Uploads and updates the user's avatar image.
+### 7. Upload Image or Video
+Upload one file as `file`, or up to five mixed files as repeated `files` fields. The backend streams each to Cloudinary and returns each URL and asset ID in `data.items`; for a single-file upload the same asset is also exposed directly as `data.url` and `data.asset_id`. Uploading does not write the URL into another database record; send the returned URL to the relevant profile, assessment, or content API separately.
 
-- **URL**: `{BASE_URL}/Admin/profileUpdate`
+- **URL**: `{BASE_URL}/api/v1/media/upload`
 - **Method**: `POST`
-- **Headers**:
-  ```http
-  Authorization: Bearer <token>
-  ```
+- **Headers**: `Authorization: Bearer <token>`, optional `X-Media-Purpose: general|profile|assessment|progress|content`
 - **Content-Type**: `multipart/form-data`
-- **Request Body (FormData)**:
-  | Key | Type | Required | Description |
-  |---|---|---|---|
-  | `action` | `String` | Yes | Value: `'upload'` |
-  | `profile` | `File` (Binary) | Yes | Image file (`image/jpeg` or `image/png`) |
-
-- **Sample Response**:
-  ```json
-  {
-    "status": "success",
-    "message": "Profile photo updated successfully."
-  }
-  ```
+- **Request Body**: a `file` field or repeated `files` fields, up to five mixed files. JPEG, PNG, WebP, GIF, AVIF, MP4, MOV, M4V, and WebM are accepted. Images are limited to 10 MB each; the video limit is controlled by `MAX_MEDIA_FILE_SIZE_MB` (100 MB per video by default).
+- To save a profile photo, use `X-Media-Purpose: profile`, then send the returned `data.url` as `profile_url` to `POST /api/v1/users/updateProfile`. Send `profile_url: null` to remove it.
+- For assessment photos, use `X-Media-Purpose: assessment`, then send each returned URL in the matching `photo_front_url`, `photo_top_url`, `photo_left_url`, `photo_right_url`, or `photo_back_url` field to `POST /api/v1/hair-tests/submit_form`. The backend checks the URLs belong to the current patient before saving them.
 
 ---
 
@@ -500,3 +492,25 @@ class ApiEndpoints {
   static String profileImageUrl(String path) => '$baseUrl/$path';
 }
 ```
+
+### 12. Get Patient Clinical Record
+Returns the signed-in patient's submitted assessments, the latest-first clinician care plans, and private report metadata. The API derives the patient ID from the verified bearer token; callers cannot request another patient's record.
+
+- **URL**: `{BASE_URL}/api/v1/patient/clinical-record`
+- **Method**: `GET`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response data**: `assessments[]`, `care_plans[]`, and `reports[]`.
+- Care plans include clinician notes, diagnosis/stage, review date, prescribed medicines, routine steps, and diet suggestions.
+- Reports contain metadata only; private file URLs are never returned in this list response.
+
+### 13. Download a Patient Report
+Requests a short-lived signed URL for a report already associated with the authenticated patient.
+
+- **URL**: `{BASE_URL}/api/v1/patient/reports/{reportId}/download`
+- **Method**: `GET`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response data**: `{ "url": "https://…", "expires_in_seconds": 60 }`
+- The backend checks the report ID together with the patient ID from the bearer token. Use the returned URL promptly; it expires after 60 seconds.
+
+### Flutter Hair Assessment Fields Now Synced
+`POST /api/v1/hair-tests/submit_form` associates the assessment with the authenticated account and stores the current app answers: `full_name`, `age`, `gender`, `primary_concern`, `stage`, `duration`, `dandruff`, `gut_health`, `stress_level`, and `family_history`. Scalp photos are not included because the current app intentionally keeps them on-device.

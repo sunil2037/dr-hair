@@ -9,6 +9,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../viewmodels/auth_cubit.dart';
+import '../viewmodels/auth_state.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -69,10 +70,13 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
 
   void _onSplashComplete() {
     if (!mounted || _hasNavigated) return;
+    final authState = context.read<AuthCubit>().state;
+    if (authState.status == AuthStatus.loading) return;
     _hasNavigated = true;
     _navigationFallback?.cancel();
-    final isAuthenticated = context.read<AuthCubit>().state.isAuthenticated;
-    if (isAuthenticated) {
+    if (authState.requiresProfileCompletion) {
+      context.go(RouteNames.completeProfile);
+    } else if (authState.isAuthenticated) {
       context.go(RouteNames.mainShell);
     } else {
       context.go(RouteNames.signin);
@@ -83,97 +87,105 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return Scaffold(
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _onSplashComplete,
-        child: Stack(
-          children: [
-            // 1. Serene Clinical Background Gradient
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFFFFFFF),
-                      Color(0xFFF8FAFC),
-                      Color(0xFFEFF6F7),
-                    ],
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state.status != AuthStatus.loading) _onSplashComplete();
+      },
+      child: Scaffold(
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _onSplashComplete,
+          child: Stack(
+            children: [
+              // 1. Serene Clinical Background Gradient
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFFFFFFFF),
+                        Color(0xFFF8FAFC),
+                        Color(0xFFEFF6F7),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // 2. Soft Ambient Lighting Orbs
-            Positioned(
-              top: -60,
-              right: -60,
-              child: _AmbientGlow(
-                size: 260,
-                color: AppColors.secondary.withValues(alpha: 0.08),
+              // 2. Soft Ambient Lighting Orbs
+              Positioned(
+                top: -60,
+                right: -60,
+                child: _AmbientGlow(
+                  size: 260,
+                  color: AppColors.secondary.withValues(alpha: 0.08),
+                ),
               ),
-            ),
-            Positioned(
-              bottom: -80,
-              left: -80,
-              child: _AmbientGlow(
-                size: 300,
-                color: AppColors.primary.withValues(alpha: 0.06),
+              Positioned(
+                bottom: -80,
+                left: -80,
+                child: _AmbientGlow(
+                  size: 300,
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                ),
               ),
-            ),
 
-            // 3. Pure, Minimal Centered Emblem and Branding
-            SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Animated Emblem with Concentric Vitality Waves & Sparkles
-                      AnimatedBuilder(
-                        animation: Listenable.merge([
-                          _entranceController,
-                          _motionController,
-                        ]),
-                        builder: (context, child) {
-                          final entranceCurved = Curves.easeOutBack.transform(
-                            _entranceController.value,
-                          );
-                          final motionVal = reduceMotion
-                              ? 0.0
-                              : _motionController.value;
-                          final floatOffset = reduceMotion
-                              ? 0.0
-                              : math.sin(motionVal * 2 * math.pi) * 4.0;
+              // 3. Pure, Minimal Centered Emblem and Branding
+              SafeArea(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Animated Emblem with Concentric Vitality Waves & Sparkles
+                        AnimatedBuilder(
+                          animation: Listenable.merge([
+                            _entranceController,
+                            _motionController,
+                          ]),
+                          builder: (context, child) {
+                            final entranceCurved = Curves.easeOutBack.transform(
+                              _entranceController.value,
+                            );
+                            final motionVal = reduceMotion
+                                ? 0.0
+                                : _motionController.value;
+                            final floatOffset = reduceMotion
+                                ? 0.0
+                                : math.sin(motionVal * 2 * math.pi) * 4.0;
 
-                          return Opacity(
-                            opacity: _entranceController.value.clamp(0.0, 1.0),
-                            child: Transform.translate(
-                              offset: Offset(
-                                0,
-                                (24 * (1 - entranceCurved)) + floatOffset,
+                            return Opacity(
+                              opacity: _entranceController.value.clamp(
+                                0.0,
+                                1.0,
                               ),
-                              child: Transform.scale(
-                                scale: entranceCurved,
-                                child: child,
+                              child: Transform.translate(
+                                offset: Offset(
+                                  0,
+                                  (24 * (1 - entranceCurved)) + floatOffset,
+                                ),
+                                child: Transform.scale(
+                                  scale: entranceCurved,
+                                  child: child,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        child: _HeroEmblem(
-                          motionController: _motionController,
-                          reduceMotion: reduceMotion,
+                            );
+                          },
+                          child: _HeroEmblem(
+                            motionController: _motionController,
+                            reduceMotion: reduceMotion,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

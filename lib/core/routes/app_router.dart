@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/views/signin_view.dart';
+import '../../features/auth/presentation/views/complete_profile_view.dart';
 import '../../features/appointments/presentation/clinic_appointment_view.dart';
 import '../../features/auth/presentation/views/splash_view.dart';
 import '../../features/hair_test/presentation/views/assessment_result_view.dart';
@@ -177,6 +178,10 @@ class AppRouter {
       GoRoute(
         path: RouteNames.signin,
         builder: (context, state) => const SigninView(),
+      ),
+      GoRoute(
+        path: RouteNames.completeProfile,
+        builder: (context, state) => const CompleteProfileView(),
       ),
       GoRoute(
         path: RouteNames.about,

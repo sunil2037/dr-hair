@@ -19,6 +19,7 @@ class RouteNames {
   static const String checkout = '/checkout';
   static const String signin = '/signin';
   static const String otp = '/otp';
+  static const String completeProfile = '/complete-profile';
   static const String about = '/about';
   static const String contact = '/contact';
   static const String routine = '/routine';

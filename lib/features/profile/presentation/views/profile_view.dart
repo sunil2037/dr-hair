@@ -614,10 +614,19 @@ class ProfileView extends StatelessWidget {
     final authCubit = context.read<AuthCubit?>();
 
     Widget buildCard(UserModel? user) {
-      final name = user?.name.isNotEmpty == true ? user!.name : 'Yashveer Soni';
-      final patientId = user?.patientId.isNotEmpty == true
-          ? user!.patientId
-          : 'DRH-2024-8849';
+      final previewUser = authCubit == null ? UserModel.demoPatient() : null;
+      final profile = user ?? previewUser;
+      final name = profile?.name.isNotEmpty == true
+          ? profile!.name
+          : 'Your profile';
+      final patientId = profile?.patientId.isNotEmpty == true
+          ? profile!.patientId
+          : 'Complete your profile';
+      final contact = profile?.phone?.isNotEmpty == true
+          ? profile!.phone!
+          : profile?.email?.isNotEmpty == true
+          ? profile!.email!
+          : null;
       final photoUrl = user?.photoUrl;
 
       Widget avatarWidget;
@@ -686,6 +695,32 @@ class ProfileView extends StatelessWidget {
                       color: AppColors.secondaryDark,
                     ),
                   ),
+                  if (contact != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      contact,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryDark,
+                      ),
+                    ),
+                  ],
+                  if (profile?.age != null ||
+                      profile?.city?.isNotEmpty == true) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      [
+                        if (profile?.age != null) 'Age ${profile!.age}',
+                        if (profile?.city?.isNotEmpty == true) profile!.city!,
+                      ].join(' · '),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.secondaryDark,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -5,6 +5,10 @@ class UserModel {
   final String? email;
   final String? phone;
   final String patientId;
+  final int? age;
+  final String? gender;
+  final String? city;
+  final String? occupation;
   final bool isGuest;
   final DateTime? loggedInAt;
   final String? photoUrl;
@@ -16,6 +20,10 @@ class UserModel {
     this.email,
     this.phone,
     this.patientId = 'DRH-2024-8849',
+    this.age,
+    this.gender,
+    this.city,
+    this.occupation,
     this.isGuest = false,
     this.loggedInAt,
     this.photoUrl,
@@ -28,6 +36,10 @@ class UserModel {
     String? email,
     String? phone,
     String? patientId,
+    int? age,
+    String? gender,
+    String? city,
+    String? occupation,
     bool? isGuest,
     DateTime? loggedInAt,
     String? photoUrl,
@@ -40,9 +52,39 @@ class UserModel {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       patientId: patientId ?? this.patientId,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      city: city ?? this.city,
+      occupation: occupation ?? this.occupation,
       isGuest: isGuest ?? this.isGuest,
       loggedInAt: loggedInAt ?? this.loggedInAt,
       photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
+    );
+  }
+
+  factory UserModel.fromJson(
+    Map<String, dynamic> json, {
+    String fallbackLogin = '',
+  }) {
+    final id = json['id']?.toString() ?? '';
+    final email = json['email']?.toString();
+    final phone = json['phone']?.toString();
+    final ageValue = json['age'];
+    return UserModel(
+      id: id,
+      name: json['name']?.toString() ?? '',
+      emailOrPhone:
+          (phone?.isNotEmpty == true ? phone : email) ?? fallbackLogin,
+      email: email,
+      phone: phone,
+      patientId: id,
+      age: ageValue == null ? null : int.tryParse(ageValue.toString()),
+      gender: json['gender']?.toString(),
+      city: json['city']?.toString(),
+      occupation: json['occupation']?.toString(),
+      photoUrl: json['profile_url']?.toString(),
+      isGuest: false,
+      loggedInAt: DateTime.now(),
     );
   }
 

@@ -15,6 +15,8 @@ class HairTestState {
   final Map<String, String> photos;
   final bool isSubmitted;
   final bool isCompleted;
+  final bool isSubmitting;
+  final String? referenceNo;
   final bool isRetesting;
   final bool isPickingImage;
   final String? errorMessage;
@@ -22,8 +24,8 @@ class HairTestState {
   const HairTestState({
     this.currentStep = 0,
     this.totalSteps = 8,
-    this.name = 'Sahil',
-    this.age = '23',
+    this.name = '',
+    this.age = '',
     this.selectedGender,
     this.stage,
     this.primaryConcern,
@@ -35,6 +37,8 @@ class HairTestState {
     this.photos = const {},
     this.isSubmitted = false,
     this.isCompleted = false,
+    this.isSubmitting = false,
+    this.referenceNo,
     this.isRetesting = false,
     this.isPickingImage = false,
     this.errorMessage,
@@ -57,6 +61,9 @@ class HairTestState {
     Map<String, String>? photos,
     bool? isSubmitted,
     bool? isCompleted,
+    bool? isSubmitting,
+    String? referenceNo,
+    bool clearReferenceNo = false,
     bool? isRetesting,
     bool? isPickingImage,
     String? errorMessage,
@@ -78,15 +85,21 @@ class HairTestState {
       photos: photos ?? this.photos,
       isSubmitted: isSubmitted ?? this.isSubmitted,
       isCompleted: isCompleted ?? this.isCompleted,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+      referenceNo: clearReferenceNo ? null : referenceNo ?? this.referenceNo,
       isRetesting: isRetesting ?? this.isRetesting,
       isPickingImage: isPickingImage ?? this.isPickingImage,
-      errorMessage: clearErrorMessage ? null : errorMessage ?? this.errorMessage,
+      errorMessage: clearErrorMessage
+          ? null
+          : errorMessage ?? this.errorMessage,
     );
   }
 
   String? getPhoto(String label) => photos[label];
   bool hasPhoto(String label) =>
-      photos.containsKey(label) && photos[label] != null && photos[label]!.isNotEmpty;
+      photos.containsKey(label) &&
+      photos[label] != null &&
+      photos[label]!.isNotEmpty;
 
   /// Plain-language summary based on the answers selected by the user.
   String get assessmentSummary {

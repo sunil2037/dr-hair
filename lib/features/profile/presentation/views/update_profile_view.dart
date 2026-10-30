@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,10 +5,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../../../auth/presentation/viewmodels/auth_cubit.dart';
-import '../../../../core/widgets/app_toast.dart';
 
 class UpdateProfileView extends StatefulWidget {
   final ImagePicker? imagePicker;
@@ -22,33 +20,40 @@ class UpdateProfileView extends StatefulWidget {
 }
 
 class _UpdateProfileViewState extends State<UpdateProfileView> {
+  static const _genderOptions = [
+    'Female',
+    'Male',
+    'Non-binary',
+    'Prefer not to say',
+  ];
+
   final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _ageController;
+  late final TextEditingController _cityController;
+  late final TextEditingController _occupationController;
 
-  late TextEditingController _nameController;
-  late TextEditingController _emailController;
-  late TextEditingController _phoneController;
-
-  String? _selectedImagePath;
+  String? _selectedImageUrl;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
+  String? _gender;
   bool _isPhotoRemoved = false;
   bool _isSaving = false;
-
-  static const String _defaultAvatarUrl =
-      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400';
 
   @override
   void initState() {
     super.initState();
-    final authUser = context.read<AuthCubit?>()?.state.user;
-    _nameController = TextEditingController(
-      text: authUser?.name ?? 'Yashveer Soni',
-    );
-    _emailController = TextEditingController(
-      text: authUser?.email ?? 'yashveer@example.com',
-    );
-    _phoneController = TextEditingController(
-      text: authUser?.phone ?? '+91 98765 43210',
-    );
-    _selectedImagePath = authUser?.photoUrl;
+    final user = context.read<AuthCubit>().state.user;
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _emailController = TextEditingController(text: user?.email ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+    _ageController = TextEditingController(text: user?.age?.toString() ?? '');
+    _cityController = TextEditingController(text: user?.city ?? '');
+    _occupationController = TextEditingController(text: user?.occupation ?? '');
+    _selectedImageUrl = user?.photoUrl;
+    _gender = _genderOptions.contains(user?.gender) ? user?.gender : null;
   }
 
   @override
@@ -56,6 +61,9 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _ageController.dispose();
+    _cityController.dispose();
+    _occupationController.dispose();
     super.dispose();
   }
 
@@ -68,38 +76,48 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
       cameraSubtitle: 'Take a new profile photo with your camera',
       gallerySubtitle: 'Choose an existing photo from your library',
       removeTitle: 'Remove Profile Photo',
-      removeSubtitle: 'Clear current photo and use default avatar',
-      hasExistingPhoto: _selectedImagePath != null || !_isPhotoRemoved,
+      removeSubtitle: 'Clear current photo and use the default avatar',
+      hasExistingPhoto:
+          _selectedImageUrl != null ||
+          _selectedImageBytes != null ||
+          !_isPhotoRemoved,
       onSelectSource: (source) async {
         try {
           final picker = widget.imagePicker ?? ImagePicker();
-          final XFile? image = await picker.pickImage(
+          final image = await picker.pickImage(
             source: source,
             maxWidth: 1024,
             maxHeight: 1024,
             imageQuality: 85,
           );
-          if (image != null && mounted) {
-            setState(() {
-              _selectedImagePath = image.path;
-              _isPhotoRemoved = false;
-            });
-            HapticFeedback.lightImpact();
-          }
-        } catch (e) {
-          if (mounted) {
-            AppToast.show(context,
-              SnackBar(
-                behavior: SnackBarBehavior.floating,
-                content: Text('Could not access photo: $e'),
+          if (image == null || !mounted) return;
+          final bytes = await image.readAsBytes();
+          if (!mounted) return;
+          setState(() {
+            _selectedImageUrl = null;
+            _selectedImageBytes = bytes;
+            _selectedImageName = image.name;
+            _isPhotoRemoved = false;
+          });
+          HapticFeedback.lightImpact();
+        } catch (_) {
+          if (!mounted) return;
+          AppToast.show(
+            context,
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text(
+                'Could not access that photo. Check photo permissions and try again.',
               ),
-            );
-          }
+            ),
+          );
         }
       },
       onRemovePhoto: () {
         setState(() {
-          _selectedImagePath = null;
+          _selectedImageUrl = null;
+          _selectedImageBytes = null;
+          _selectedImageName = null;
           _isPhotoRemoved = true;
         });
         HapticFeedback.lightImpact();
@@ -107,40 +125,49 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
     );
   }
 
-  void _saveProfile() {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isSaving = true);
-      final authCubit = context.read<AuthCubit?>();
-      authCubit?.updateProfile(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        photoUrl: _selectedImagePath,
-        clearPhoto: _isPhotoRemoved,
+  Future<void> _saveProfile() async {
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isSaving = true);
+
+    final auth = context.read<AuthCubit>();
+    final currentUser = auth.state.user;
+    final ageText = _ageController.text.trim();
+    final success = await auth.updateProfile(
+      name: _nameController.text.trim(),
+      age: int.tryParse(ageText),
+      clearAge: ageText.isEmpty && currentUser?.age != null,
+      gender: _gender ?? '',
+      city: _cityController.text.trim(),
+      occupation: _occupationController.text.trim(),
+      photoBytes: _selectedImageBytes,
+      photoFilename: _selectedImageName,
+      clearPhoto: _isPhotoRemoved,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    if (!success) {
+      AppToast.show(
+        context,
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger,
+          content: Text(
+            auth.state.errorMessage ?? 'Could not update your profile.',
+          ),
+        ),
       );
-
-      HapticFeedback.mediumImpact();
-
-      Navigator.of(context).pop(true);
+      return;
     }
+    HapticFeedback.mediumImpact();
+    Navigator.of(context).pop(true);
   }
 
   Widget _buildAvatarImage() {
-    if (_selectedImagePath != null && _selectedImagePath!.isNotEmpty) {
-      if (_selectedImagePath!.startsWith('http')) {
-        return ClipOval(
-          child: CustomCachedImage(
-            imageUrl: _selectedImagePath!,
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-            borderRadius: 50,
-          ),
-        );
-      }
+    if (_selectedImageBytes != null) {
       return ClipOval(
-        child: Image.file(
-          File(_selectedImagePath!),
+        child: Image.memory(
+          _selectedImageBytes!,
           width: 100,
           height: 100,
           fit: BoxFit.cover,
@@ -148,11 +175,10 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
         ),
       );
     }
-
-    if (!_isPhotoRemoved) {
+    if (_selectedImageUrl?.isNotEmpty == true && !_isPhotoRemoved) {
       return ClipOval(
         child: CustomCachedImage(
-          imageUrl: _defaultAvatarUrl,
+          imageUrl: _selectedImageUrl!,
           width: 100,
           height: 100,
           fit: BoxFit.cover,
@@ -160,25 +186,22 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
         ),
       );
     }
-
     return _buildPlaceholderAvatar();
   }
 
-  Widget _buildPlaceholderAvatar() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: const BoxDecoration(
-        color: AppColors.primary5,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(
-        LucideIcons.userRound,
-        size: 46,
-        color: AppColors.primary,
-      ),
-    );
-  }
+  Widget _buildPlaceholderAvatar() => Container(
+    width: 100,
+    height: 100,
+    decoration: const BoxDecoration(
+      color: AppColors.primary5,
+      shape: BoxShape.circle,
+    ),
+    child: const Icon(
+      LucideIcons.userRound,
+      size: 46,
+      color: AppColors.primary,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +216,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
         leading: IconButton(
           tooltip: 'Back',
           icon: const Icon(LucideIcons.arrowLeft),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
@@ -203,13 +226,12 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Interactive Avatar
               Center(
                 child: Semantics(
                   label: 'Change profile photo',
                   button: true,
                   child: GestureDetector(
-                    onTap: _pickProfilePhoto,
+                    onTap: _isSaving ? null : _pickProfilePhoto,
                     child: Stack(
                       children: [
                         Container(
@@ -242,13 +264,6 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                               color: AppColors.primary,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.12),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
                             ),
                             child: const Icon(
                               LucideIcons.camera,
@@ -263,45 +278,37 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                 ),
               ),
               const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _pickProfilePhoto,
-                child: const Text(
-                  'Change Profile Photo',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              TextButton(
+                onPressed: _isSaving ? null : _pickProfilePhoto,
+                child: const Text('Change Profile Photo'),
               ),
-
-              const SizedBox(height: 32),
-
-              // Inputs
+              const SizedBox(height: 24),
               _buildInputField(
                 label: 'Full Name',
                 controller: _nameController,
                 icon: LucideIcons.userRound,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               _buildInputField(
                 label: 'Email Address',
                 controller: _emailController,
                 icon: LucideIcons.mail,
                 keyboardType: TextInputType.emailAddress,
+                readOnly: true,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               _buildInputField(
                 label: 'Phone Number',
                 controller: _phoneController,
                 icon: LucideIcons.phone,
                 keyboardType: TextInputType.phone,
+                readOnly: true,
               ),
               const SizedBox(height: 8),
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'This demo saves contact changes locally and does not verify them.',
+                  'To change your email or phone, the new contact must be verified first.',
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.35,
@@ -309,10 +316,54 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 36),
-
-              // Save Button
+              const SizedBox(height: 18),
+              _buildInputField(
+                label: 'Age (optional)',
+                controller: _ageController,
+                icon: LucideIcons.calendarDays,
+                keyboardType: TextInputType.number,
+                requiredField: false,
+              ),
+              const SizedBox(height: 18),
+              DropdownButtonFormField<String>(
+                initialValue: _gender,
+                decoration: InputDecoration(
+                  labelText: 'Gender (optional)',
+                  prefixIcon: const Icon(
+                    LucideIcons.usersRound,
+                    color: AppColors.primary,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.primary5,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                items: _genderOptions
+                    .map(
+                      (value) =>
+                          DropdownMenuItem(value: value, child: Text(value)),
+                    )
+                    .toList(),
+                onChanged: _isSaving
+                    ? null
+                    : (value) => setState(() => _gender = value),
+              ),
+              const SizedBox(height: 18),
+              _buildInputField(
+                label: 'City (optional)',
+                controller: _cityController,
+                icon: LucideIcons.mapPin,
+                requiredField: false,
+              ),
+              const SizedBox(height: 18),
+              _buildInputField(
+                label: 'Occupation (optional)',
+                controller: _occupationController,
+                icon: LucideIcons.briefcaseBusiness,
+                requiredField: false,
+              ),
+              const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -330,9 +381,8 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                     ),
                   ),
                   child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
+                      ? const SizedBox.square(
+                          dimension: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
@@ -361,6 +411,8 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
     required TextEditingController controller,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    bool requiredField = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,19 +429,20 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          readOnly: readOnly,
+          enabled: true,
           validator: (value) {
             final input = value?.trim() ?? '';
-            if (input.isEmpty) return 'This field is required';
-            if (label == 'Email Address' &&
-                !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(input)) {
-              return 'Enter a valid email address';
-            }
-            if (label == 'Phone Number' &&
-                input.replaceAll(RegExp(r'\D'), '').length < 10) {
-              return 'Enter a valid phone number';
-            }
+            if (readOnly) return null;
+            if (requiredField && input.isEmpty) return 'This field is required';
             if (label == 'Full Name' && input.length < 2) {
               return 'Enter at least 2 characters';
+            }
+            if (label == 'Age (optional)' && input.isNotEmpty) {
+              final age = int.tryParse(input);
+              if (age == null || age < 1 || age > 120) {
+                return 'Enter a whole number from 1 to 120';
+              }
             }
             return null;
           },

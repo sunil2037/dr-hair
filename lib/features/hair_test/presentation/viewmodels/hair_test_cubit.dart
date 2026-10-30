@@ -2,7 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/app_local_cache.dart';
 import 'hair_test_state.dart';
 
@@ -43,7 +46,8 @@ class HairTestCubit extends Cubit<HairTestState> {
             gutHealth: draft['gutHealth'] as String?,
             stressLevel: draft['stressLevel'] as String?,
             familyHistory: draft['familyHistory'] as String?,
-            photos: (draft['photos'] as Map?)?.map(
+            photos:
+                (draft['photos'] as Map?)?.map(
                   (key, value) => MapEntry(key.toString(), value.toString()),
                 ) ??
                 const {},
@@ -54,8 +58,8 @@ class HairTestCubit extends Cubit<HairTestState> {
       }
       final savedStage = _cache.getString('hair_test_stage');
       final savedDandruff = _cache.getString('hair_test_dandruff');
-      final savedName = _cache.getString('hair_test_name') ?? 'Sahil';
-      final savedAge = _cache.getString('hair_test_age') ?? '23';
+      final savedName = _cache.getString('hair_test_name') ?? '';
+      final savedAge = _cache.getString('hair_test_age') ?? '';
 
       if (hasCompleted) {
         final hasObservedPattern = restored.primaryConcern != null;
@@ -77,7 +81,11 @@ class HairTestCubit extends Cubit<HairTestState> {
     } catch (_) {}
   }
 
-  void nextStep() {
+  Future<void> nextStep({
+    String? sessionToken,
+    String? patientName,
+    int? patientAge,
+  }) async {
     final validationMessage = _validationMessageForCurrentStep();
     if (validationMessage != null) {
       emit(state.copyWith(errorMessage: validationMessage));
@@ -93,7 +101,11 @@ class HairTestCubit extends Cubit<HairTestState> {
       );
       _saveDraft();
     } else {
-      submitTest();
+      await submitTest(
+        sessionToken: sessionToken,
+        patientName: patientName,
+        patientAge: patientAge,
+      );
     }
   }
 
@@ -101,12 +113,24 @@ class HairTestCubit extends Cubit<HairTestState> {
     return _validationMessageForState(state, state.currentStep);
   }
 
-  Future<void> skipPhotosAndSubmit() async {
+  Future<void> skipPhotosAndSubmit({
+    String? sessionToken,
+    String? patientName,
+    int? patientAge,
+  }) async {
     if (state.currentStep != state.totalSteps - 1) {
-      emit(state.copyWith(errorMessage: 'Complete the questions before submitting.'));
+      emit(
+        state.copyWith(
+          errorMessage: 'Complete the questions before submitting.',
+        ),
+      );
       return;
     }
-    await submitTest();
+    await submitTest(
+      sessionToken: sessionToken,
+      patientName: patientName,
+      patientAge: patientAge,
+    );
   }
 
   void prevStep() {
@@ -121,7 +145,12 @@ class HairTestCubit extends Cubit<HairTestState> {
     }
   }
 
-  Future<void> submitTest() async {
+  Future<void> submitTest({
+    String? sessionToken,
+    String? patientName,
+    int? patientAge,
+  }) async {
+    if (state.isSubmitting) return;
     for (var step = 0; step < state.totalSteps - 1; step++) {
       final message = _validationMessageForStep(step);
       if (message != null) {
@@ -129,14 +158,88 @@ class HairTestCubit extends Cubit<HairTestState> {
         return;
       }
     }
-    emit(
-      state.copyWith(
-        isSubmitted: true,
-        isCompleted: true,
-        isRetesting: false,
-        clearErrorMessage: true,
-      ),
-    );
+    final name = patientName?.trim().isNotEmpty == true
+        ? patientName!.trim()
+        : state.name.trim();
+    final age = patientAge?.toString() ?? state.age.trim();
+    if (sessionToken?.trim().isNotEmpty == true) {
+      if (name.isEmpty) {
+        emit(
+          state.copyWith(
+            errorMessage: 'Complete your profile before sending the assessment to the clinic.',
+          ),
+        );
+        return;
+      }
+      emit(
+        state.copyWith(
+          isSubmitting: true,
+          clearErrorMessage: true,
+          name: name,
+          age: age,
+        ),
+      );
+      try {
+        final client = DioClient(
+          baseUrl: ApiEndpoints.backendBaseUrl,
+          enableDebugLogging: false,
+        );
+        final response = await client.dio.post<Map<String, dynamic>>(
+          '/api/v1/hair-tests/submit_form',
+          data: FormData.fromMap({
+            'full_name': name,
+            if (age.isNotEmpty) 'age': age,
+            if (state.selectedGender?.isNotEmpty == true)
+              'gender': state.selectedGender,
+            if (state.duration?.isNotEmpty == true) 'duration': state.duration,
+            if (state.primaryConcern?.isNotEmpty == true)
+              'primary_concern': state.primaryConcern,
+            if (state.stage?.isNotEmpty == true) 'stage': state.stage,
+            if (state.dandruff?.isNotEmpty == true) 'dandruff': state.dandruff,
+            if (state.gutHealth?.isNotEmpty == true)
+              'gut_health': state.gutHealth,
+            if (state.stressLevel?.isNotEmpty == true)
+              'stress_level': state.stressLevel,
+            if (state.familyHistory?.isNotEmpty == true)
+              'family_history': state.familyHistory,
+          }),
+          options: Options(
+            contentType: Headers.multipartFormDataContentType,
+            headers: {'Authorization': 'Bearer $sessionToken'},
+          ),
+        );
+        final referenceNo = response.data?['reference_no']?.toString();
+        emit(
+          state.copyWith(
+            referenceNo: referenceNo,
+            isSubmitting: false,
+            isSubmitted: true,
+            isCompleted: true,
+            isRetesting: false,
+            clearErrorMessage: true,
+          ),
+        );
+      } catch (_) {
+        emit(
+          state.copyWith(
+            isSubmitting: false,
+            errorMessage: 'Assessment could not be sent to the clinic. Check your connection and try again.',
+          ),
+        );
+        return;
+      }
+    } else {
+      emit(
+        state.copyWith(
+          isSubmitted: true,
+          isCompleted: true,
+          isRetesting: false,
+          clearErrorMessage: true,
+          name: name,
+          age: age,
+        ),
+      );
+    }
 
     try {
       await _cache.put('has_completed_hair_test', true);
@@ -163,19 +266,29 @@ class HairTestCubit extends Cubit<HairTestState> {
   String? _validationMessageForState(HairTestState value, int step) {
     switch (step) {
       case 0:
-        return value.selectedGender == null ? 'Choose an option to continue.' : null;
+        return value.selectedGender == null
+            ? 'Choose an option to continue.'
+            : null;
       case 1:
         return value.primaryConcern == null && value.stage == null
             ? 'Choose an illustration, or select “Not sure.”'
             : null;
       case 2:
-        return value.duration == null ? 'Choose how long you have noticed hair loss to continue.' : null;
+        return value.duration == null
+            ? 'Choose how long you have noticed hair loss to continue.'
+            : null;
       case 3:
-        return value.dandruff == null ? 'Choose a scalp condition to continue.' : null;
+        return value.dandruff == null
+            ? 'Choose a scalp condition to continue.'
+            : null;
       case 4:
-        return value.stressLevel == null ? 'Choose a stress level to continue.' : null;
+        return value.stressLevel == null
+            ? 'Choose a stress level to continue.'
+            : null;
       case 5:
-        return value.gutHealth == null ? 'Choose a digestion and gut-health option to continue.' : null;
+        return value.gutHealth == null
+            ? 'Choose a digestion and gut-health option to continue.'
+            : null;
       case 6:
         return null;
       default:
@@ -189,6 +302,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         isRetesting: true,
         isSubmitted: false,
         currentStep: 0,
+        clearReferenceNo: true,
         clearErrorMessage: true,
       ),
     );

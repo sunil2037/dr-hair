@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
+import '../../../auth/presentation/viewmodels/auth_cubit.dart';
 import '../viewmodels/hair_test_cubit.dart';
 import '../viewmodels/hair_test_state.dart';
 
@@ -251,15 +253,26 @@ class _HairTestContent extends StatelessWidget {
                   width: currentContinueWidth,
                   child: AppButton(
                     height: 50,
-                    text: state.currentStep == state.totalSteps - 1
+                    text: state.isSubmitting
+                        ? 'Submitting…'
+                        : state.currentStep == state.totalSteps - 1
                         ? 'Submit'
                         : 'Continue',
                     variant: AppButtonVariant.filled,
                     size: AppButtonSize.large,
                     width: currentContinueWidth,
-                    onPressed: () {
-                      context.read<HairTestCubit>().nextStep();
-                    },
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () {
+                            final auth = context.read<AuthCubit?>()?.state;
+                            unawaited(
+                              context.read<HairTestCubit>().nextStep(
+                                sessionToken: auth?.sessionToken,
+                                patientName: auth?.user?.name,
+                                patientAge: auth?.user?.age,
+                              ),
+                            );
+                          },
                   ),
                 ),
               ],
@@ -405,7 +418,18 @@ class _HairTestContent extends StatelessWidget {
                     color: AppColors.primary,
                   ),
                 ),
-                onPressed: () => cubit.skipPhotosAndSubmit(),
+                onPressed: state.isSubmitting
+                    ? null
+                    : () {
+                        final auth = context.read<AuthCubit?>()?.state;
+                        unawaited(
+                          cubit.skipPhotosAndSubmit(
+                            sessionToken: auth?.sessionToken,
+                            patientName: auth?.user?.name,
+                            patientAge: auth?.user?.age,
+                          ),
+                        );
+                      },
               ),
             ),
           ],
