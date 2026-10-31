@@ -21,12 +21,27 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
   DateTime? _startsAt;
   final TextEditingController _reasonController = TextEditingController();
   String? _replacingId;
+  String? _accessToken;
+  bool _didLoadAppointments = false;
   bool _saving = false;
 
   @override
   void dispose() {
     _reasonController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didLoadAppointments) return;
+    _didLoadAppointments = true;
+    final auth = context.read<AuthCubit>().state;
+    final token = auth.sessionToken;
+    if (token != null && token.isNotEmpty && auth.isGuest != true) {
+      _accessToken = token;
+      context.read<ClinicAppointmentCubit>().loadFromApi(token);
+    }
   }
 
   String _dateLabel(DateTime date) =>
@@ -57,6 +72,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
     setState(() => _saving = true);
     final error = await context.read<ClinicAppointmentCubit>().saveRequest(
       patientId: patientId,
+      accessToken: _accessToken ?? '',
       startsAt: _startsAt!,
       reason: finalReason,
       replacingId: _replacingId,
@@ -73,6 +89,42 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
     _message(
       error ?? 'Appointment request submitted to Dr. Jai Bansal. OPD token assigned.',
     );
+  }
+
+  Future<void> _confirmCancel(String id, String patientId) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        child: SafeArea(
+          top: false,
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+            const SizedBox(height: 18),
+            const Text('Cancel this appointment?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
+            const SizedBox(height: 8),
+            const Text('The clinic will be notified and this sitting will be released. You can request another appointment later.', style: TextStyle(fontSize: 13, height: 1.45, color: AppColors.secondaryDark)),
+            const SizedBox(height: 18),
+            Row(children: [
+              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(sheetContext, false), child: const Text('Keep appointment'))),
+              const SizedBox(width: 10),
+              Expanded(child: FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.danger), onPressed: () => Navigator.pop(sheetContext, true), child: const Text('Cancel visit'))),
+            ]),
+          ]),
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final token = _accessToken;
+    if (token == null || token.isEmpty) {
+      _message('Sign in again to cancel this appointment.');
+      return;
+    }
+    final error = await context.read<ClinicAppointmentCubit>().cancel(id, patientId, accessToken: token);
+    if (!mounted) return;
+    _message(error ?? 'Appointment request cancelled.');
   }
 
   void _message(String message) => ScaffoldMessenger.of(context)
@@ -602,9 +654,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                                   ),
                                   const SizedBox(width: 8),
                                   TextButton.icon(
-                                    onPressed: () => context
-                                        .read<ClinicAppointmentCubit>()
-                                        .cancel(request.id, patientId),
+                                    onPressed: () => _confirmCancel(request.id, patientId),
                                     icon: const Icon(
                                       LucideIcons.xCircle,
                                       size: 14,

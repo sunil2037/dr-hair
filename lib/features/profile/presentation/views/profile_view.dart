@@ -105,24 +105,11 @@ class ProfileView extends StatelessWidget {
               title: const Text('Delete local care data'),
               onTap: () async {
                 Navigator.pop(sheetContext);
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Delete care data?'),
-                    content: const Text(
-                      'This removes saved assessment answers, check-ins, reminders, routine steps, and clinic appointment requests from this device.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext, false),
-                        child: const Text('Keep data'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(dialogContext, true),
-                        child: const Text('Delete data'),
-                      ),
-                    ],
-                  ),
+                final confirmed = await _showDeleteWarningSheet(
+                  context,
+                  title: 'Delete care data?',
+                  message: 'This permanently removes saved assessment answers, check-ins, reminders, routine steps, and appointment requests from this device.',
+                  confirmLabel: 'Delete data',
                 );
                 if (confirmed == true && context.mounted) {
                   final hairCubit = context.read<HairTestCubit?>();
@@ -145,24 +132,11 @@ class ProfileView extends StatelessWidget {
   }
 
   Future<void> _resetDemoData(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset demo data?'),
-        content: const Text(
-          'This clears saved assessment answers and progress, resets your profile and cart, and restores the sample care records. You can run through the app again from the beginning.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Reset demo'),
-          ),
-        ],
-      ),
+    final confirmed = await _showDeleteWarningSheet(
+      context,
+      title: 'Reset demo data?',
+      message: 'This clears saved assessment answers and progress, resets your profile and cart, and restores the sample care records. This cannot be undone.',
+      confirmLabel: 'Reset demo',
     );
     if (confirmed != true || !context.mounted) return;
 
@@ -181,6 +155,45 @@ class ProfileView extends StatelessWidget {
 
     if (!context.mounted) return;
     context.go(RouteNames.signin);
+  }
+
+  Future<bool?> _showDeleteWarningSheet(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+              const SizedBox(height: 18),
+              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
+              const SizedBox(height: 8),
+              Text(message, style: const TextStyle(fontSize: 13, height: 1.45, color: AppColors.secondaryDark)),
+              const SizedBox(height: 18),
+              Row(children: [
+                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(sheetContext, false), child: const Text('Cancel'))),
+                const SizedBox(width: 10),
+                Expanded(child: FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.danger), onPressed: () => Navigator.pop(sheetContext, true), child: Text(confirmLabel))),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _openPersonalizedFeature(BuildContext context, String route) {
@@ -688,12 +701,30 @@ class ProfileView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Patient ID: $patientId',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.secondaryDark,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Patient ID: $patientId',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.secondaryDark,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Copy patient ID',
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: patientId));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Patient ID copied')),
+                          );
+                        },
+                        icon: const Icon(Icons.copy, size: 15),
+                        color: AppColors.primary,
+                      ),
+                    ],
                   ),
                   if (contact != null) ...[
                     const SizedBox(height: 3),

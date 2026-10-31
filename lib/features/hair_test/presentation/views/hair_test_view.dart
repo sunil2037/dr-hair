@@ -353,6 +353,8 @@ class _HairTestContent extends StatelessWidget {
           onSelected: cubit.selectFamilyHistory,
         );
       case 7:
+        return _buildMedicationSafetyStep(state, cubit);
+      case 8:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -437,6 +439,98 @@ class _HairTestContent extends StatelessWidget {
       default:
         return const SizedBox();
     }
+  }
+
+  Widget _buildMedicationSafetyStep(HairTestState state, HairTestCubit cubit) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Medication & allergy safety',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'This helps the clinic review future care suggestions. You can choose “Not sure” if you do not know.',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.secondaryDark,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 22),
+        _buildOptionSelector(
+          title: 'Do you have any known allergies?',
+          subtitle: 'Include medicine, food, or product allergies if known.',
+          options: const [
+            'No known allergies',
+            'Yes, I have allergies',
+            'Not sure',
+          ],
+          selected: state.allergyStatus,
+          onSelected: cubit.setAllergyStatus,
+        ),
+        if (state.allergyStatus == 'Yes, I have allergies') ...[
+          const SizedBox(height: 4),
+          TextField(
+            maxLength: 500,
+            minLines: 2,
+            maxLines: 4,
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: cubit.setAllergyDetails,
+            decoration: InputDecoration(
+              labelText: 'List known allergies',
+              hintText: 'Name the medicine, ingredient, or product if known',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 18),
+        _buildOptionSelector(
+          title: 'Are you taking any medicines or supplements?',
+          subtitle: 'Include prescriptions and non-prescription products.',
+          options: const ['No', 'Yes', 'Not sure'],
+          selected: state.currentMedicationsStatus,
+          onSelected: cubit.setCurrentMedicationsStatus,
+        ),
+        if (state.currentMedicationsStatus == 'Yes') ...[
+          const SizedBox(height: 4),
+          TextField(
+            maxLength: 1000,
+            minLines: 2,
+            maxLines: 4,
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: cubit.setCurrentMedications,
+            decoration: InputDecoration(
+              labelText: 'Current medicines and supplements',
+              hintText: 'Add names and doses if you know them',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        const Text(
+          'Your answers are shared with the clinic team for care review.',
+          style: TextStyle(
+            fontSize: 11,
+            color: AppColors.secondaryDark,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildPhotoUploadBox(
@@ -623,8 +717,85 @@ class _HairTestContent extends StatelessWidget {
       removeSubtitle: 'Clear current photo for $label',
       hasExistingPhoto: hasExistingPhoto,
       onSelectSource: (source) => cubit.pickPhoto(label: label, source: source),
-      onRemovePhoto: () => cubit.removePhoto(label),
+      onRemovePhoto: () => _confirmRemoveAssessmentPhoto(context, label, cubit),
     );
+  }
+
+  Future<void> _confirmRemoveAssessmentPhoto(
+    BuildContext context,
+    String label,
+    HairTestCubit cubit,
+  ) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Remove $label photo?',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'This clears the photo from your saved assessment draft. You can choose another photo before submitting.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: AppColors.secondaryDark,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      child: const Text('Keep photo'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                      ),
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      child: const Text('Remove photo'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed == true) cubit.removePhoto(label);
   }
 
   Widget _buildOptionSelector({

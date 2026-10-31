@@ -46,6 +46,11 @@ class HairTestCubit extends Cubit<HairTestState> {
             gutHealth: draft['gutHealth'] as String?,
             stressLevel: draft['stressLevel'] as String?,
             familyHistory: draft['familyHistory'] as String?,
+            allergyStatus: draft['allergyStatus'] as String?,
+            allergyDetails: draft['allergyDetails'] as String? ?? '',
+            currentMedicationsStatus:
+                draft['currentMedicationsStatus'] as String?,
+            currentMedications: draft['currentMedications'] as String? ?? '',
             photos:
                 (draft['photos'] as Map?)?.map(
                   (key, value) => MapEntry(key.toString(), value.toString()),
@@ -202,6 +207,14 @@ class HairTestCubit extends Cubit<HairTestState> {
               'stress_level': state.stressLevel,
             if (state.familyHistory?.isNotEmpty == true)
               'family_history': state.familyHistory,
+            if (state.allergyStatus?.isNotEmpty == true)
+              'allergy_status': state.allergyStatus,
+            if (state.allergyDetails.trim().isNotEmpty)
+              'allergy_details': state.allergyDetails.trim(),
+            if (state.currentMedicationsStatus?.isNotEmpty == true)
+              'current_medications_status': state.currentMedicationsStatus,
+            if (state.currentMedications.trim().isNotEmpty)
+              'current_medications': state.currentMedications.trim(),
           }),
           options: Options(
             contentType: Headers.multipartFormDataContentType,
@@ -291,6 +304,22 @@ class HairTestCubit extends Cubit<HairTestState> {
             : null;
       case 6:
         return null;
+      case 7:
+        if (value.allergyStatus == null) {
+          return 'Choose an allergy option to continue.';
+        }
+        if (value.allergyStatus == 'Yes, I have allergies' &&
+            value.allergyDetails.trim().isEmpty) {
+          return 'List the known allergies, or choose “Not sure.”';
+        }
+        if (value.currentMedicationsStatus == null) {
+          return 'Choose a medicines and supplements option to continue.';
+        }
+        if (value.currentMedicationsStatus == 'Yes' &&
+            value.currentMedications.trim().isEmpty) {
+          return 'List current medicines or supplements, or choose “Not sure.”';
+        }
+        return null;
       default:
         return null;
     }
@@ -378,6 +407,30 @@ class HairTestCubit extends Cubit<HairTestState> {
     _saveDraft();
   }
 
+  void setAllergyStatus(String status) {
+    emit(state.copyWith(allergyStatus: status, clearErrorMessage: true));
+    _saveDraft();
+  }
+
+  void setAllergyDetails(String details) {
+    emit(state.copyWith(allergyDetails: details, clearErrorMessage: true));
+    _saveDraft();
+  }
+
+  void setCurrentMedicationsStatus(String status) {
+    emit(
+      state.copyWith(currentMedicationsStatus: status, clearErrorMessage: true),
+    );
+    _saveDraft();
+  }
+
+  void setCurrentMedications(String medications) {
+    emit(
+      state.copyWith(currentMedications: medications, clearErrorMessage: true),
+    );
+    _saveDraft();
+  }
+
   void selectDuration(String duration) {
     emit(state.copyWith(duration: duration, clearErrorMessage: true));
     _saveDraft();
@@ -441,6 +494,10 @@ class HairTestCubit extends Cubit<HairTestState> {
     'gutHealth': state.gutHealth,
     'stressLevel': state.stressLevel,
     'familyHistory': state.familyHistory,
+    'allergyStatus': state.allergyStatus,
+    'allergyDetails': state.allergyDetails,
+    'currentMedicationsStatus': state.currentMedicationsStatus,
+    'currentMedications': state.currentMedications,
     'photos': state.photos,
   };
 

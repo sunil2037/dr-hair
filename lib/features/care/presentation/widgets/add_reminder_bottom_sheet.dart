@@ -15,7 +15,10 @@ class AddReminderBottomSheet extends StatefulWidget {
 
   const AddReminderBottomSheet({super.key, this.reminderToEdit});
 
-  static Future<void> show(BuildContext context, {CareReminder? reminderToEdit}) {
+  static Future<void> show(
+    BuildContext context, {
+    CareReminder? reminderToEdit,
+  }) {
     final careCubit = context.read<CareCubit>();
     return showModalBottomSheet(
       context: context,
@@ -23,9 +26,7 @@ class AddReminderBottomSheet extends StatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (modalContext) => BlocProvider<CareCubit>.value(
         value: careCubit,
-        child: AddReminderBottomSheet(
-          reminderToEdit: reminderToEdit,
-        ),
+        child: AddReminderBottomSheet(reminderToEdit: reminderToEdit),
       ),
     );
   }
@@ -80,7 +81,9 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
     _notesController = TextEditingController(text: rem?.notes ?? '');
     _selectedTime = rem?.time ?? const TimeOfDay(hour: 20, minute: 0);
     _treatmentType = rem?.treatmentType ?? 'Topical Serum';
-    _selectedDays = rem != null ? List<int>.from(rem.repeatDays) : [1, 2, 3, 4, 5, 6, 7];
+    _selectedDays = rem != null
+        ? List<int>.from(rem.repeatDays)
+        : [1, 2, 3, 4, 5, 6, 7];
     _isEnabled = rem?.isEnabled ?? true;
   }
 
@@ -100,7 +103,8 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
         if (_selectedDays.length > 1) {
           _selectedDays.remove(day);
         } else {
-          AppToast.show(context,
+          AppToast.show(
+            context,
             const SnackBar(
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 2),
@@ -133,12 +137,13 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
     final frequency = _selectedDays.length == 7
         ? 'Daily'
         : (_selectedDays.length == 5 &&
-                _selectedDays.every((d) => d >= 1 && d <= 5)
-            ? 'Weekdays'
-            : 'Custom');
+                  _selectedDays.every((d) => d >= 1 && d <= 5)
+              ? 'Weekdays'
+              : 'Custom');
 
     final reminder = CareReminder(
-      id: widget.reminderToEdit?.id ??
+      id:
+          widget.reminderToEdit?.id ??
           'rem_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
       subtitle: '$_treatmentType · ${_selectedDaysSummary()}',
@@ -153,7 +158,6 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
     cubit.saveReminder(reminder);
     HapticFeedback.mediumImpact();
     Navigator.pop(context);
-
   }
 
   String _selectedDaysSummary() {
@@ -167,31 +171,81 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
     return _selectedDays.map((d) => _dayLabels[d]).join(', ');
   }
 
-  void _confirmDelete() {
-    showDialog(
+  Future<void> _confirmDelete() async {
+    final reminder = widget.reminderToEdit;
+    if (reminder == null) return;
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Reminder?'),
-        content: Text(
-          'Are you sure you want to remove "${widget.reminderToEdit!.title}" from your care schedule?',
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Delete this reminder?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '“${reminder.title}” will be removed from your care schedule. This cannot be undone.',
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: AppColors.secondaryDark,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      child: const Text('Keep reminder'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                      ),
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      child: const Text('Delete reminder'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<CareCubit>().deleteReminder(widget.reminderToEdit!.id);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Delete'),
-          ),
-        ],
+        ),
       ),
     );
+    if (confirmed != true || !mounted) return;
+    context.read<CareCubit>().deleteReminder(reminder.id);
+    Navigator.pop(context);
   }
 
   @override
@@ -238,7 +292,11 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                   if (_isEditing)
                     IconButton(
                       tooltip: 'Delete reminder',
-                      icon: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 20),
+                      icon: const Icon(
+                        LucideIcons.trash2,
+                        color: AppColors.danger,
+                        size: 20,
+                      ),
                       onPressed: _confirmDelete,
                     ),
                 ],
@@ -255,7 +313,9 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                     TextField(
                       controller: _titleController,
                       onChanged: (_) {
-                        if (_titleError != null) setState(() => _titleError = null);
+                        if (_titleError != null) {
+                          setState(() => _titleError = null);
+                        }
                       },
                       decoration: InputDecoration(
                         labelText: 'Reminder Title',
@@ -292,8 +352,12 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                           selectedColor: AppColors.primary5,
                           labelStyle: TextStyle(
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
                           ),
                           onSelected: (val) {
                             if (val) setState(() => _treatmentType = type);
@@ -325,7 +389,10 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.background,
                           borderRadius: BorderRadius.circular(12),
@@ -334,7 +401,11 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(LucideIcons.clock, size: 18, color: AppColors.primary),
+                            const Icon(
+                              LucideIcons.clock,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               _selectedTime.format(context),
@@ -345,7 +416,11 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(LucideIcons.chevronDown, size: 14, color: AppColors.textMuted),
+                            const Icon(
+                              LucideIcons.chevronDown,
+                              size: 14,
+                              color: AppColors.textMuted,
+                            ),
                           ],
                         ),
                       ),
@@ -367,7 +442,8 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => _setPresetDays([1, 2, 3, 4, 5, 6, 7]),
+                              onTap: () =>
+                                  _setPresetDays([1, 2, 3, 4, 5, 6, 7]),
                               child: const Text(
                                 'Everyday',
                                 style: TextStyle(
@@ -377,7 +453,10 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                                 ),
                               ),
                             ),
-                            const Text(' · ', style: TextStyle(color: AppColors.textMuted)),
+                            const Text(
+                              ' · ',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
                             GestureDetector(
                               onTap: () => _setPresetDays([1, 2, 3, 4, 5]),
                               child: const Text(
@@ -400,7 +479,8 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                         final dayNumber = index + 1;
                         final isSelected = _selectedDays.contains(dayNumber);
                         return Semantics(
-                          label: '${_fullDayLabels[dayNumber]}, ${isSelected ? "selected" : "not selected"}',
+                          label:
+                              '${_fullDayLabels[dayNumber]}, ${isSelected ? "selected" : "not selected"}',
                           button: true,
                           child: InkWell(
                             onTap: () => _toggleDay(dayNumber),
@@ -410,10 +490,14 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                               width: 42,
                               height: 42,
                               decoration: BoxDecoration(
-                                color: isSelected ? AppColors.primary : AppColors.background,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.background,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: isSelected ? AppColors.primary : AppColors.border,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.border,
                                 ),
                               ),
                               alignment: Alignment.center,
@@ -422,7 +506,9 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
                                 ),
                               ),
                             ),
@@ -457,7 +543,9 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+                border: Border(
+                  top: BorderSide(color: AppColors.border, width: 0.5),
+                ),
               ),
               child: SizedBox(
                 width: double.infinity,

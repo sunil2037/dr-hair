@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/media/data/media_upload_api.dart';
 import '../../../../core/network/dio_client.dart';
 
 class AuthRemoteDataSource {
   final Dio _dio;
+  late final MediaUploadApi _mediaUploadApi = MediaUploadApi(dio: _dio);
 
   AuthRemoteDataSource({Dio? dio})
     : _dio = dio ?? DioClient(baseUrl: ApiEndpoints.backendBaseUrl).dio;
@@ -13,6 +15,7 @@ class AuthRemoteDataSource {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/auth/send_login_otp',
       data: {'login': login},
+      options: Options(extra: const {'sensitive': true}),
     );
     return _asMap(response.data);
   }
@@ -24,6 +27,7 @@ class AuthRemoteDataSource {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/auth/verify_login_otp',
       data: {'login': login, 'otp': otp},
+      options: Options(extra: const {'sensitive': true}),
     );
     return _asMap(response.data);
   }
@@ -104,20 +108,12 @@ class AuthRemoteDataSource {
     required List<int> bytes,
     required String filename,
   }) async {
-    final form = FormData.fromMap({
-      'file': MultipartFile.fromBytes(bytes, filename: filename),
-    });
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/media/upload',
-      data: form,
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Media-Purpose': 'profile',
-        },
-      ),
+    final items = await _mediaUploadApi.uploadFiles(
+      token: token,
+      purpose: 'profile',
+      files: [MultipartFile.fromBytes(bytes, filename: filename)],
     );
-    return _asMap(response.data);
+    return {'status': 'success', 'data': items.first};
   }
 
   Future<Map<String, dynamic>> removeProfilePhoto(String token) async {
@@ -129,8 +125,10 @@ class AuthRemoteDataSource {
     return _asMap(response.data);
   }
 
-  Options _authorized(String token) =>
-      Options(headers: {'Authorization': 'Bearer $token'});
+  Options _authorized(String token) => Options(
+    headers: {'Authorization': 'Bearer $token'},
+    extra: const {'sensitive': true},
+  );
 
   Map<String, dynamic> _asMap(Object? value) {
     if (value is Map<String, dynamic>) return value;

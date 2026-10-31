@@ -53,6 +53,7 @@ class DioClient {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           _startLoading();
+          final sensitive = options.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
               '==================== [DIO REQUEST] ====================',
@@ -64,7 +65,11 @@ class DioClient {
               _printYellow('📋 HEADERS: $safeHeaders');
             }
             if (options.data != null) {
-              _printYellow('📦 PAYLOAD: ${options.data}');
+              _printYellow(
+                sensitive
+                    ? '📦 PAYLOAD: [REDACTED]'
+                    : '📦 PAYLOAD: ${options.data}',
+              );
             }
             _printYellow(
               '=======================================================',
@@ -74,6 +79,7 @@ class DioClient {
         },
         onResponse: (response, handler) {
           _stopLoading();
+          final sensitive = response.requestOptions.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
               '==================== [DIO RESPONSE] ===================',
@@ -81,7 +87,9 @@ class DioClient {
             _printYellow(
               '✅ STATUS: ${response.statusCode} | URL: ${response.requestOptions.uri}',
             );
-            _printYellow('📄 DATA: ${response.data}');
+            _printYellow(
+              sensitive ? '📄 DATA: [REDACTED]' : '📄 DATA: ${response.data}',
+            );
             _printYellow(
               '=======================================================',
             );
@@ -90,6 +98,7 @@ class DioClient {
         },
         onError: (DioException err, handler) {
           _stopLoading();
+          final sensitive = err.requestOptions.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
               '==================== [DIO ERROR] ======================',
@@ -98,8 +107,10 @@ class DioClient {
               '⚠️ STATUS: ${err.response?.statusCode ?? 'NETWORK/TIMEOUT'} | URL: ${err.requestOptions.uri}',
             );
             _printYellow('❌ MESSAGE: ${err.message}');
-            if (err.response?.data != null) {
+            if (err.response?.data != null && !sensitive) {
               _printYellow('📄 ERROR DATA: ${err.response?.data}');
+            } else if (err.response?.data != null) {
+              _printYellow('📄 ERROR DATA: [REDACTED]');
             }
             _printYellow(
               '=======================================================',

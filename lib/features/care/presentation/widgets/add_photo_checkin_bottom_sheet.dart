@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
+import '../../../auth/presentation/viewmodels/auth_cubit.dart';
+import '../../data/patient_progress_api.dart';
 import '../viewmodels/care_cubit.dart';
 import '../../../../core/widgets/app_toast.dart';
 
@@ -38,7 +41,9 @@ class _AddPhotoCheckInBottomSheetState
   String? _backImagePath;
   final String _region = 'Crown / Vertex';
   String _shedding = 'Low / Normal';
+  bool _savingProgress = false;
   final TextEditingController _notesController = TextEditingController();
+  final PatientProgressApi _progressApi = PatientProgressApi();
 
   @override
   void dispose() {
@@ -89,13 +94,91 @@ class _AddPhotoCheckInBottomSheetState
           }
         } catch (e) {
           if (mounted) {
-            AppToast.show(context,
+            AppToast.show(
+              context,
               SnackBar(content: Text('Could not access image: $e')),
             );
           }
         }
       },
     );
+  }
+
+  Future<void> _saveProgressCheckIn() async {
+    if (_savingProgress) return;
+    final photoPaths = <String, String>{};
+    if (_frontImagePath case final path?) photoPaths['front'] = path;
+    if (_topImagePath case final path?) photoPaths['top'] = path;
+    if (_backImagePath case final path?) photoPaths['back'] = path;
+    if (photoPaths.isEmpty) {
+      AppToast.show(
+        context,
+        const SnackBar(
+          content: Text('Add at least one photo before saving your check-in.'),
+        ),
+      );
+      return;
+    }
+
+    final date = DateTime.now();
+    final checkInId = 'ci_${date.millisecondsSinceEpoch}';
+    final note = _notesController.text.trim().isEmpty
+        ? 'Logged 3-angle progress check-in photos.'
+        : _notesController.text.trim();
+    final auth = context.read<AuthCubit?>()?.state;
+    final token = auth?.sessionToken;
+    final shouldSync = token?.isNotEmpty == true && auth?.isGuest != true;
+
+    setState(() => _savingProgress = true);
+    try {
+      if (shouldSync) {
+        await _progressApi.createCheckIn(
+          token: token!,
+          id: checkInId,
+          date: date,
+          photoPaths: photoPaths,
+          scalpRegion: _region,
+          sheddingLevel: _shedding,
+          notes: note,
+          densityRating: 4,
+        );
+      }
+
+      if (!mounted) return;
+      context.read<CareCubit>().addProgressCheckIn(
+        id: checkInId,
+        date: date,
+        imagePath: photoPaths.values.first,
+        frontImagePath: photoPaths['front'],
+        topImagePath: photoPaths['top'],
+        backImagePath: photoPaths['back'],
+        scalpRegion: _region,
+        sheddingLevel: _shedding,
+        notes: note,
+        densityRating: 4,
+        doctorNote: shouldSync
+            ? 'Shared with the clinic. Awaiting clinician review.'
+            : null,
+      );
+      HapticFeedback.mediumImpact();
+      Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _savingProgress = false);
+      AppToast.show(
+        context,
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Progress could not be shared with the clinic. ${error is DioException
+                ? error.message ?? 'Check your connection and try again.'
+                : error is FormatException
+                ? error.message
+                : 'Try again.'}',
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildPhotoSlot({
@@ -470,38 +553,13 @@ class _AddPhotoCheckInBottomSheetState
                 child: SizedBox(
                   width: double.infinity,
                   child: AppButton(
-                    text: 'Save Progress Photos',
+                    text: _savingProgress
+                        ? 'Saving progress…'
+                        : 'Save Progress Photos',
+                    isLoading: _savingProgress,
+                    isDisabled: _savingProgress,
                     variant: AppButtonVariant.filled,
-                    onPressed: () {
-                      final primaryImage = _frontImagePath ??
-                          _topImagePath ?? _backImagePath;
-                      if (primaryImage == null) {
-                        AppToast.show(
-                          context,
-                          const SnackBar(
-                            content: Text('Add at least one photo before saving your check-in.'),
-                          ),
-                        );
-                        return;
-                      }
-
-                      context.read<CareCubit>().addProgressCheckIn(
-                        date: DateTime.now(),
-                        imagePath: primaryImage,
-                        frontImagePath: _frontImagePath,
-                        topImagePath: _topImagePath,
-                        backImagePath: _backImagePath,
-                        scalpRegion: _region,
-                        sheddingLevel: _shedding,
-                        notes: _notesController.text.trim().isEmpty
-                            ? 'Logged 3-angle progress check-in photos.'
-                            : _notesController.text.trim(),
-                        densityRating: 4,
-                      );
-
-                      HapticFeedback.mediumImpact();
-                      Navigator.pop(context);
-                    },
+                    onPressed: _saveProgressCheckIn,
                   ),
                 ),
               ),

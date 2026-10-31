@@ -118,7 +118,7 @@ class _CartViewState extends State<CartView> {
       }
       HapticFeedback.selectionClick();
     } else {
-      _removeItem(index);
+      _requestRemoveItem(index);
     }
   }
 
@@ -133,8 +133,107 @@ class _CartViewState extends State<CartView> {
     HapticFeedback.lightImpact();
   }
 
-  void _clearCart() {
+  Future<bool> _showDeleteWarning({
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) async {
+    return await showModalBottomSheet<bool>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (sheetContext) => Container(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: AppColors.secondaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetContext, false),
+                          child: const Text('Keep items'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.danger,
+                          ),
+                          onPressed: () => Navigator.pop(sheetContext, true),
+                          child: Text(confirmLabel),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _requestRemoveItem(int index) async {
+    if (index < 0 || index >= _items.length) return;
+    final item = _items[index];
+    final confirmed = await _showDeleteWarning(
+      title: 'Remove this item?',
+      message: '${item['title']} will be removed from your cart.',
+      confirmLabel: 'Remove item',
+    );
+    if (!confirmed || !mounted) return;
+    final currentIndex = _items.indexWhere(
+      (entry) => entry['id'] == item['id'],
+    );
+    if (currentIndex >= 0) _removeItem(currentIndex);
+  }
+
+  Future<void> _clearCart() async {
     if (_items.isEmpty) return;
+    final confirmed = await _showDeleteWarning(
+      title: 'Clear your cart?',
+      message:
+          'All ${_items.length} item${_items.length == 1 ? '' : 's'} will be removed from your cart.',
+      confirmLabel: 'Clear cart',
+    );
+    if (!confirmed || !mounted) return;
     final sharedCart = context.read<CartCubit?>();
     if (sharedCart != null) {
       sharedCart.clear();
@@ -482,6 +581,13 @@ class _CartViewState extends State<CartView> {
                   ],
                 ),
               ),
+              confirmDismiss: (_) async {
+                return _showDeleteWarning(
+                  title: 'Remove this item?',
+                  message: '${item['title']} will be removed from your cart.',
+                  confirmLabel: 'Remove item',
+                );
+              },
               onDismissed: (_) => _removeItem(index),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 14),
@@ -536,7 +642,7 @@ class _CartViewState extends State<CartView> {
                                   minWidth: 32,
                                   minHeight: 32,
                                 ),
-                                onPressed: () => _removeItem(index),
+                                onPressed: () => _requestRemoveItem(index),
                                 icon: const Icon(
                                   LucideIcons.trash2,
                                   color: AppColors.danger,

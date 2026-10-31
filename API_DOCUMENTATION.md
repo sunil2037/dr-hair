@@ -44,6 +44,9 @@ This document provides Flutter integration notes for the Express backend. The ca
   ```
   *(Token received upon successful verification in `verify_login_otp` and stored in secure storage).*
 
+### Patient identifier
+Every registered profile response includes the backend-issued `patient_code` (for example `DHP0001`). The Flutter profile displays this value as the Patient ID; keep the numeric `id` as an internal API/database identifier.
+
 ---
 
 ## 🔐 Authentication Flow
@@ -58,7 +61,7 @@ sequenceDiagram
 
     User->>App: Enter Mobile / Email
     App->>AuthAPI: POST /auth/send_login_otp {login}
-    AuthAPI-->>App: {status: "success", type: "register" | "login"}
+    AuthAPI-->>App: {status: "success", message: "If this destination can receive a code..."}
 
     User->>App: Enter 6-digit OTP
     App->>AuthAPI: POST /auth/verify_login_otp {login, otp}
@@ -78,19 +81,21 @@ sequenceDiagram
 
 | # | Endpoint | Method | Content-Type | Auth Required | Flutter Feature Module |
 |---|---|---|---|:---:|---|
-| 1 | `/auth/send_login_otp` | `POST` | `multipart/form-data` | ❌ | `features/auth` |
-| 2 | `/auth/verify_login_otp` | `POST` | `multipart/form-data` | ❌ | `features/auth` |
+| 1 | `/auth/send_login_otp` | `POST` | `application/json` | ❌ | `features/auth` |
+| 2 | `/auth/verify_login_otp` | `POST` | `application/json` | ❌ | `features/auth` |
 | 3 | `/Admin/checkUser` | `POST` | `application/json` | ✅ | `features/auth` / `features/hair_test` |
 | 4 | `/Admin/loginSignup` | `POST` | `multipart/form-data` | ❌ / Optional | `features/auth` / `features/hair_test` |
 | 5 | `/Admin/get_profile` | `POST` | `multipart/form-data` | ✅ | `features/profile` / `features/treatment` |
 | 6 | `/Admin/updateProfile` | `POST` | `multipart/form-data` | ✅ | `features/profile` |
-| 7 | `/api/v1/media/upload` | `POST` | `multipart/form-data` | ✅ | `features/profile`, future media screens |
+| 7 | `/api/v1/media/upload` | `POST` | `multipart/form-data` | ✅ | `features/profile`, `features/care`, future media screens |
 | 8 | `/HairTest/submit_form` | `POST` | `multipart/form-data` | ✅ | `features/hair_test` |
 | 9 | `/HairTest/hair_test` | `POST` | `application/json` | ✅ | `features/treatment` |
 | 10 | `/HairTest/get_treatment_history/{id}` | `GET` | `application/json` | ✅ | `features/treatment` |
 | 11 | `/Review/review_get` | `POST` | `application/json` | ❌ | `features/home` / `features/reviews` |
 | 12 | `/api/v1/patient/clinical-record` | `GET` | `application/json` | ✅ | `features/treatment` |
 | 13 | `/api/v1/patient/reports/{reportId}/download` | `GET` | `application/json` | ✅ | `features/treatment` |
+| 14 | `/api/v1/patient/progress-checkins` | `GET` | `application/json` | ✅ | `features/care` |
+| 15 | `/api/v1/patient/progress-checkins` | `POST` | `application/json` | ✅ | `features/care` |
 
 ---
 
@@ -101,7 +106,7 @@ Initiates authentication by sending a one-time password to the user's mobile num
 
 - **URL**: `{BASE_URL}/auth/send_login_otp`
 - **Method**: `POST`
-- **Content-Type**: `multipart/form-data`
+- **Content-Type**: `application/json`
 - **Headers**:
   ```http
   Accept: application/json
@@ -115,10 +120,11 @@ Initiates authentication by sending a one-time password to the user's mobile num
   ```json
   {
     "status": "success",
-    "message": "OTP sent successfully to your number.",
-    "type": "login" // or "register" / "new"
+    "message": "If this destination can receive a code, a verification code has been sent."
   }
   ```
+
+The response does not reveal whether the account exists. Local development uses a stub and a debug-only demo code; no code is returned or logged by the backend. A delivery provider is required outside development.
 
 ---
 
@@ -314,6 +320,10 @@ Comprehensive multi-step hair evaluation questionnaire submission, including que
   | Key | Type | Description |
   |---|---|---|
   | `family_history` | `String` | Family history of hair loss |
+  | `allergy_status` | `String` | Allergy option: `No known allergies`, `Yes, I have allergies`, or `Not sure` |
+  | `allergy_details` | `String` | Allergy details, required when `allergy_status` is `Yes, I have allergies` (max 500 characters) |
+  | `current_medications_status` | `String` | Whether the patient takes current medicines/supplements: `No`, `Yes`, or `Not sure` |
+  | `current_medications` | `String` | Names/details, required when status is `Yes` (max 1,000 characters) |
   | `have_taken_treatment` | `String` | Previous treatments taken (`Yes`/`No`) |
   | `previous_treatments` | `String` (JSON string) | List of previous treatments |
   | `treatment_results` | `String` | Results of prior treatments |
@@ -511,6 +521,15 @@ Requests a short-lived signed URL for a report already associated with the authe
 - **Headers**: `Authorization: Bearer <token>`
 - **Response data**: `{ "url": "https://…", "expires_in_seconds": 60 }`
 - The backend checks the report ID together with the patient ID from the bearer token. Use the returned URL promptly; it expires after 60 seconds.
+
+### 14. Read and save daily progress check-ins
+The GET response lists only the signed-in patient's check-ins. For POST, upload one to three progress images through the shared `/api/v1/media/upload` endpoint using `X-Media-Purpose: progress`, then pass the returned asset IDs, URLs, and image metadata to the check-in API. The check-in endpoint stores data only; the patient ID comes from the bearer token, and the backend verifies each asset belongs to that patient's progress folder. The check-in ID makes retries idempotent.
+
+- **URL**: `{BASE_URL}/api/v1/patient/progress-checkins`
+- **Method**: `GET` or `POST`
+- **Headers**: `Authorization: Bearer <token>`
+- **POST JSON fields**: `id`, `date` (ISO-8601), `scalp_region`, `shedding_level`, `notes`, `density_rating` (1–5), and `photos` (one to three objects with `angle`, `public_id`, `url`, `file_name`, `mime_type`, and `bytes`, returned by the shared media upload endpoint).
+- **GET response data**: `{ "items": [{ "id": "…", "date": "…", "density_rating": 4, "photos": [{ "angle": "front", "url": "https://…", "file_name": "…" }] }] }`.
 
 ### Flutter Hair Assessment Fields Now Synced
 `POST /api/v1/hair-tests/submit_form` associates the assessment with the authenticated account and stores the current app answers: `full_name`, `age`, `gender`, `primary_concern`, `stage`, `duration`, `dandruff`, `gut_health`, `stress_level`, and `family_history`. Scalp photos are not included because the current app intentionally keeps them on-device.

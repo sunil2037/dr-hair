@@ -309,9 +309,8 @@ class _ProgressTrackingViewState extends State<ProgressTrackingView> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: () {
-                  HapticFeedback.mediumImpact();
-                  context.read<CareCubit>().deleteProgressCheckIn(ci.id);
                   Navigator.pop(sheetContext);
+                  _showDeleteCheckInConfirmation(context, ci);
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -395,6 +394,84 @@ class _ProgressTrackingViewState extends State<ProgressTrackingView> {
         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteCheckInConfirmation(
+    BuildContext context,
+    ProgressCheckIn checkIn,
+  ) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Delete this progress check-in?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Its photos and notes will be removed from your treatment timeline on this device. This cannot be undone.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: AppColors.secondaryDark,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      child: const Text('Keep check-in'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                      ),
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      child: const Text('Delete check-in'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    HapticFeedback.mediumImpact();
+    context.read<CareCubit>().deleteProgressCheckIn(checkIn.id);
   }
 
   Widget _buildPhotoThumbnail({

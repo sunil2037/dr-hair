@@ -48,7 +48,7 @@ class ClinicAppointment {
       patientId: patientId,
       startsAt: startsAt,
       reason: reason,
-      status: status == 'Cancelled' ? 'Cancelled' : 'Requested',
+      status: status is String && status.isNotEmpty ? status : 'Requested',
     );
   }
 }

@@ -19,7 +19,7 @@ class UserModel {
     required this.emailOrPhone,
     this.email,
     this.phone,
-    this.patientId = 'DRH-2024-8849',
+    this.patientId = 'DHP0001',
     this.age,
     this.gender,
     this.city,
@@ -70,6 +70,10 @@ class UserModel {
     final email = json['email']?.toString();
     final phone = json['phone']?.toString();
     final ageValue = json['age'];
+    final numericId = int.tryParse(id);
+    final patientCode =
+        json['patient_code']?.toString() ??
+        (numericId == null ? id : 'DHP${numericId.toString().padLeft(4, '0')}');
     return UserModel(
       id: id,
       name: json['name']?.toString() ?? '',
@@ -77,7 +81,7 @@ class UserModel {
           (phone?.isNotEmpty == true ? phone : email) ?? fallbackLogin,
       email: email,
       phone: phone,
-      patientId: id,
+      patientId: patientCode,
       age: ageValue == null ? null : int.tryParse(ageValue.toString()),
       gender: json['gender']?.toString(),
       city: json['city']?.toString(),
@@ -95,7 +99,7 @@ class UserModel {
       emailOrPhone: identifier ?? '+91 98765 43210',
       email: 'yashveer@example.com',
       phone: '+91 98765 43210',
-      patientId: 'DRH-2024-8849',
+      patientId: 'DHP0001',
       isGuest: false,
       loggedInAt: DateTime.now(),
     );

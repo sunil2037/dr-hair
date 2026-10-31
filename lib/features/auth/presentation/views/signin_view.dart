@@ -136,10 +136,47 @@ class _SigninViewState extends State<SigninView>
   }
 
   void _editPhoneNumber() {
+    FocusScope.of(context).unfocus();
+    for (final controller in _otpControllers) {
+      controller.clear();
+    }
     setState(() {
       _currentStep = _LoginStep.phone;
     });
     context.read<AuthCubit?>()?.resetToPhoneStep();
+  }
+
+  void _handleOtpChanged(int index, String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.length > 1) {
+      for (var slot = index; slot < _otpControllers.length; slot++) {
+        _otpControllers[slot].clear();
+      }
+
+      final count = digits.length
+          .clamp(0, _otpControllers.length - index)
+          .toInt();
+      for (var offset = 0; offset < count; offset++) {
+        _otpControllers[index + offset].text = digits[offset];
+      }
+
+      final nextIndex = index + count;
+      if (nextIndex < _otpFocusNodes.length) {
+        _otpFocusNodes[nextIndex].requestFocus();
+      } else {
+        _otpFocusNodes.last.requestFocus();
+      }
+      return;
+    }
+
+    if (digits.isNotEmpty) {
+      if (value != digits) _otpControllers[index].text = digits;
+      if (index < _otpFocusNodes.length - 1) {
+        _otpFocusNodes[index + 1].requestFocus();
+      }
+    } else if (index > 0) {
+      _otpFocusNodes[index - 1].requestFocus();
+    }
   }
 
   void _fillDemoOtp() {
@@ -786,54 +823,52 @@ class _SigninViewState extends State<SigninView>
         const SizedBox(height: 18),
 
         // 6 OTP Digit Inputs
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(6, (index) {
-            return SizedBox(
-              width: 44,
-              height: 52,
-              child: TextField(
-                controller: _otpControllers[index],
-                focusNode: _otpFocusNodes[index],
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                autofillHints: const [AutofillHints.oneTimeCode],
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(1),
-                ],
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
-                ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  filled: true,
-                  fillColor: AppColors.primary5,
-                  contentPadding: EdgeInsets.zero,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+        AutofillGroup(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(6, (index) {
+              return SizedBox(
+                width: 44,
+                height: 52,
+                child: TextField(
+                  controller: _otpControllers[index],
+                  focusNode: _otpFocusNodes[index],
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  autofillHints: index == 0
+                      ? const [AutofillHints.oneTimeCode]
+                      : null,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 2,
+                  decoration: InputDecoration(
+                    counterText: '',
+                    filled: true,
+                    fillColor: AppColors.primary5,
+                    contentPadding: EdgeInsets.zero,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
                     ),
                   ),
+                  onChanged: (value) => _handleOtpChanged(index, value),
                 ),
-                onChanged: (val) {
-                  if (val.isNotEmpty && index < 5) {
-                    _otpFocusNodes[index + 1].requestFocus();
-                  } else if (val.isEmpty && index > 0) {
-                    _otpFocusNodes[index - 1].requestFocus();
-                  }
-                },
-              ),
-            );
-          }),
+              );
+            }),
+          ),
         ),
 
         const SizedBox(height: 22),

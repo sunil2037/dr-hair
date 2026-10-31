@@ -301,6 +301,7 @@ class CareCubit extends Cubit<CareState> {
 
   // --- PROGRESS CHECK-IN ACTIONS ---
   void addProgressCheckIn({
+    String? id,
     required DateTime date,
     required String imagePath,
     String? frontImagePath,
@@ -310,9 +311,10 @@ class CareCubit extends Cubit<CareState> {
     required String sheddingLevel,
     required String notes,
     int densityRating = 4,
+    String? doctorNote,
   }) {
     final newCheckIn = ProgressCheckIn(
-      id: 'ci_${DateTime.now().millisecondsSinceEpoch}',
+      id: id ?? 'ci_${DateTime.now().millisecondsSinceEpoch}',
       date: date,
       imagePath: imagePath,
       frontImagePath: frontImagePath,
@@ -324,6 +326,7 @@ class CareCubit extends Cubit<CareState> {
       densityRating: densityRating,
       isDoctorReviewed: false,
       doctorNote:
+          doctorNote ??
           'Saved on this device. No clinician has reviewed this check-in.',
     );
 

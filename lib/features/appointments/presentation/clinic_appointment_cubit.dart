@@ -1,16 +1,22 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/storage/app_local_cache.dart';
+import '../data/patient_appointment_api.dart';
 import '../domain/clinic_appointment.dart';
 
 class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
   static const storageKey = 'clinic_appointment_requests_v1';
   final AppLocalCache cache;
+  final PatientAppointmentApi api;
+  bool isLoading = false;
+  String? loadError;
 
-  ClinicAppointmentCubit({AppLocalCache? cache})
+  ClinicAppointmentCubit({AppLocalCache? cache, PatientAppointmentApi? api})
     : cache = cache ?? AppLocalCache.instance,
+      api = api ?? PatientAppointmentApi(),
       super(const []);
 
   void load() {
@@ -30,12 +36,28 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     }
   }
 
+  Future<void> loadFromApi(String token) async {
+    isLoading = true;
+    loadError = null;
+    try {
+      final records = await api.list(token);
+      emit(records.map(ClinicAppointment.fromJson).whereType<ClinicAppointment>().toList());
+      await _persist();
+    } catch (error) {
+      loadError = error.toString();
+    } finally {
+      isLoading = false;
+      emit(List<ClinicAppointment>.from(state));
+    }
+  }
+
   List<ClinicAppointment> forPatient(String patientId) =>
       state.where((item) => item.patientId == patientId).toList()
         ..sort((a, b) => b.startsAt.compareTo(a.startsAt));
 
   Future<String?> saveRequest({
     required String patientId,
+    required String accessToken,
     required DateTime startsAt,
     required String reason,
     String? replacingId,
@@ -68,37 +90,31 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
         )) {
       return 'This appointment request is no longer available.';
     }
-    final appointment = ClinicAppointment(
-      id: replacingId ?? 'APT-${DateTime.now().microsecondsSinceEpoch}',
-      patientId: patientId,
-      startsAt: startsAt,
-      reason: reason.trim(),
-    );
-    emit(
-      replacingId == null
-          ? [appointment, ...state]
-          : state
-                .map((item) => item.id == replacingId ? appointment : item)
-                .toList(),
-    );
-    await _persist();
-    return null;
+    try {
+      if (replacingId == null) {
+        await api.create(token: accessToken, startsAt: startsAt, reason: reason.trim());
+      } else {
+        await api.update(
+          token: accessToken,
+          appointmentId: replacingId,
+          data: {'action': 'reschedule', 'starts_at': startsAt.toUtc().toIso8601String()},
+        );
+      }
+      await loadFromApi(accessToken);
+      return null;
+    } catch (error) {
+      return _errorMessage(error, 'Appointment request could not be saved.');
+    }
   }
 
-  Future<void> cancel(String id, String patientId) async {
-    emit(
-      state
-          .map(
-            (item) =>
-                item.id == id &&
-                    item.patientId == patientId &&
-                    item.status != 'Cancelled'
-                ? item.copyWith(status: 'Cancelled')
-                : item,
-          )
-          .toList(),
-    );
-    await _persist();
+  Future<String?> cancel(String id, String patientId, {required String accessToken}) async {
+    try {
+      await api.update(token: accessToken, appointmentId: id, data: {'action': 'cancel'});
+      await loadFromApi(accessToken);
+      return null;
+    } catch (error) {
+      return _errorMessage(error, 'Appointment request could not be cancelled.');
+    }
   }
 
   Future<void> clearForPatient(String patientId) async {
@@ -110,4 +126,13 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     storageKey,
     jsonEncode(state.map((item) => item.toJson()).toList()),
   );
+
+  String _errorMessage(Object error, String fallback) {
+    if (error is DioException) {
+      final message = error.response?.data;
+      if (message is Map && message['message'] is String) return message['message'] as String;
+      return error.message ?? fallback;
+    }
+    return error is FormatException ? error.message : fallback;
+  }
 }

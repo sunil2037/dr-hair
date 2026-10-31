@@ -12,6 +12,10 @@ class HairTestState {
   final String? gutHealth;
   final String? stressLevel;
   final String? familyHistory;
+  final String? allergyStatus;
+  final String allergyDetails;
+  final String? currentMedicationsStatus;
+  final String currentMedications;
   final Map<String, String> photos;
   final bool isSubmitted;
   final bool isCompleted;
@@ -23,7 +27,7 @@ class HairTestState {
 
   const HairTestState({
     this.currentStep = 0,
-    this.totalSteps = 8,
+    this.totalSteps = 9,
     this.name = '',
     this.age = '',
     this.selectedGender,
@@ -34,6 +38,10 @@ class HairTestState {
     this.gutHealth,
     this.stressLevel,
     this.familyHistory,
+    this.allergyStatus,
+    this.allergyDetails = '',
+    this.currentMedicationsStatus,
+    this.currentMedications = '',
     this.photos = const {},
     this.isSubmitted = false,
     this.isCompleted = false,
@@ -58,6 +66,10 @@ class HairTestState {
     String? gutHealth,
     String? stressLevel,
     String? familyHistory,
+    String? allergyStatus,
+    String? allergyDetails,
+    String? currentMedicationsStatus,
+    String? currentMedications,
     Map<String, String>? photos,
     bool? isSubmitted,
     bool? isCompleted,
@@ -82,6 +94,11 @@ class HairTestState {
       gutHealth: gutHealth ?? this.gutHealth,
       stressLevel: stressLevel ?? this.stressLevel,
       familyHistory: familyHistory ?? this.familyHistory,
+      allergyStatus: allergyStatus ?? this.allergyStatus,
+      allergyDetails: allergyDetails ?? this.allergyDetails,
+      currentMedicationsStatus:
+          currentMedicationsStatus ?? this.currentMedicationsStatus,
+      currentMedications: currentMedications ?? this.currentMedications,
       photos: photos ?? this.photos,
       isSubmitted: isSubmitted ?? this.isSubmitted,
       isCompleted: isCompleted ?? this.isCompleted,
