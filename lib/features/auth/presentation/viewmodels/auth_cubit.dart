@@ -330,6 +330,27 @@ class AuthCubit extends Cubit<AuthState> {
     emit(const AuthState(status: AuthStatus.unauthenticated));
   }
 
+  Future<bool> deleteAccount() async {
+    _countdownTimer?.cancel();
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+    try {
+      final repo = repository;
+      if (repo != null) {
+        await repo.deleteAccount();
+      }
+      emit(const AuthState(status: AuthStatus.unauthenticated));
+      return true;
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.authenticated,
+          errorMessage: _message(error, 'Could not delete your account. Please try again.'),
+        ),
+      );
+      return false;
+    }
+  }
+
   String _message(Object error, String fallback) {
     if (error is AuthRepositoryException && error.message.isNotEmpty) {
       return error.message;

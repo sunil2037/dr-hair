@@ -67,68 +67,137 @@ class ProfileView extends StatelessWidget {
   void _showDataControls(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       useSafeArea: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your data on this device',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Your data on this device',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Assessment answers, routine steps, reminders, check-ins, and clinic appointment requests are stored locally. Export or delete this care data from the device.',
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: AppColors.secondaryDark,
+              const SizedBox(height: 8),
+              const Text(
+                'Assessment answers, routine steps, reminders, check-ins, and clinic appointment requests are stored locally. Export or delete this care data from the device.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: AppColors.secondaryDark,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(LucideIcons.share2, color: AppColors.primary),
-              title: const Text('Export my care data'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _exportLocalData(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(LucideIcons.trash2, color: AppColors.danger),
-              title: const Text('Delete local care data'),
-              onTap: () async {
-                Navigator.pop(sheetContext);
-                final confirmed = await _showDeleteWarningSheet(
-                  context,
-                  title: 'Delete care data?',
-                  message: 'This permanently removes saved assessment answers, check-ins, reminders, routine steps, and appointment requests from this device.',
-                  confirmLabel: 'Delete data',
-                );
-                if (confirmed == true && context.mounted) {
-                  final hairCubit = context.read<HairTestCubit?>();
-                  final careCubit = context.read<CareCubit?>();
-                  final appointmentCubit = context
-                      .read<ClinicAppointmentCubit?>();
-                  final patientId =
-                      context.read<AuthCubit?>()?.state.user?.patientId ??
-                      'GUEST';
-                  await hairCubit?.clearSavedAssessment();
-                  await careCubit?.clearPersonalCareData();
-                  await appointmentCubit?.clearForPatient(patientId);
-                }
-              },
-            ),
-          ],
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(LucideIcons.share2, color: AppColors.primary),
+                title: const Text('Export my care data'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _exportLocalData(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(LucideIcons.trash2, color: AppColors.danger),
+                title: const Text('Delete local care data'),
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  final confirmed = await _showDeleteWarningSheet(
+                    context,
+                    title: 'Delete care data?',
+                    message:
+                        'This permanently removes saved assessment answers, check-ins, reminders, routine steps, and appointment requests from this device.',
+                    confirmLabel: 'Delete data',
+                  );
+                  if (confirmed == true && context.mounted) {
+                    final hairCubit = context.read<HairTestCubit?>();
+                    final careCubit = context.read<CareCubit?>();
+                    final appointmentCubit =
+                        context.read<ClinicAppointmentCubit?>();
+                    final patientId =
+                        context.read<AuthCubit?>()?.state.user?.patientId ??
+                        'GUEST';
+                    await hairCubit?.clearSavedAssessment();
+                    await careCubit?.clearPersonalCareData();
+                    await appointmentCubit?.clearForPatient(patientId);
+                  }
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(LucideIcons.userX, color: AppColors.danger),
+                title: const Text(
+                  'Delete account permanently',
+                  style: TextStyle(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Erase personal profile, credentials & routine data',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _deleteAccount(context);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    final confirmed = await _showDeleteWarningSheet(
+      context,
+      title: 'Delete account permanently?',
+      message:
+          'Are you sure you want to delete your Dr. Hair account? This will permanently erase your personal profile, active sessions, and login credentials.\n\nNote: Medical reports and clinical consultations are retained for doctor records according to medical regulations.\n\nThis action cannot be undone.',
+      confirmLabel: 'Delete account',
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final authCubit = context.read<AuthCubit?>();
+    final hairCubit = context.read<HairTestCubit?>();
+    final careCubit = context.read<CareCubit?>();
+    final cartCubit = context.read<CartCubit?>();
+    final appointmentCubit = context.read<ClinicAppointmentCubit?>();
+    final patientId = authCubit?.state.user?.patientId ?? 'GUEST';
+
+    final success = await authCubit?.deleteAccount() ?? false;
+    if (!context.mounted) return;
+
+    if (success) {
+      await AppLocalCache.instance.clearAll();
+      await hairCubit?.clearSavedAssessment();
+      await careCubit?.clearPersonalCareData();
+      await appointmentCubit?.clearForPatient(patientId);
+      cartCubit?.clear();
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your account has been deleted successfully.'),
+          ),
+        );
+        context.go(RouteNames.signin);
+      }
+    } else {
+      final error =
+          authCubit?.state.errorMessage ??
+          'Could not delete your account. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    }
   }
 
   Future<void> _resetDemoData(BuildContext context) async {
@@ -165,6 +234,7 @@ class ProfileView extends StatelessWidget {
   }) {
     return showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => Container(
         padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
@@ -174,22 +244,62 @@ class ProfileView extends StatelessWidget {
         ),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
-              const SizedBox(height: 18),
-              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
-              const SizedBox(height: 8),
-              Text(message, style: const TextStyle(fontSize: 13, height: 1.45, color: AppColors.secondaryDark)),
-              const SizedBox(height: 18),
-              Row(children: [
-                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(sheetContext, false), child: const Text('Cancel'))),
-                const SizedBox(width: 10),
-                Expanded(child: FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.danger), onPressed: () => Navigator.pop(sheetContext, true), child: Text(confirmLabel))),
-              ]),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: AppColors.secondaryDark,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                        ),
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        child: Text(confirmLabel),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:dr_hair/features/auth/presentation/viewmodels/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -237,6 +238,18 @@ void main() {
         expect(find.byType(HairTestView), findsOneWidget);
         expect(find.text('Hair & Scalp Assessment'), findsOneWidget);
         expect(find.byType(HomeView), findsNothing);
+      },
+    );
+
+    test(
+      'AuthCubit deleteAccount calls repository and resets to unauthenticated',
+      () async {
+        final repository = FakeAuthRepository();
+        final authCubit = AuthCubit(repository: repository);
+        final success = await authCubit.deleteAccount();
+        expect(success, true);
+        expect(authCubit.state.status, AuthStatus.unauthenticated);
+        expect(repository.sessionCleared, true);
       },
     );
   });

@@ -125,6 +125,14 @@ class AuthRemoteDataSource {
     return _asMap(response.data);
   }
 
+  Future<Map<String, dynamic>> deleteAccount(String token) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/users/deleteAccount',
+      options: _authorized(token),
+    );
+    return _asMap(response.data);
+  }
+
   Options _authorized(String token, {bool silent = false}) => Options(
     headers: {'Authorization': 'Bearer $token'},
     extra: {

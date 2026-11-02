@@ -103,6 +103,11 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> removeProfilePhoto() async {}
 
   @override
+  Future<void> deleteAccount() async {
+    sessionCleared = true;
+  }
+
+  @override
   Future<void> clearSession() async {
     sessionCleared = true;
   }

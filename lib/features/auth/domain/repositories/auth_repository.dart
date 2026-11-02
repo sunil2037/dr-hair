@@ -72,5 +72,7 @@ abstract interface class AuthRepository {
 
   Future<void> removeProfilePhoto();
 
+  Future<void> deleteAccount();
+
   Future<void> clearSession();
 }

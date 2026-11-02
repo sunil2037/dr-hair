@@ -242,6 +242,22 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> deleteAccount() async {
+    final token = await _sessionStore.readToken();
+    if (token != null && token.isNotEmpty) {
+      try {
+        await _remote.deleteAccount(token);
+      } on DioException catch (error) {
+        // Map error unless it's already a 404 (already deleted)
+        if (error.response?.statusCode != 404) {
+          throw _mapError(error, fallback: 'Could not delete your account.');
+        }
+      }
+    }
+    await _sessionStore.clear();
+  }
+
+  @override
   Future<void> clearSession() => _sessionStore.clear();
 
   Future<UserModel> _loadProfile(
