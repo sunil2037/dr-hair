@@ -125,10 +125,7 @@ void main() {
         // Add to cart to show quantity controls
         await tester.tap(find.textContaining('Add to cart'));
         await tester.pumpAndSettle();
-        expect(
-          find.byKey(const ValueKey('product-added-controls')),
-          findsOneWidget,
-        );
+        expect(find.byKey(const ValueKey('product-added-controls')), findsOneWidget);
 
         // Increment quantity (+ button)
         await tester.tap(find.byIcon(LucideIcons.plus));
@@ -285,10 +282,7 @@ void main() {
         // Tap Add to cart to show quantity controls and View button
         await tester.tap(find.textContaining('Add to cart'));
         await tester.pumpAndSettle();
-        expect(
-          find.byKey(const ValueKey('product-added-controls')),
-          findsOneWidget,
-        );
+        expect(find.byKey(const ValueKey('product-added-controls')), findsOneWidget);
         expect(find.text('View'), findsOneWidget);
         expect(find.byIcon(LucideIcons.trash2), findsOneWidget);
         expect(find.byIcon(LucideIcons.plus), findsOneWidget);

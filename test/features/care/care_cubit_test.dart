@@ -14,16 +14,13 @@ void main() {
       cubit.close();
     });
 
-    test(
-      'initial state starts with clean unpopulated patient checkIns and orders',
-      () {
-        expect(cubit.state.checkIns, isEmpty);
-        expect(cubit.state.orders, isEmpty);
-        expect(cubit.state.routineTasks.isNotEmpty, isTrue);
-        expect(cubit.state.reminders.isNotEmpty, isTrue);
-        expect(cubit.state.dietPlans.isNotEmpty, isTrue);
-      },
-    );
+    test('initial state starts with clean unpopulated patient checkIns and orders', () {
+      expect(cubit.state.checkIns, isEmpty);
+      expect(cubit.state.orders, isEmpty);
+      expect(cubit.state.routineTasks.isNotEmpty, isTrue);
+      expect(cubit.state.reminders.isNotEmpty, isTrue);
+      expect(cubit.state.dietPlans.isNotEmpty, isTrue);
+    });
 
     test('addProgressCheckIn prepends new photo checkin to list', () {
       cubit.addProgressCheckIn(
@@ -67,10 +64,7 @@ void main() {
         notes: 'Patient 101 private progress notes',
       );
       expect(cubit.state.checkIns.length, equals(1));
-      expect(
-        cubit.state.checkIns.first.notes,
-        equals('Patient 101 private progress notes'),
-      );
+      expect(cubit.state.checkIns.first.notes, equals('Patient 101 private progress notes'));
 
       // Clear on sign out
       await cubit.clearPersonalCareData();

@@ -21,7 +21,7 @@ void main() {
     }
 
     testWidgets(
-      'renders the assessment summary and clear screening note when submitted',
+    'renders the assessment summary and clear screening note when submitted',
       (tester) async {
         // Set completed answers directly on cubit
         cubit.selectGender('Male');
@@ -49,12 +49,18 @@ void main() {
         expect(find.text('Moderate'), findsOneWidget);
 
         // Honest clinical disclaimer checks
-        expect(find.text('How to use this result'), findsOneWidget);
+        expect(
+          find.text('How to use this result'),
+          findsOneWidget,
+        );
         expect(
           find.textContaining('is not a medical diagnosis'),
           findsOneWidget,
         );
-        expect(find.textContaining('/api/v1/assessment/submit'), findsNothing);
+        expect(
+          find.textContaining('/api/v1/assessment/submit'),
+          findsNothing,
+        );
 
         // Reset on Done
         expect(find.text('Done'), findsOneWidget);

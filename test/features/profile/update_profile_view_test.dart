@@ -62,9 +62,7 @@ void main() {
       expect(find.byIcon(LucideIcons.camera), findsWidgets);
     });
 
-    testWidgets('tapping Change Profile Photo opens PhotoSourceBottomSheet', (
-      tester,
-    ) async {
+    testWidgets('tapping Change Profile Photo opens PhotoSourceBottomSheet', (tester) async {
       await tester.pumpWidget(
         BlocProvider<AuthCubit>.value(
           value: authCubit,
@@ -82,9 +80,7 @@ void main() {
       expect(find.text('Remove Profile Photo'), findsOneWidget);
     });
 
-    testWidgets('picking image updates photo source and dismisses sheet', (
-      tester,
-    ) async {
+    testWidgets('picking image updates photo source and dismisses sheet', (tester) async {
       final fakePicker = _FakeImagePicker(
         mockResult: XFile('/mock/path/profile.jpg'),
       );
@@ -108,9 +104,7 @@ void main() {
       expect(find.byType(SnackBar), findsNothing);
     });
 
-    testWidgets('removing photo clears it without showing a toast', (
-      tester,
-    ) async {
+    testWidgets('removing photo clears it without showing a toast', (tester) async {
       await tester.pumpWidget(
         BlocProvider<AuthCubit>.value(
           value: authCubit,
@@ -128,9 +122,7 @@ void main() {
       expect(find.byIcon(LucideIcons.userRound), findsWidgets);
     });
 
-    testWidgets('saving changes updates AuthCubit and pops view', (
-      tester,
-    ) async {
+    testWidgets('saving changes updates AuthCubit and pops view', (tester) async {
       authCubit.emit(
         authCubit.state.copyWith(
           status: AuthStatus.authenticated,

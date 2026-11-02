@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('VideosView renders header and filters with NestedScrollView', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const MaterialApp(home: VideosView()));
+  testWidgets('VideosView renders header and filters with NestedScrollView',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: VideosView(),
+      ),
+    );
 
     expect(find.text('Patient Video Stories'), findsOneWidget);
     expect(find.text('Educational & Stories'), findsOneWidget);

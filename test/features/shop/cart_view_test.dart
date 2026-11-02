@@ -100,7 +100,9 @@ void main() {
       expect(find.text('₹2048'), findsWidgets);
     });
 
-    testWidgets('removing item updates cart without a toast', (tester) async {
+    testWidgets('removing item updates cart without a toast', (
+      tester,
+    ) async {
       await tester.pumpWidget(const MaterialApp(home: CartView()));
 
       final trashButtons = find.byIcon(LucideIcons.trash2);
