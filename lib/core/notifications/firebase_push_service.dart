@@ -41,6 +41,7 @@ class FirebasePushService {
   static Future<RemoteMessage?> get initialNotificationMessage =>
       _messaging.getInitialMessage();
 
+  // ignore: deprecated_member_use
   static Stream<String> get tokenRefreshes => _messaging.onTokenRefresh;
 
   /// Call from a user-initiated notification setting or onboarding step.
@@ -64,6 +65,7 @@ class FirebasePushService {
       );
     }
 
+    // ignore: deprecated_member_use
     return _messaging.getToken(vapidKey: webVapidKey);
   }
 }

@@ -274,7 +274,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              'Sector 29, Gurugram, Delhi NCR · 122002\nNear IFFCO Chowk Metro Station',
+                              'Dr. Hair & Cosmodent Clinic, Jaipur, Rajasthan · 302017\nMon - Sat: 10:00 AM - 7:30 PM',
                               style: TextStyle(
                                 fontSize: 11,
                                 height: 1.35,
@@ -624,7 +624,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                             ),
                             const SizedBox(height: 6),
                             const Text(
-                              'Venue: Dr. Hair Clinic · Room 101 · Sector 29, Gurugram',
+                              'Venue: Dr. Hair & Cosmodent Clinic · Jaipur Clinic',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,

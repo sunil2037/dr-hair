@@ -52,7 +52,8 @@ class PrescribedMedicine {
 }
 
 class TreatmentDetailsView extends StatefulWidget {
-  const TreatmentDetailsView({super.key});
+  final PatientClinicalApi? clinicalApi;
+  const TreatmentDetailsView({super.key, this.clinicalApi});
 
   @override
   State<TreatmentDetailsView> createState() => _TreatmentDetailsViewState();
@@ -62,7 +63,8 @@ class _TreatmentDetailsViewState extends State<TreatmentDetailsView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedReportFilter = 'All';
-  final PatientClinicalApi _clinicalApi = PatientClinicalApi();
+  late final PatientClinicalApi _clinicalApi =
+      widget.clinicalApi ?? PatientClinicalApi();
   List<ClinicalReportItem> _reports = [];
   List<PrescribedMedicine> _medicines = [];
   List<Map<String, dynamic>> _routineSteps = [];

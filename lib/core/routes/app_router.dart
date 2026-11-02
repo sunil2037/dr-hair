@@ -25,6 +25,7 @@ import '../../features/static/presentation/views/policy_page_view.dart';
 import '../../features/treatment/presentation/views/treatment_details_view.dart';
 import '../../features/videos/presentation/views/videos_view.dart';
 import '../widgets/assessment_gate.dart';
+import '../widgets/auth_gate.dart';
 import '../../features/care/presentation/views/diet_plan_view.dart';
 import '../../features/care/presentation/views/order_tracking_view.dart';
 import '../../features/care/presentation/views/progress_tracking_view.dart';
@@ -108,12 +109,17 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.updateProfile,
-        builder: (context, state) => const UpdateProfileView(),
+        builder: (context, state) => const AuthRequiredRoute(
+          routePath: RouteNames.updateProfile,
+          child: UpdateProfileView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.treatmentDetails,
-        builder: (context, state) =>
-            AssessmentRequiredRoute(child: const TreatmentDetailsView()),
+        builder: (context, state) => AuthRequiredRoute(
+          routePath: RouteNames.treatmentDetails,
+          child: AssessmentRequiredRoute(child: const TreatmentDetailsView()),
+        ),
       ),
       GoRoute(
         path: RouteNames.cart,
@@ -139,13 +145,7 @@ class AppRouter {
         path: RouteNames.productById,
         builder: (context, state) {
           final id = state.pathParameters['productId'];
-          ProductItem? product;
-          for (final item in ProductItem.demoCatalog) {
-            if (item.id == id) {
-              product = item;
-              break;
-            }
-          }
+          final product = ProductItem.findById(id);
           if (product == null) {
             return Scaffold(
               appBar: AppBar(title: const Text('Product unavailable')),
@@ -169,7 +169,10 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.checkout,
-        builder: (context, state) => const CheckoutView(),
+        builder: (context, state) => const AuthRequiredRoute(
+          routePath: RouteNames.checkout,
+          child: CheckoutView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.products,
@@ -193,34 +196,49 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.routine,
-        builder: (context, state) =>
-            AssessmentRequiredRoute(child: const RoutineTrackerView()),
+        builder: (context, state) => AuthRequiredRoute(
+          routePath: RouteNames.routine,
+          child: AssessmentRequiredRoute(child: const RoutineTrackerView()),
+        ),
       ),
       GoRoute(
         path: RouteNames.progress,
-        builder: (context, state) => AssessmentRequiredRoute(
-          child: ProgressTrackingView(
-            autoOpenAddCheckIn: state.extra is bool && state.extra == true,
+        builder: (context, state) => AuthRequiredRoute(
+          routePath: RouteNames.progress,
+          child: AssessmentRequiredRoute(
+            child: ProgressTrackingView(
+              autoOpenAddCheckIn: state.extra is bool && state.extra == true,
+            ),
           ),
         ),
       ),
       GoRoute(
         path: RouteNames.clinicAppointment,
-        builder: (context, state) => const ClinicAppointmentView(),
+        builder: (context, state) => const AuthRequiredRoute(
+          routePath: RouteNames.clinicAppointment,
+          child: ClinicAppointmentView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.dietPlan,
-        builder: (context, state) =>
-            AssessmentRequiredRoute(child: const DietPlanView()),
+        builder: (context, state) => AuthRequiredRoute(
+          routePath: RouteNames.dietPlan,
+          child: AssessmentRequiredRoute(child: const DietPlanView()),
+        ),
       ),
       GoRoute(
         path: RouteNames.reminders,
-        builder: (context, state) =>
-            AssessmentRequiredRoute(child: const RemindersView()),
+        builder: (context, state) => AuthRequiredRoute(
+          routePath: RouteNames.reminders,
+          child: AssessmentRequiredRoute(child: const RemindersView()),
+        ),
       ),
       GoRoute(
         path: RouteNames.orders,
-        builder: (context, state) => const OrderTrackingView(),
+        builder: (context, state) => const AuthRequiredRoute(
+          routePath: RouteNames.orders,
+          child: OrderTrackingView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.policy,

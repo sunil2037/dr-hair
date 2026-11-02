@@ -129,14 +129,19 @@ class _HairTestContent extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Step ${state.currentStep + 1} of ${state.totalSteps}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
+                              Flexible(
+                                child: Text(
+                                  'Step ${state.currentStep + 1} of ${state.totalSteps}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 '$percent% Complete',
                                 style: const TextStyle(
@@ -1239,7 +1244,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                           SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                              'Self-assessment complete',
+                              'Assessment complete',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -1367,7 +1372,7 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
               // Practical Actions (No Bottom Price Bar)
               AppButton(
                 height: 50,
-                text: 'Browse demo products',
+                text: 'Explore recommended products',
                 variant: AppButtonVariant.outlined,
                 size: AppButtonSize.large,
                 width: double.infinity,

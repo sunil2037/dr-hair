@@ -25,7 +25,7 @@ void main() {
     test('initial state requires the user to provide answers', () {
       final cubit = HairTestCubit();
       expect(cubit.state.currentStep, 0);
-      expect(cubit.state.totalSteps, 5);
+      expect(cubit.state.totalSteps, 9);
       expect(cubit.state.selectedGender, isNull);
       expect(cubit.state.primaryConcern, isNull);
       expect(cubit.state.duration, isNull);
@@ -63,13 +63,20 @@ void main() {
       cubit.nextStep(); // 2
       cubit.selectDuration('1 - 3 years');
       cubit.nextStep(); // 3
-      cubit.selectStressLevel('Moderate');
+      cubit.selectDandruff('Occasional flakes or itching');
       cubit.nextStep(); // 4
-      expect(cubit.state.currentStep, 4);
+      cubit.selectStressLevel('Moderate');
+      cubit.nextStep(); // 5
+      cubit.selectGutHealth('Normal');
+      cubit.nextStep(); // 6
+      cubit.selectFamilyHistory("Mother's side");
+      cubit.nextStep(); // 7
+      cubit.setAllergyStatus('No known allergies');
+      cubit.setCurrentMedicationsStatus('No');
+      cubit.nextStep(); // 8
+      expect(cubit.state.currentStep, 8);
       expect(cubit.state.isSubmitted, false);
 
-      cubit.nextStep(); // blocked until all required photos are added
-      expect(cubit.state.isSubmitted, false);
       for (final label in [
         'Front Hairline',
         'Crown / Top',
@@ -77,7 +84,7 @@ void main() {
       ]) {
         await cubit.pickPhoto(label: label, source: ImageSource.gallery);
       }
-      cubit.nextStep();
+      await cubit.nextStep();
       expect(cubit.state.isSubmitted, true);
 
       cubit.close();

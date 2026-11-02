@@ -50,7 +50,7 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   void _handlePlaceOrder() {
     final address = _selectedAddress;
-    final items = context.read<CartCubit>().state.items;
+    final items = context.read<CartCubit?>()?.state.items ?? [];
     if (address == null) {
       AppToast.show(context, const SnackBar(content: Text('Select a delivery address first.')));
       return;

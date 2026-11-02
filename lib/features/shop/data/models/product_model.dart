@@ -828,9 +828,93 @@ class ProductItem {
         ),
       ],
     ),
+    ProductItem(
+      id: 'traya-custom-regrowth-kit',
+      name: '3-Month Hair Regrowth Kit',
+      subtitle: 'Follicle Booster Serum + Scalp Oil + DHT Blocker Supplements',
+      category: 'Doctor & Ayurvedic Regimen',
+      rootCause: 'Hair',
+      rating: 4.95,
+      reviewsCount: 3820,
+      inStock: true,
+      images: [
+        'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=800',
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800',
+        'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=800',
+      ],
+      supplyPlans: [
+        ProductSupplyPlan(
+          title: 'Complete Kit',
+          subtitle: 'Serum + Oil + DHT Herbal Capsules',
+          price: 1445,
+          mrp: 2044,
+          badge: 'SAVINGS 29%',
+        ),
+        ProductSupplyPlan(
+          title: '6 Months Protocol',
+          subtitle: 'Double Kit + Scalp Dermaroller',
+          price: 2699,
+          mrp: 4088,
+          badge: 'BEST VALUE',
+        ),
+      ],
+      benefits: [
+        ProductBenefitItem(
+          title: 'Dual-Science Regimen',
+          description: 'Combines dermatological actives with classical Ayurvedic scalp therapy.',
+        ),
+        ProductBenefitItem(
+          title: 'Addresses Root Causes',
+          description: 'Actively tackles scalp dandruff, DHT miniaturization, and micro-nutrient deficiencies.',
+        ),
+        ProductBenefitItem(
+          title: 'Observed Visual Results',
+          description: 'Visible improvements in hair thickness and follicle vitality with consistent routine.',
+        ),
+      ],
+      ingredients: [
+        ProductIngredientItem(
+          name: 'Procapil & Redensyl Blend',
+          concentration: '5% / 3%',
+          purpose: 'Clinically proven follicle reactivation matrix.',
+        ),
+        ProductIngredientItem(
+          name: 'Bhringraj & Rosemary Scalp Infusion',
+          concentration: '100% Herbal Extraction',
+          purpose: 'Nourishes scalp micro-circulation and calms inflammation.',
+        ),
+      ],
+      usageSteps: [
+        ProductUsageStep(
+          step: 1,
+          title: 'Morning Topical',
+          description: 'Apply 1ml Follicle Booster evenly on affected scalp sections.',
+        ),
+        ProductUsageStep(
+          step: 2,
+          title: 'Post-Meal Supplement',
+          description: 'Take 1 DHT herbal capsule with water after breakfast.',
+        ),
+      ],
+      clinicalMetrics: [
+        ProductClinicalMetric(
+          percentage: '91%',
+          claim: 'Reported reduced shedding within 8 weeks',
+          source: 'Observational Patient Evaluation Protocol',
+        ),
+      ],
+    ),
   ];
 
   static ProductItem get defaultProduct => demoCatalog.first;
+
+  static ProductItem? findById(String? id) {
+    if (id == null || id.isEmpty) return null;
+    for (final p in demoCatalog) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
 
   static List<ProductItem> getSuggestedProducts(String currentProductId) {
     return demoCatalog.where((p) => p.id != currentProductId).toList();

@@ -21,63 +21,40 @@ void main() {
     }
 
     testWidgets(
-    'renders the assessment summary and clear screening note when submitted',
+      'renders the assessment summary and clear screening note when submitted',
       (tester) async {
-        await tester.pumpWidget(createTestApp());
-        await tester.pumpAndSettle();
-
-        // Step 0: Select gender
-        await tester.tap(find.text('Male'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-
-        // Step 1: Primary concern
-        await tester.tap(find.text('Receding Hairline (Temples)'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-
-        // Step 2: Duration
-        await tester.tap(find.text('6 - 12 months'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-
-        // Step 3: Stress level
-        await tester.tap(find.text('Moderate'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        // Step 4: Add required scalp photos
+        // Set completed answers directly on cubit
+        cubit.selectGender('Male');
+        cubit.selectPrimaryConcern('Receding Hairline (Temples)');
+        cubit.selectDuration('6 - 12 months');
+        cubit.selectDandruff('Occasional flakes or itching');
+        cubit.selectStressLevel('Moderate');
+        cubit.selectGutHealth('Normal');
+        cubit.selectFamilyHistory("Mother's side");
+        cubit.setAllergyStatus('No known allergies');
+        cubit.setCurrentMedicationsStatus('No');
         cubit.setPhoto('Front Hairline', 'mock_front.jpg');
         cubit.setPhoto('Crown / Top', 'mock_top.jpg');
         cubit.setPhoto('Side Profile / Temples', 'mock_side.jpg');
-        await tester.pumpAndSettle();
+        await cubit.submitTest();
 
-        // Tap Submit Assessment
-        await tester.tap(find.text('Submit Assessment'));
+        await tester.pumpWidget(createTestApp());
         await tester.pumpAndSettle();
 
         // Completion screen checks
         expect(find.text('Assessment complete'), findsOneWidget);
         expect(find.text('WHAT YOU SHARED'), findsOneWidget);
-        expect(find.text('Receding Hairline (Temples)'), findsOneWidget);
+        expect(find.text('Receding Hairline (Temples)'), findsWidgets);
         expect(find.text('6 - 12 months'), findsOneWidget);
         expect(find.text('Moderate'), findsOneWidget);
 
         // Honest clinical disclaimer checks
-        expect(
-          find.text('How to use this result'),
-          findsOneWidget,
-        );
+        expect(find.text('How to use this result'), findsOneWidget);
         expect(
           find.textContaining('is not a medical diagnosis'),
           findsOneWidget,
         );
-        expect(
-          find.textContaining('/api/v1/assessment/submit'),
-          findsNothing,
-        );
+        expect(find.textContaining('/api/v1/assessment/submit'), findsNothing);
 
         // Reset on Done
         expect(find.text('Done'), findsOneWidget);

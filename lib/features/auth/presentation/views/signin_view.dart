@@ -115,8 +115,10 @@ class _SigninViewState extends State<SigninView>
     });
 
     final authCubit = context.read<AuthCubit>();
-    final fullPhone = '$_countryCode $rawPhone';
-    final sent = await authCubit.sendOtp(fullPhone);
+    // The API stores and matches Indian phone identities as the 10-digit
+    // national number. Keep +91 as presentation only until the UI supports
+    // selecting other countries.
+    final sent = await authCubit.sendOtp(rawPhone);
     if (!mounted) return;
     setState(() {
       _isLoading = false;
@@ -179,15 +181,12 @@ class _SigninViewState extends State<SigninView>
     }
   }
 
-  void _fillDemoOtp() {
-    const demo = '123456';
-    for (int i = 0; i < 6; i++) {
-      _otpControllers[i].text = demo[i];
+  void _fillOtp(String code) {
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) return;
+    for (var index = 0; index < _otpControllers.length; index++) {
+      _otpControllers[index].text = code[index];
     }
-    if (_otpFocusNodes[5].canRequestFocus) {
-      _otpFocusNodes[5].requestFocus();
-    }
-    setState(() {});
+    FocusScope.of(context).unfocus();
   }
 
   Future<void> _resendOtp() async {
@@ -231,7 +230,7 @@ class _SigninViewState extends State<SigninView>
 
     setState(() => _isLoading = true);
     final authCubit = context.read<AuthCubit>();
-    final phone = '$_countryCode ${_phoneController.text.trim()}';
+    final phone = _phoneController.text.trim();
 
     final success = await authCubit.verifyOtp(otp: code, phoneNumber: phone);
 
@@ -239,8 +238,21 @@ class _SigninViewState extends State<SigninView>
     setState(() => _isLoading = false);
 
     if (success) {
+      String? redirect;
+      try {
+        redirect = GoRouterState.of(context).uri.queryParameters['redirect'];
+      } catch (_) {
+        // SigninView can also be previewed in a plain MaterialApp in tests.
+      }
       if (authCubit.state.requiresProfileCompletion) {
-        context.go(RouteNames.completeProfile);
+        final target = redirect != null && redirect.isNotEmpty
+            ? '${RouteNames.completeProfile}?redirect=${Uri.encodeComponent(redirect)}'
+            : RouteNames.completeProfile;
+        context.go(target);
+      } else if (redirect != null &&
+          redirect.isNotEmpty &&
+          redirect != RouteNames.signin) {
+        context.go(redirect);
       } else {
         _navigateToHome();
       }
@@ -255,11 +267,6 @@ class _SigninViewState extends State<SigninView>
         ),
       );
     }
-  }
-
-  void _continueAsGuest() {
-    context.read<AuthCubit?>()?.loginAsGuest();
-    _navigateToHome();
   }
 
   void _navigateToHome() {
@@ -615,46 +622,7 @@ class _SigninViewState extends State<SigninView>
         const SizedBox(height: 18),
 
         // OR Divider
-        Row(
-          children: [
-            const Expanded(child: Divider(color: AppColors.border)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'OR',
-                style: TextStyle(
-                  color: AppColors.secondaryDark.withValues(alpha: 0.6),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-            const Expanded(child: Divider(color: AppColors.border)),
-          ],
-        ),
-
-        // const SizedBox(height: 10),
-
-        // Demo Mode Credentials & API Contract Notice
-        if (!kReleaseMode) ...[
-          // Continue as Guest
-          Center(
-            child: TextButton(
-              onPressed: _continueAsGuest,
-              child: const Text(
-                'Continue as Guest',
-                style: TextStyle(
-                  color: AppColors.secondaryDark,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-        ],
+        const SizedBox(height: 20),
 
         // Terms and Privacy Policy Links
         Center(
@@ -770,56 +738,6 @@ class _SigninViewState extends State<SigninView>
           ),
         ),
 
-        if (!kReleaseMode) ...[
-          const SizedBox(height: 16),
-
-          // Demo Helper Pill
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary5,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary100),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  LucideIcons.info,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Demo OTP: 123456',
-                    style: TextStyle(
-                      color: AppColors.secondaryDark,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: _fillDemoOtp,
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  child: const Text(
-                    'Auto-fill',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-
         const SizedBox(height: 18),
 
         // 6 OTP Digit Inputs
@@ -870,6 +788,45 @@ class _SigninViewState extends State<SigninView>
             }),
           ),
         ),
+
+        if (kDebugMode && authState.developmentOtp != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: AppColors.primary5.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.flaskConical,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Local test code: ${authState.developmentOtp}',
+                    style: const TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => _fillOtp(authState.developmentOtp!),
+                  child: const Text('Fill'),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         const SizedBox(height: 22),
 

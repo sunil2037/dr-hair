@@ -186,7 +186,7 @@ class _AppointmentDatePickerBottomSheetState
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Dr. Jai Bansal · Room 101 · Sector 29, Gurugram',
+                      'Dr. Jai Bansal · Dr. Hair & Cosmodent Clinic · Jaipur',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.secondaryDark,

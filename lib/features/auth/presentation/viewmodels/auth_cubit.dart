@@ -11,11 +11,8 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthRepository? repository;
   Timer? _countdownTimer;
 
-  /// The app composition root always supplies the API repository. The no-arg
-  /// path remains a local-only preview for the existing widget tests.
+  /// The application composition root supplies the API-backed repository.
   AuthCubit({this.repository}) : super(const AuthState());
-
-  bool get _canUseLocalPreview => repository == null && kDebugMode;
 
   Future<void> restoreSession() async {
     final repo = repository;
@@ -64,17 +61,21 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<bool> sendOtp(String login) async {
     final normalizedLogin = login.trim();
-    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        clearError: true,
+        clearDevelopmentOtp: true,
+      ),
+    );
     try {
-      if (repository case final repo?) {
-        await repo.requestOtp(normalizedLogin);
-      } else if (_canUseLocalPreview) {
-        await Future<void>.delayed(const Duration(milliseconds: 250));
-      } else {
+      final repo = repository;
+      if (repo == null) {
         throw const AuthRepositoryException(
           'Authentication is not configured.',
         );
       }
+      final developmentOtp = await repo.requestOtp(normalizedLogin);
 
       _startCountdownTimer();
       emit(
@@ -83,6 +84,7 @@ class AuthCubit extends Cubit<AuthState> {
           isOtpSent: true,
           phoneNumber: normalizedLogin,
           resendCountdown: 30,
+          developmentOtp: kDebugMode ? developmentOtp : null,
           clearError: true,
         ),
       );
@@ -92,6 +94,7 @@ class AuthCubit extends Cubit<AuthState> {
         state.copyWith(
           status: AuthStatus.failure,
           isOtpSent: false,
+          clearDevelopmentOtp: true,
           errorMessage: _message(
             error,
             'Could not send the verification code.',
@@ -130,53 +133,34 @@ class AuthCubit extends Cubit<AuthState> {
   Future<bool> verifyOtp({
     required String otp,
     required String phoneNumber,
-    String? name,
   }) async {
     final login = phoneNumber.trim();
-    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        clearError: true,
+        clearDevelopmentOtp: true,
+      ),
+    );
     try {
       final repo = repository;
-      if (repo != null) {
-        final result = await repo.verifyOtp(login: login, otp: otp.trim());
-        _countdownTimer?.cancel();
-        emit(
-          AuthState(
-            status: result.isRegistered && result.user != null
-                ? AuthStatus.authenticated
-                : AuthStatus.profileRequired,
-            user: result.user,
-            sessionToken: result.token,
-            isRegistered: result.isRegistered && result.user != null,
-            isAdmin: result.isAdmin,
-            phoneNumber: login,
-          ),
-        );
-        return true;
-      }
-
-      if (!_canUseLocalPreview) {
+      if (repo == null) {
         throw const AuthRepositoryException(
           'Authentication is not configured.',
         );
       }
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      if (otp.trim() != '123456') {
-        throw const AuthRepositoryException(
-          'Use the development test code to continue.',
-        );
-      }
+      final result = await repo.verifyOtp(login: login, otp: otp.trim());
       _countdownTimer?.cancel();
-      final user = UserModel.demoPatient(identifier: login).copyWith(
-        name: (name?.trim().isNotEmpty ?? false) ? name!.trim() : null,
-      );
       emit(
-        state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-          isRegistered: true,
-          isOtpSent: false,
-          resendCountdown: 0,
-          clearError: true,
+        AuthState(
+          status: result.isRegistered && result.user != null
+              ? AuthStatus.authenticated
+              : AuthStatus.profileRequired,
+          user: result.user,
+          sessionToken: result.token,
+          isRegistered: result.isRegistered && result.user != null,
+          isAdmin: result.isAdmin,
+          phoneNumber: login,
         ),
       );
       return true;
@@ -203,34 +187,9 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final repo = repository;
       if (repo == null) {
-        if (!_canUseLocalPreview) {
-          throw const AuthRepositoryException(
-            'Authentication is not configured.',
-          );
-        }
-        final user = UserModel(
-          id: 'PREVIEW-USER',
-          name: name.trim(),
-          emailOrPhone: verifiedLogin,
-          phone: verifiedLogin.contains('@') ? null : verifiedLogin,
-          email: verifiedLogin.contains('@') ? verifiedLogin : null,
-          age: age,
-          gender: gender,
-          city: city,
-          occupation: occupation,
-          patientId: 'PREVIEW-USER',
-          loggedInAt: DateTime.now(),
+        throw const AuthRepositoryException(
+          'Authentication is not configured.',
         );
-        emit(
-          state.copyWith(
-            status: AuthStatus.authenticated,
-            user: user,
-            isRegistered: true,
-            isOtpSent: false,
-            clearError: true,
-          ),
-        );
-        return true;
       }
 
       final user = await repo.completeProfile(
@@ -283,21 +242,8 @@ class AuthCubit extends Cubit<AuthState> {
       final repo = repository;
       UserModel updated;
       if (repo == null) {
-        if (!_canUseLocalPreview) {
-          throw const AuthRepositoryException(
-            'Authentication is not configured.',
-          );
-        }
-        updated = current.copyWith(
-          name: name,
-          email: email,
-          phone: phone,
-          age: age,
-          gender: gender,
-          city: city,
-          occupation: occupation,
-          photoUrl: photoUrl,
-          clearPhotoUrl: clearPhoto,
+        throw const AuthRepositoryException(
+          'Authentication is not configured.',
         );
       } else {
         String? uploadedPhotoUrl;
@@ -355,54 +301,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> login({required String identifier, String? name}) async {
-    if (repository != null || !_canUseLocalPreview) return;
-    emit(state.copyWith(status: AuthStatus.loading));
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    final user = UserModel.demoPatient(
-      identifier: identifier,
-    ).copyWith(name: (name?.trim().isNotEmpty ?? false) ? name!.trim() : null);
-    emit(
-      state.copyWith(
-        status: AuthStatus.authenticated,
-        user: user,
-        clearError: true,
-      ),
-    );
-  }
-
-  Future<void> loginWithDemo() async {
-    if (repository != null || !_canUseLocalPreview) return;
-    _countdownTimer?.cancel();
-    emit(state.copyWith(status: AuthStatus.loading));
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    emit(
-      state.copyWith(
-        status: AuthStatus.authenticated,
-        user: UserModel.demoPatient(),
-        isRegistered: true,
-        isOtpSent: false,
-        resendCountdown: 0,
-        clearError: true,
-      ),
-    );
-  }
-
-  void loginAsGuest() {
-    if (repository != null || !_canUseLocalPreview) return;
-    _countdownTimer?.cancel();
-    emit(
-      state.copyWith(
-        status: AuthStatus.authenticated,
-        user: UserModel.guest(),
-        isRegistered: false,
-        isOtpSent: false,
-        resendCountdown: 0,
-        clearError: true,
-      ),
-    );
-  }
-
   void resetToPhoneStep() {
     _countdownTimer?.cancel();
     emit(
@@ -412,6 +310,7 @@ class AuthCubit extends Cubit<AuthState> {
         resendCountdown: 0,
         phoneNumber: '',
         clearError: true,
+        clearDevelopmentOtp: true,
       ),
     );
   }

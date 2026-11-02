@@ -41,15 +41,15 @@ void main() {
       expect(find.text('Prefer expert guidance?'), findsNothing);
       expect(find.text('Visit Dr. Jai Bansal'), findsOneWidget);
       expect(find.text('URGENT CARE'), findsOneWidget);
-      expect(find.text('Explore Dr.Hair'), findsOneWidget);
+      expect(find.text('Voices of Success'), findsOneWidget);
       expect(find.text('Free Hair Test'), findsOneWidget);
 
       // Verify vertical positioning order:
       final productsTop = tester.getTopLeft(find.text('Essential Products')).dy;
       final urgentCareTop = tester.getTopLeft(find.text('URGENT CARE')).dy;
-      final moreContentTop = tester.getTopLeft(find.text('Explore Dr.Hair')).dy;
+      final reviewsTop = tester.getTopLeft(find.text('Voices of Success')).dy;
       expect(productsTop, lessThan(urgentCareTop));
-      expect(urgentCareTop, lessThan(moreContentTop));
+      expect(urgentCareTop, lessThan(reviewsTop));
     },
   );
 
@@ -66,9 +66,7 @@ void main() {
     await tester.pumpWidget(buildHomeView());
     await tester.pumpAndSettle();
 
-    // Optional editorial content stays collapsed until requested.
-    await tester.ensureVisible(find.text('Explore Dr.Hair'));
-    await tester.tap(find.text('Explore Dr.Hair'));
+    await tester.ensureVisible(find.text('Voices of Success'));
     await tester.pumpAndSettle();
 
     expect(find.text('Voices of Success'), findsOneWidget);

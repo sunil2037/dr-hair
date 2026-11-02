@@ -481,7 +481,10 @@ class _ProductsViewState extends State<ProductsView>
                                       : 2,
                                   crossAxisSpacing: 8,
                                   mainAxisSpacing: 8,
-                                  mainAxisExtent: 225,
+                                  mainAxisExtent:
+                                      MediaQuery.sizeOf(context).width < 360
+                                      ? 254
+                                      : 236,
                                 ),
                             delegate: SliverChildBuilderDelegate((
                               context,
@@ -732,7 +735,14 @@ class _ProductGridCard extends StatelessWidget {
     final plan = product.supplyPlans.isNotEmpty
         ? product.supplyPlans.first
         : null;
-    final price = plan != null ? '₹${plan.price}' : 'Price N/A';
+    final hasMultiplePlans = product.supplyPlans.length > 1;
+    final minPrice = product.supplyPlans.fold<int>(
+      plan?.price ?? 0,
+      (min, p) => p.price < min ? p.price : min,
+    );
+    final price = plan != null
+        ? (hasMultiplePlans ? 'From ₹$minPrice' : '₹${plan.price}')
+        : 'Price N/A';
     final mrp = plan != null && plan.mrp > plan.price ? '₹${plan.mrp}' : null;
     final discountPercent = plan != null && plan.mrp > plan.price
         ? (((plan.mrp - plan.price) / plan.mrp) * 100).round()
@@ -742,6 +752,7 @@ class _ProductGridCard extends StatelessWidget {
     final tagLabel = product.rootCause.isNotEmpty
         ? product.rootCause
         : (isAyurveda ? 'Ayurveda' : 'Clinical');
+    final isNarrow = MediaQuery.sizeOf(context).width < 360;
 
     return Semantics(
       label: '${product.name}, $price, ${product.rating} stars',
@@ -776,7 +787,7 @@ class _ProductGridCard extends StatelessWidget {
                         imageUrl: product.images.isNotEmpty
                             ? product.images.first
                             : '',
-                        height: 104,
+                        height: isNarrow ? 92 : 104,
                         width: double.infinity,
                         borderRadius: 14,
                         fit: BoxFit.cover,

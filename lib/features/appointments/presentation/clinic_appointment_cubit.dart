@@ -57,7 +57,7 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
 
   Future<String?> saveRequest({
     required String patientId,
-    required String accessToken,
+    String? accessToken,
     required DateTime startsAt,
     required String reason,
     String? replacingId,
@@ -90,31 +90,64 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
         )) {
       return 'This appointment request is no longer available.';
     }
-    try {
-      if (replacingId == null) {
-        await api.create(token: accessToken, startsAt: startsAt, reason: reason.trim());
-      } else {
-        await api.update(
-          token: accessToken,
-          appointmentId: replacingId,
-          data: {'action': 'reschedule', 'starts_at': startsAt.toUtc().toIso8601String()},
-        );
+    if (accessToken != null && accessToken.isNotEmpty) {
+      try {
+        if (replacingId == null) {
+          await api.create(token: accessToken, startsAt: startsAt, reason: reason.trim());
+        } else {
+          await api.update(
+            token: accessToken,
+            appointmentId: replacingId,
+            data: {'action': 'reschedule', 'starts_at': startsAt.toUtc().toIso8601String()},
+          );
+        }
+        await loadFromApi(accessToken);
+        return null;
+      } catch (error) {
+        return _errorMessage(error, 'Appointment request could not be saved.');
       }
-      await loadFromApi(accessToken);
-      return null;
-    } catch (error) {
-      return _errorMessage(error, 'Appointment request could not be saved.');
     }
+    final appointment = ClinicAppointment(
+      id: replacingId ?? 'APT-${DateTime.now().microsecondsSinceEpoch}',
+      patientId: patientId,
+      startsAt: startsAt,
+      reason: reason.trim(),
+    );
+    emit(
+      replacingId == null
+          ? [appointment, ...state]
+          : state
+                .map((item) => item.id == replacingId ? appointment : item)
+                .toList(),
+    );
+    await _persist();
+    return null;
   }
 
-  Future<String?> cancel(String id, String patientId, {required String accessToken}) async {
-    try {
-      await api.update(token: accessToken, appointmentId: id, data: {'action': 'cancel'});
-      await loadFromApi(accessToken);
-      return null;
-    } catch (error) {
-      return _errorMessage(error, 'Appointment request could not be cancelled.');
+  Future<String?> cancel(String id, String patientId, {String? accessToken}) async {
+    if (accessToken != null && accessToken.isNotEmpty) {
+      try {
+        await api.update(token: accessToken, appointmentId: id, data: {'action': 'cancel'});
+        await loadFromApi(accessToken);
+        return null;
+      } catch (error) {
+        return _errorMessage(error, 'Appointment request could not be cancelled.');
+      }
     }
+    emit(
+      state
+          .map(
+            (item) =>
+                item.id == id &&
+                    item.patientId == patientId &&
+                    item.status != 'Cancelled'
+                ? item.copyWith(status: 'Cancelled')
+                : item,
+          )
+          .toList(),
+    );
+    await _persist();
+    return null;
   }
 
   Future<void> clearForPatient(String patientId) async {

@@ -3,31 +3,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('ReviewsView renders rating card and filters with NestedScrollView',
-      (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReviewsView(),
-      ),
-    );
+  testWidgets(
+    'ReviewsView renders rating card and filters with NestedScrollView',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: ReviewsView()));
 
-    expect(find.text('Clinical Reviews'), findsOneWidget);
-    expect(find.text('10,000+ Verified Stories'), findsOneWidget);
+      expect(find.text('Patient Stories'), findsOneWidget);
+      expect(
+        find.text('Sample testimonials shown for this app demo'),
+        findsOneWidget,
+      );
 
-    // Category chips
-    expect(find.text('All'), findsOneWidget);
-    expect(find.text('Hair Fall'), findsOneWidget);
-    expect(find.text('Regrowth'), findsOneWidget);
-    expect(find.text('Dandruff'), findsOneWidget);
+      // Category chips
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Hair Fall'), findsOneWidget);
+      expect(find.text('Regrowth'), findsOneWidget);
+      expect(find.text('Dandruff'), findsOneWidget);
 
-    // Initial shows Yashveer Soni
-    expect(find.text('Yashveer Soni'), findsOneWidget);
+      // Initial shows Rahul Sharma
+      expect(find.text('Rahul Sharma'), findsOneWidget);
 
-    // Switch filter to Dandruff
-    await tester.tap(find.text('Dandruff'));
-    await tester.pumpAndSettle();
+      // Switch filter to Dandruff
+      await tester.tap(find.text('Dandruff'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Ananya Mehra'), findsOneWidget);
-    expect(find.text('Yashveer Soni'), findsNothing);
-  });
+      expect(find.text('Ananya Mehra'), findsOneWidget);
+      expect(find.text('Rahul Sharma'), findsNothing);
+    },
+  );
 }

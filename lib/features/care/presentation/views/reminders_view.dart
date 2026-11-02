@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../data/services/care_notification_service.dart';
 import '../../domain/models/care_models.dart';
 import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
@@ -118,6 +119,36 @@ class RemindersView extends StatelessWidget {
     );
   }
 
+  void _showPermissionRecoveryDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enable Notifications in Settings'),
+        content: Text(
+          CareNotificationService.getPermissionDeniedRecoveryAdvice(),
+          style: const TextStyle(fontSize: 14, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Dismiss'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<CareCubit>().requestNotificationPermission(simulateDenial: false);
+            },
+            child: const Text('I Enabled It'),
+          ),
+        ],
+      ),
+    );
+  }
+
   IconData _iconForReminder(CareReminder reminder) {
     final type = reminder.treatmentType.toLowerCase();
     final title = reminder.title.toLowerCase();
@@ -160,7 +191,61 @@ class RemindersView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              careCard(
+              if (state.notificationPermissionStatus == NotificationPermissionStatus.denied)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(LucideIcons.bellOff, color: AppColors.danger, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Notifications Disabled',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.danger,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Timed reminders and regimen alerts will not trigger on your device.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.4,
+                                color: AppColors.secondaryDark,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            GestureDetector(
+                              onTap: () => _showPermissionRecoveryDialog(context),
+                              child: const Text(
+                                'How to enable in Settings →',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.danger,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                careCard(
                 backgroundColor: AppColors.primary5,
                 border: Border.all(color: AppColors.primary100),
                 child: const Row(

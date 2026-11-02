@@ -9,15 +9,37 @@ import '../../../../core/storage/app_local_cache.dart';
 import 'care_state.dart';
 
 class CareCubit extends Cubit<CareState> {
-  static const _checkInsKey = 'care_checkins_v1';
-  static const _ordersKey = 'care_orders_v1';
   static const _routineHistoryKey = 'care_routine_completion_days_v1';
   static const _careDataClearedKey = 'care_personal_data_cleared_v1';
   final CareNotificationService? _notificationService;
+  String? _patientId;
+
+  String get _checkInsKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'care_checkins_${_patientId}_v1'
+      : 'care_checkins_v1';
+
+  String get _ordersKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'care_orders_${_patientId}_v1'
+      : 'care_orders_v1';
 
   CareCubit([this._notificationService]) : super(const CareState()) {
     _initializeDefaultData();
     _initPersistence();
+  }
+
+  Future<void> bindPatient(String? patientId) async {
+    if (_patientId == patientId) return;
+    _patientId = patientId;
+    await _initPersistence();
+  }
+
+  void loadSampleFixturesForTesting() {
+    if (isClosed) return;
+    emit(
+      state.copyWith(
+        checkIns: ProgressCheckIn.sampleFixtures,
+      ),
+    );
   }
 
   Future<void> _initPersistence() async {
@@ -48,6 +70,7 @@ class CareCubit extends Cubit<CareState> {
       (json) => json['day'] as String? ?? '',
     );
 
+    if (isClosed) return;
     emit(
       state.copyWith(
         notificationPermissionStatus: status,
@@ -62,41 +85,7 @@ class CareCubit extends Cubit<CareState> {
 
   void _initializeDefaultData() {
     if (AppLocalCache.instance.getBool(_careDataClearedKey) == true) return;
-    final defaultCheckIns = [
-      ProgressCheckIn(
-        id: 'ci_1',
-        date: DateTime.now().subtract(const Duration(days: 4)),
-        imagePath: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600',
-        scalpRegion: 'Crown / Vertex',
-        sheddingLevel: 'Low / Normal',
-        notes: 'Noticeable increase in hair shaft thickness. Baby hairs visible around follicle borders.',
-        densityRating: 4,
-        isDoctorReviewed: true,
-        doctorNote: 'Follicular miniaturization is reversing nicely. Maintain current 5% topical solution frequency.',
-      ),
-      ProgressCheckIn(
-        id: 'ci_2',
-        date: DateTime.now().subtract(const Duration(days: 35)),
-        imagePath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600',
-        scalpRegion: 'Frontal Hairline',
-        sheddingLevel: 'Moderate',
-        notes: 'Shedding during evening shampoo significantly reduced. Scalp irritation is gone.',
-        densityRating: 3,
-        isDoctorReviewed: true,
-        doctorNote: 'Good cellular response to the DHT blocker. Consistency is key during month 2-3.',
-      ),
-      ProgressCheckIn(
-        id: 'ci_3',
-        date: DateTime.now().subtract(const Duration(days: 75)),
-        imagePath: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600',
-        scalpRegion: 'Crown / Vertex',
-        sheddingLevel: 'Noticeable',
-        notes: 'Baseline consultation photo before starting customized formulation.',
-        densityRating: 2,
-        isDoctorReviewed: true,
-        doctorNote: 'Baseline captured. Target: Stage 2 androgenetic thinning.',
-      ),
-    ];
+    const defaultCheckIns = <ProgressCheckIn>[];
 
     final defaultTasks = [
       const RoutineTask(
@@ -266,25 +255,7 @@ class CareCubit extends Cubit<CareState> {
       ],
     ];
 
-    final defaultOrders = [
-      const CareOrder(
-        orderId: 'DRH-99214',
-        orderDate: 'Oct 20, 2026',
-        estimatedDelivery: 'Oct 23, 2026 (Tomorrow)',
-        status: 'Out for Delivery',
-        currentStep: 3,
-        courierName: 'BlueDart Express',
-        trackingNumber: 'BD-884910245IN',
-        deliveryAddress:
-            'Apt 402, Green Glen Layout, Bellandur, Bengaluru 560103',
-        items: [
-          'Dr.Hair Customized 5% Topical Regrowth Serum (60ml)',
-          'DHT-Blocker Saw Palmetto & Biotin Capsules (60 Tabs)',
-          'Anti-Residue Scalp Clarifying Cleanser (100ml)',
-        ],
-        totalAmount: 2048,
-      ),
-    ];
+    const defaultOrders = <CareOrder>[];
 
     emit(
       CareState(
@@ -335,6 +306,7 @@ class CareCubit extends Cubit<CareState> {
   }
 
   void deleteProgressCheckIn(String id) {
+    if (isClosed) return;
     emit(
       state.copyWith(
         checkIns: state.checkIns.where((ci) => ci.id != id).toList(),
@@ -588,6 +560,7 @@ class CareCubit extends Cubit<CareState> {
     for (final reminder in state.reminders) {
       await service.cancelReminder(reminder.id);
     }
+    if (isClosed) return;
     emit(
       state.copyWith(
         checkIns: const [],
@@ -600,6 +573,9 @@ class CareCubit extends Cubit<CareState> {
     final cache = AppLocalCache.instance;
     for (final key in [
       _checkInsKey,
+      'care_checkins_v1',
+      _ordersKey,
+      'care_orders_v1',
       'care_bookings_v1',
       _routineHistoryKey,
       'care_persisted_routine_v1',
@@ -609,6 +585,7 @@ class CareCubit extends Cubit<CareState> {
     ]) {
       await cache.remove(key);
     }
+    _patientId = null;
     await cache.put(_careDataClearedKey, true);
   }
 

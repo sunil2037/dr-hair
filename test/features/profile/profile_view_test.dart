@@ -29,13 +29,13 @@ void main() {
 
     // Patient info
     expect(find.text('Yashveer Soni'), findsOneWidget);
-    expect(find.text('Patient ID: DRH-2024-8849'), findsOneWidget);
+    expect(find.text('Patient ID: DHP0001'), findsOneWidget);
     expect(find.text('The tools for your hair health journey'), findsOneWidget);
 
     // Key drawer sections present in profile, including Assessment result
     expect(find.text('Assessment result'), findsOneWidget);
     expect(
-      find.text('View your clinical hair diagnosis report'),
+      find.text('Review your assessment answers and summary'),
       findsOneWidget,
     );
     expect(find.text('Treatment plan'), findsOneWidget);
@@ -63,8 +63,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Assessment Report'), findsOneWidget);
-      expect(find.text('Your Hair Loss Root Causes'), findsOneWidget);
-      expect(find.text('Dandruff'), findsWidgets);
+      expect(find.text('What this may mean'), findsOneWidget);
+      expect(find.textContaining('Dandruff'), findsWidgets);
     },
   );
 

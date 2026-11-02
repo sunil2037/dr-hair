@@ -17,7 +17,7 @@ void main() {
       await tester.ensureVisible(find.text('Continue'));
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      expect(find.text('Step 1 of 5'), findsOneWidget);
+      expect(find.text('Step 1 of 9'), findsOneWidget);
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
 
@@ -59,8 +59,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show Step 1 Questionnaire, NOT Assessment Report
-      expect(find.text('Clinical Hair Analysis'), findsOneWidget);
-      expect(find.text('Step 1 of 5'), findsOneWidget);
+      expect(find.text('Hair & Scalp Assessment'), findsOneWidget);
+      expect(find.text('Step 1 of 9'), findsOneWidget);
       expect(find.text('Assessment complete'), findsNothing);
       expect(find.text('Your Hair Loss Root Causes'), findsNothing);
 

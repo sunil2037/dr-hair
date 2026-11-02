@@ -14,17 +14,18 @@ void main() {
       cubit.close();
     });
 
-    test('initial state has default clinical data populated', () {
-      expect(cubit.state.checkIns.isNotEmpty, isTrue);
-      expect(cubit.state.routineTasks.isNotEmpty, isTrue);
-      expect(cubit.state.reminders.isNotEmpty, isTrue);
-      expect(cubit.state.dietPlans.isNotEmpty, isTrue);
-      expect(cubit.state.orders.isNotEmpty, isTrue);
-      expect(cubit.state.routineStreakDays, equals(14));
-    });
+    test(
+      'initial state starts with clean unpopulated patient checkIns and orders',
+      () {
+        expect(cubit.state.checkIns, isEmpty);
+        expect(cubit.state.orders, isEmpty);
+        expect(cubit.state.routineTasks.isNotEmpty, isTrue);
+        expect(cubit.state.reminders.isNotEmpty, isTrue);
+        expect(cubit.state.dietPlans.isNotEmpty, isTrue);
+      },
+    );
 
     test('addProgressCheckIn prepends new photo checkin to list', () {
-      final initialCount = cubit.state.checkIns.length;
       cubit.addProgressCheckIn(
         date: DateTime.now(),
         imagePath: '/mock/path/scalp.jpg',
@@ -34,7 +35,7 @@ void main() {
         densityRating: 5,
       );
 
-      expect(cubit.state.checkIns.length, equals(initialCount + 1));
+      expect(cubit.state.checkIns.length, equals(1));
       expect(
         cubit.state.checkIns.first.imagePath,
         equals('/mock/path/scalp.jpg'),
@@ -43,12 +44,41 @@ void main() {
     });
 
     test('deleteProgressCheckIn removes checkin by id', () {
+      cubit.addProgressCheckIn(
+        date: DateTime.now(),
+        imagePath: '/mock/path/scalp.jpg',
+        scalpRegion: 'Crown / Vertex',
+        sheddingLevel: 'Low / Normal',
+        notes: 'Baseline photo',
+      );
       final firstId = cubit.state.checkIns.first.id;
-      final initialCount = cubit.state.checkIns.length;
 
       cubit.deleteProgressCheckIn(firstId);
-      expect(cubit.state.checkIns.length, equals(initialCount - 1));
-      expect(cubit.state.checkIns.any((ci) => ci.id == firstId), isFalse);
+      expect(cubit.state.checkIns, isEmpty);
+    });
+
+    test('patient care data isolation: sign-out clears care data and cannot bleed between users', () async {
+      await cubit.bindPatient('patient_101');
+      cubit.addProgressCheckIn(
+        date: DateTime.now(),
+        imagePath: '/mock/path/patient1.jpg',
+        scalpRegion: 'Frontal Hairline',
+        sheddingLevel: 'Moderate',
+        notes: 'Patient 101 private progress notes',
+      );
+      expect(cubit.state.checkIns.length, equals(1));
+      expect(
+        cubit.state.checkIns.first.notes,
+        equals('Patient 101 private progress notes'),
+      );
+
+      // Clear on sign out
+      await cubit.clearPersonalCareData();
+      expect(cubit.state.checkIns, isEmpty);
+
+      // New patient signs in
+      await cubit.bindPatient('patient_202');
+      expect(cubit.state.checkIns, isEmpty);
     });
 
     test('toggleRoutineTask updates isCompleted status', () {

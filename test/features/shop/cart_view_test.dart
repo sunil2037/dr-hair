@@ -64,8 +64,10 @@ void main() {
       expect(find.text('Follicle Booster Serum'), findsOneWidget);
       expect(find.text('Clear'), findsOneWidget);
 
-      // Tap Clear
+      // Tap Clear and confirm
       await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear cart'));
       await tester.pumpAndSettle();
 
       // Cart is now empty
@@ -98,16 +100,16 @@ void main() {
       expect(find.text('₹2048'), findsWidgets);
     });
 
-    testWidgets('removing item updates cart without a toast', (
-      tester,
-    ) async {
+    testWidgets('removing item updates cart without a toast', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: CartView()));
 
       final trashButtons = find.byIcon(LucideIcons.trash2);
       expect(trashButtons, findsWidgets);
 
-      // Remove the first item
+      // Remove the first item and confirm
       await tester.tap(trashButtons.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove item'));
       await tester.pumpAndSettle();
 
       expect(find.text('UNDO'), findsNothing);

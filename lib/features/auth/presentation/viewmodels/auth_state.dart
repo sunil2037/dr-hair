@@ -17,6 +17,7 @@ class AuthState {
   final bool isOtpSent;
   final String? phoneNumber;
   final String? sessionToken;
+  final String? developmentOtp;
   final bool isRegistered;
   final bool isAdmin;
 
@@ -28,6 +29,7 @@ class AuthState {
     this.isOtpSent = false,
     this.phoneNumber,
     this.sessionToken,
+    this.developmentOtp,
     this.isRegistered = false,
     this.isAdmin = false,
   });
@@ -37,7 +39,7 @@ class AuthState {
           (user != null || sessionToken != null) ||
       status == AuthStatus.profileRequired && sessionToken != null;
   bool get requiresProfileCompletion => status == AuthStatus.profileRequired;
-  bool get isGuest => user?.isGuest ?? false;
+  bool get isGuest => false;
   bool get canResendOtp => resendCountdown <= 0;
 
   AuthState copyWith({
@@ -48,11 +50,13 @@ class AuthState {
     bool? isOtpSent,
     String? phoneNumber,
     String? sessionToken,
+    String? developmentOtp,
     bool? isRegistered,
     bool? isAdmin,
     bool clearUser = false,
     bool clearError = false,
     bool clearSession = false,
+    bool clearDevelopmentOtp = false,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -62,6 +66,9 @@ class AuthState {
       isOtpSent: isOtpSent ?? this.isOtpSent,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       sessionToken: clearSession ? null : (sessionToken ?? this.sessionToken),
+      developmentOtp: clearDevelopmentOtp
+          ? null
+          : (developmentOtp ?? this.developmentOtp),
       isRegistered: isRegistered ?? this.isRegistered,
       isAdmin: isAdmin ?? this.isAdmin,
     );

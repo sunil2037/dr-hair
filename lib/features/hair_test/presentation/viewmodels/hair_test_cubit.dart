@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/media/data/media_upload_api.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/app_local_cache.dart';
 import 'hair_test_state.dart';
@@ -14,11 +15,21 @@ class HairTestCubit extends Cubit<HairTestState> {
   static const String _legacyDraftKey = 'hair_test_draft_v1';
   final ImagePicker _imagePicker;
   final AppLocalCache _cache;
+  final MediaUploadApi? _mediaUploadApi;
+  final Dio? _dio;
 
-  HairTestCubit({ImagePicker? imagePicker, AppLocalCache? cache})
-    : _imagePicker = imagePicker ?? ImagePicker(),
-      _cache = cache ?? AppLocalCache.instance,
-      super(const HairTestState());
+  HairTestCubit({
+    ImagePicker? imagePicker,
+    AppLocalCache? cache,
+    MediaUploadApi? mediaUploadApi,
+    Dio? dio,
+  })  : _imagePicker = imagePicker ?? ImagePicker(),
+        _cache = cache ?? AppLocalCache.instance,
+        // ignore: prefer_initializing_formals
+        _mediaUploadApi = mediaUploadApi,
+        // ignore: prefer_initializing_formals
+        _dio = dio,
+        super(const HairTestState());
 
   Future<void> loadSavedState() async {
     try {
@@ -123,14 +134,7 @@ class HairTestCubit extends Cubit<HairTestState> {
     String? patientName,
     int? patientAge,
   }) async {
-    if (state.currentStep != state.totalSteps - 1) {
-      emit(
-        state.copyWith(
-          errorMessage: 'Complete the questions before submitting.',
-        ),
-      );
-      return;
-    }
+    emit(state.copyWith(currentStep: state.totalSteps - 1));
     await submitTest(
       sessionToken: sessionToken,
       patientName: patientName,
@@ -156,10 +160,21 @@ class HairTestCubit extends Cubit<HairTestState> {
     int? patientAge,
   }) async {
     if (state.isSubmitting) return;
-    for (var step = 0; step < state.totalSteps - 1; step++) {
-      final message = _validationMessageForStep(step);
-      if (message != null) {
-        emit(state.copyWith(currentStep: step, errorMessage: message));
+    if (sessionToken?.trim().isNotEmpty == true) {
+      for (var step = 0; step < state.totalSteps - 1; step++) {
+        final message = _validationMessageForStep(step);
+        if (message != null) {
+          emit(state.copyWith(currentStep: step, errorMessage: message));
+          return;
+        }
+      }
+    } else {
+      if (state.selectedGender == null) {
+        emit(state.copyWith(currentStep: 0, errorMessage: 'Choose an option to continue.'));
+        return;
+      }
+      if (state.primaryConcern == null && state.stage == null) {
+        emit(state.copyWith(currentStep: 1, errorMessage: 'Choose an illustration, or select “Not sure.”'));
         return;
       }
     }
@@ -167,6 +182,13 @@ class HairTestCubit extends Cubit<HairTestState> {
         ? patientName!.trim()
         : state.name.trim();
     final age = patientAge?.toString() ?? state.age.trim();
+    final stage = state.stage ?? state.primaryConcern;
+    final duration = state.duration ?? '1 - 3 years';
+    final dandruff = state.dandruff ?? 'Mild / None';
+    final gutHealth = state.gutHealth ?? 'Normal';
+    final stressLevel = state.stressLevel ?? 'Moderate';
+    final familyHistory = state.familyHistory ?? 'No known family history';
+
     if (sessionToken?.trim().isNotEmpty == true) {
       if (name.isEmpty) {
         emit(
@@ -184,29 +206,71 @@ class HairTestCubit extends Cubit<HairTestState> {
           age: age,
         ),
       );
+
+      final uploadedUrls = <String, String>{};
+      if (state.photos.isNotEmpty) {
+        try {
+          final uploader = _mediaUploadApi ?? MediaUploadApi(dio: _dio);
+          final filesToUpload = <MultipartFile>[];
+          final fileKeys = <String>[];
+          for (final entry in state.photos.entries) {
+            final path = entry.value;
+            if (path.isNotEmpty) {
+              if (path.startsWith('http://') || path.startsWith('https://')) {
+                uploadedUrls[entry.key] = path;
+              } else {
+                filesToUpload.add(await MultipartFile.fromFile(path, filename: path.split('/').last));
+                fileKeys.add(entry.key);
+              }
+            }
+          }
+          if (filesToUpload.isNotEmpty) {
+            final uploadResult = await uploader.uploadFiles(
+              token: sessionToken!,
+              purpose: 'assessment',
+              files: filesToUpload,
+            );
+            for (var i = 0; i < uploadResult.length; i++) {
+              final url = uploadResult[i]['url']?.toString();
+              if (url != null && url.isNotEmpty) {
+                uploadedUrls[fileKeys[i]] = url;
+              }
+            }
+          }
+        } catch (uploadError) {
+          emit(
+            state.copyWith(
+              isSubmitting: false,
+              errorMessage: 'Could not upload assessment photos. Please try again.',
+            ),
+          );
+          return;
+        }
+      }
+
       try {
-        final client = DioClient(
-          baseUrl: ApiEndpoints.backendBaseUrl,
-          enableDebugLogging: false,
-        );
-        final response = await client.dio.post<Map<String, dynamic>>(
+        final client = _dio != null
+            ? null
+            : DioClient(
+                baseUrl: ApiEndpoints.backendBaseUrl,
+                enableDebugLogging: false,
+              );
+        final dioToUse = _dio ?? client!.dio;
+        final response = await dioToUse.post<Map<String, dynamic>>(
           '/api/v1/hair-tests/submit_form',
           data: FormData.fromMap({
             'full_name': name,
             if (age.isNotEmpty) 'age': age,
             if (state.selectedGender?.isNotEmpty == true)
               'gender': state.selectedGender,
-            if (state.duration?.isNotEmpty == true) 'duration': state.duration,
+            'duration': duration,
             if (state.primaryConcern?.isNotEmpty == true)
               'primary_concern': state.primaryConcern,
-            if (state.stage?.isNotEmpty == true) 'stage': state.stage,
-            if (state.dandruff?.isNotEmpty == true) 'dandruff': state.dandruff,
-            if (state.gutHealth?.isNotEmpty == true)
-              'gut_health': state.gutHealth,
-            if (state.stressLevel?.isNotEmpty == true)
-              'stress_level': state.stressLevel,
-            if (state.familyHistory?.isNotEmpty == true)
-              'family_history': state.familyHistory,
+            if (stage?.isNotEmpty == true) 'stage': stage,
+            'dandruff': dandruff,
+            'gut_health': gutHealth,
+            'stress_level': stressLevel,
+            'family_history': familyHistory,
             if (state.allergyStatus?.isNotEmpty == true)
               'allergy_status': state.allergyStatus,
             if (state.allergyDetails.trim().isNotEmpty)
@@ -215,6 +279,12 @@ class HairTestCubit extends Cubit<HairTestState> {
               'current_medications_status': state.currentMedicationsStatus,
             if (state.currentMedications.trim().isNotEmpty)
               'current_medications': state.currentMedications.trim(),
+            if (uploadedUrls['Front Hairline'] != null)
+              'photo_front_url': uploadedUrls['Front Hairline'],
+            if (uploadedUrls['Crown / Top'] != null)
+              'photo_top_url': uploadedUrls['Crown / Top'],
+            if (uploadedUrls['Side Profile / Temples'] != null)
+              'photo_left_url': uploadedUrls['Side Profile / Temples'],
           }),
           options: Options(
             contentType: Headers.multipartFormDataContentType,
@@ -250,6 +320,12 @@ class HairTestCubit extends Cubit<HairTestState> {
           clearErrorMessage: true,
           name: name,
           age: age,
+          stage: stage,
+          duration: duration,
+          dandruff: dandruff,
+          gutHealth: gutHealth,
+          stressLevel: stressLevel,
+          familyHistory: familyHistory,
         ),
       );
     }

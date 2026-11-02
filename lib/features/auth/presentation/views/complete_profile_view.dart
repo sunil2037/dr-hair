@@ -69,7 +69,14 @@ class _CompleteProfileViewState extends State<CompleteProfileView> {
           ? null
           : auth.state.errorMessage ?? 'Could not save your profile.';
     });
-    if (success) context.go(RouteNames.mainShell);
+    if (success) {
+      final redirect = GoRouterState.of(context).uri.queryParameters['redirect'];
+      if (redirect != null && redirect.isNotEmpty && redirect != RouteNames.signin && redirect != RouteNames.completeProfile) {
+        context.go(redirect);
+      } else {
+        context.go(RouteNames.mainShell);
+      }
+    }
   }
 
   @override

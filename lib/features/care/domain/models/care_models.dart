@@ -15,6 +15,19 @@ class ProgressCheckIn {
   final bool isDoctorReviewed;
   final String? doctorNote;
 
+  static List<ProgressCheckIn> get sampleFixtures => [
+    ProgressCheckIn(
+      id: 'demo_ci_1',
+      date: DateTime.now().subtract(const Duration(days: 4)),
+      imagePath: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600',
+      scalpRegion: 'Crown / Vertex',
+      sheddingLevel: 'Low / Normal',
+      notes: 'Sample baseline checkin for development fixture.',
+      densityRating: 4,
+      isDoctorReviewed: false,
+    ),
+  ];
+
   const ProgressCheckIn({
     required this.id,
     required this.date,

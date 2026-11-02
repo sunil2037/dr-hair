@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -195,7 +196,7 @@ class _VideosContentState extends State<_VideosContent> {
                     ),
                     SizedBox(width: 4),
                     Text(
-                      '100% Verified Outcomes',
+                      'Educational & Stories',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -350,7 +351,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
   bool get _isTesting =>
       WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
       const bool.fromEnvironment('flutter.test') ||
-      Platform.environment.containsKey('FLUTTER_TEST');
+      (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST'));
 
   @override
   void initState() {
