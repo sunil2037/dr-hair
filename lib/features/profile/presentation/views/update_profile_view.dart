@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
@@ -319,9 +320,11 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           onPressed: _isSaving ? null : () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Form(
+      body: Skeletonizer(
+        enabled: _isSaving,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Form(
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
@@ -590,6 +593,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           ),
         ),
       ),
+    ),
       // -----------------------------------------------------------------------
       // Sticky Bottom Action Bar with Save Changes Button
       // -----------------------------------------------------------------------
@@ -626,12 +630,14 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                 ),
               ),
               child: _isSaving
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white,
+                  ? Skeletonizer(
+                      enabled: true,
+                      child: Container(
+                        width: 140,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
                         ),
                       ),
                     )

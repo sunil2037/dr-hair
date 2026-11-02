@@ -43,7 +43,7 @@ class AuthRemoteDataSource {
   Future<Map<String, dynamic>> getSession(String token) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/v1/auth/session',
-      options: _authorized(token),
+      options: _authorized(token, silent: true),
     );
     return _asMap(response.data);
   }
@@ -125,9 +125,12 @@ class AuthRemoteDataSource {
     return _asMap(response.data);
   }
 
-  Options _authorized(String token) => Options(
+  Options _authorized(String token, {bool silent = false}) => Options(
     headers: {'Authorization': 'Bearer $token'},
-    extra: const {'sensitive': true},
+    extra: {
+      'sensitive': true,
+      if (silent) 'silent': true,
+    },
   );
 
   Map<String, dynamic> _asMap(Object? value) {

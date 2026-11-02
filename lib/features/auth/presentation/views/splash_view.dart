@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/storage/app_local_cache.dart';
 import '../viewmodels/auth_cubit.dart';
 import '../viewmodels/auth_state.dart';
 
@@ -71,16 +72,27 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
   void _onSplashComplete() {
     if (!mounted || _hasNavigated) return;
     final authState = context.read<AuthCubit>().state;
-    if (authState.status == AuthStatus.loading ||
-        authState.status == AuthStatus.failure) {
+    if (authState.status == AuthStatus.loading) {
+      return;
+    }
+    if (authState.status == AuthStatus.failure) {
+      _continueToSignIn();
       return;
     }
     _hasNavigated = true;
     _navigationFallback?.cancel();
-    if (authState.requiresProfileCompletion) {
+    if (authState.requiresProfileCompletion ||
+        authState.nextStep == 'COMPLETE_PROFILE') {
       context.go(RouteNames.completeProfile);
     } else if (authState.isAuthenticated) {
-      context.go(RouteNames.mainShell);
+      final cachedCompleted =
+          AppLocalCache.instance.getBool('has_completed_hair_test') ?? false;
+      if (authState.nextStep == 'ASSESSMENT' ||
+          (!authState.hasCompletedAssessment && !cachedCompleted)) {
+        context.go(RouteNames.hairTest);
+      } else {
+        context.go(RouteNames.mainShell);
+      }
     } else {
       context.go(RouteNames.signin);
     }

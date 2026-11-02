@@ -8,6 +8,8 @@ import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/media/data/media_upload_api.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/app_local_cache.dart';
+import '../../data/hair_image_detector.dart';
+import '../../domain/models/hair_photo_analysis.dart';
 import 'hair_test_state.dart';
 
 class HairTestCubit extends Cubit<HairTestState> {
@@ -67,6 +69,15 @@ class HairTestCubit extends Cubit<HairTestState> {
                   (key, value) => MapEntry(key.toString(), value.toString()),
                 ) ??
                 const {},
+            photoAnalysis: (draft['photoAnalysis'] as Map?)?.map(
+                  (key, value) => MapEntry(
+                    key.toString(),
+                    HairPhotoAnalysis.fromJson(
+                      Map<String, dynamic>.from(value as Map),
+                    ),
+                  ),
+                ) ??
+                const {},
           );
         } catch (_) {
           await _cache.remove(_draftKey);
@@ -101,6 +112,7 @@ class HairTestCubit extends Cubit<HairTestState> {
     String? sessionToken,
     String? patientName,
     int? patientAge,
+    String? patientGender,
   }) async {
     final validationMessage = _validationMessageForCurrentStep();
     if (validationMessage != null) {
@@ -121,6 +133,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         sessionToken: sessionToken,
         patientName: patientName,
         patientAge: patientAge,
+        patientGender: patientGender,
       );
     }
   }
@@ -133,12 +146,14 @@ class HairTestCubit extends Cubit<HairTestState> {
     String? sessionToken,
     String? patientName,
     int? patientAge,
+    String? patientGender,
   }) async {
     emit(state.copyWith(currentStep: state.totalSteps - 1));
     await submitTest(
       sessionToken: sessionToken,
       patientName: patientName,
       patientAge: patientAge,
+      patientGender: patientGender,
     );
   }
 
@@ -158,6 +173,7 @@ class HairTestCubit extends Cubit<HairTestState> {
     String? sessionToken,
     String? patientName,
     int? patientAge,
+    String? patientGender,
   }) async {
     if (state.isSubmitting) return;
     if (sessionToken?.trim().isNotEmpty == true) {
@@ -169,12 +185,8 @@ class HairTestCubit extends Cubit<HairTestState> {
         }
       }
     } else {
-      if (state.selectedGender == null) {
-        emit(state.copyWith(currentStep: 0, errorMessage: 'Choose an option to continue.'));
-        return;
-      }
       if (state.primaryConcern == null && state.stage == null) {
-        emit(state.copyWith(currentStep: 1, errorMessage: 'Choose an illustration, or select “Not sure.”'));
+        emit(state.copyWith(currentStep: 0, errorMessage: 'Choose an illustration, or select “Not sure.”'));
         return;
       }
     }
@@ -182,6 +194,9 @@ class HairTestCubit extends Cubit<HairTestState> {
         ? patientName!.trim()
         : state.name.trim();
     final age = patientAge?.toString() ?? state.age.trim();
+    final gender = patientGender?.trim().isNotEmpty == true
+        ? patientGender!.trim()
+        : state.selectedGender;
     final stage = state.stage ?? state.primaryConcern;
     final duration = state.duration ?? '1 - 3 years';
     final dandruff = state.dandruff ?? 'Mild / None';
@@ -261,8 +276,8 @@ class HairTestCubit extends Cubit<HairTestState> {
           data: FormData.fromMap({
             'full_name': name,
             if (age.isNotEmpty) 'age': age,
-            if (state.selectedGender?.isNotEmpty == true)
-              'gender': state.selectedGender,
+            if (gender?.isNotEmpty == true)
+              'gender': gender,
             'duration': duration,
             if (state.primaryConcern?.isNotEmpty == true)
               'primary_concern': state.primaryConcern,
@@ -355,32 +370,28 @@ class HairTestCubit extends Cubit<HairTestState> {
   String? _validationMessageForState(HairTestState value, int step) {
     switch (step) {
       case 0:
-        return value.selectedGender == null
-            ? 'Choose an option to continue.'
-            : null;
-      case 1:
         return value.primaryConcern == null && value.stage == null
             ? 'Choose an illustration, or select “Not sure.”'
             : null;
-      case 2:
+      case 1:
         return value.duration == null
             ? 'Choose how long you have noticed hair loss to continue.'
             : null;
-      case 3:
+      case 2:
         return value.dandruff == null
             ? 'Choose a scalp condition to continue.'
             : null;
-      case 4:
+      case 3:
         return value.stressLevel == null
             ? 'Choose a stress level to continue.'
             : null;
-      case 5:
+      case 4:
         return value.gutHealth == null
             ? 'Choose a digestion and gut-health option to continue.'
             : null;
-      case 6:
+      case 5:
         return null;
-      case 7:
+      case 6:
         if (value.allergyStatus == null) {
           return 'Choose an allergy option to continue.';
         }
@@ -528,7 +539,33 @@ class HairTestCubit extends Cubit<HairTestState> {
       if (pickedFile != null) {
         final updatedPhotos = Map<String, String>.from(state.photos);
         updatedPhotos[label] = pickedFile.path;
-        emit(state.copyWith(photos: updatedPhotos, isPickingImage: false));
+
+        final updatedAnalysis =
+            Map<String, HairPhotoAnalysis>.from(state.photoAnalysis);
+        updatedAnalysis[label] = HairPhotoAnalysis(
+          label: label,
+          photoPath: pickedFile.path,
+          status: HairDetectionStatus.analyzing,
+          confidence: 0.0,
+          message: 'Analyzing scalp and hair features...',
+          details: 'Scanning follicular density...',
+        );
+
+        emit(state.copyWith(
+          photos: updatedPhotos,
+          photoAnalysis: updatedAnalysis,
+          isPickingImage: false,
+        ));
+        _saveDraft();
+
+        final analysis = await HairImageDetector.analyze(
+          pickedFile.path,
+          label: label,
+        );
+        final finalAnalysis =
+            Map<String, HairPhotoAnalysis>.from(state.photoAnalysis);
+        finalAnalysis[label] = analysis;
+        emit(state.copyWith(photoAnalysis: finalAnalysis));
         _saveDraft();
       } else {
         emit(state.copyWith(isPickingImage: false));
@@ -543,17 +580,57 @@ class HairTestCubit extends Cubit<HairTestState> {
     }
   }
 
-  void setPhoto(String label, String path) {
+  Future<void> setPhoto(
+    String label,
+    String path, [
+    HairPhotoAnalysis? precomputedAnalysis,
+  ]) async {
     final updatedPhotos = Map<String, String>.from(state.photos);
     updatedPhotos[label] = path;
-    emit(state.copyWith(photos: updatedPhotos, clearErrorMessage: true));
+
+    final initialAnalysis = precomputedAnalysis ??
+        HairPhotoAnalysis(
+          label: label,
+          photoPath: path,
+          status: HairDetectionStatus.analyzing,
+          confidence: 0.0,
+          message: 'Analyzing scalp and hair features...',
+          details: 'Scanning...',
+        );
+
+    final updatedAnalysis =
+        Map<String, HairPhotoAnalysis>.from(state.photoAnalysis);
+    updatedAnalysis[label] = initialAnalysis;
+
+    emit(state.copyWith(
+      photos: updatedPhotos,
+      photoAnalysis: updatedAnalysis,
+      clearErrorMessage: true,
+    ));
+    _saveDraft();
+
+    if (precomputedAnalysis != null) return;
+
+    final analysis = await HairImageDetector.analyze(path, label: label);
+    if (isClosed) return;
+    final finalAnalysis =
+        Map<String, HairPhotoAnalysis>.from(state.photoAnalysis);
+    finalAnalysis[label] = analysis;
+    emit(state.copyWith(photoAnalysis: finalAnalysis));
     _saveDraft();
   }
 
   void removePhoto(String label) {
     final updatedPhotos = Map<String, String>.from(state.photos);
     updatedPhotos.remove(label);
-    emit(state.copyWith(photos: updatedPhotos, clearErrorMessage: true));
+    final updatedAnalysis =
+        Map<String, HairPhotoAnalysis>.from(state.photoAnalysis);
+    updatedAnalysis.remove(label);
+    emit(state.copyWith(
+      photos: updatedPhotos,
+      photoAnalysis: updatedAnalysis,
+      clearErrorMessage: true,
+    ));
     _saveDraft();
   }
 
@@ -575,6 +652,9 @@ class HairTestCubit extends Cubit<HairTestState> {
     'currentMedicationsStatus': state.currentMedicationsStatus,
     'currentMedications': state.currentMedications,
     'photos': state.photos,
+    'photoAnalysis': state.photoAnalysis.map(
+      (key, value) => MapEntry(key, value.toJson()),
+    ),
   };
 
   void _saveDraft() {

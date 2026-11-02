@@ -1,3 +1,5 @@
+import '../../domain/models/hair_photo_analysis.dart';
+
 /// Holds the user's assessment answers and completion status.
 class HairTestState {
   final int currentStep;
@@ -17,6 +19,7 @@ class HairTestState {
   final String? currentMedicationsStatus;
   final String currentMedications;
   final Map<String, String> photos;
+  final Map<String, HairPhotoAnalysis> photoAnalysis;
   final bool isSubmitted;
   final bool isCompleted;
   final bool isSubmitting;
@@ -27,7 +30,7 @@ class HairTestState {
 
   const HairTestState({
     this.currentStep = 0,
-    this.totalSteps = 9,
+    this.totalSteps = 8,
     this.name = '',
     this.age = '',
     this.selectedGender,
@@ -43,6 +46,7 @@ class HairTestState {
     this.currentMedicationsStatus,
     this.currentMedications = '',
     this.photos = const {},
+    this.photoAnalysis = const {},
     this.isSubmitted = false,
     this.isCompleted = false,
     this.isSubmitting = false,
@@ -71,6 +75,7 @@ class HairTestState {
     String? currentMedicationsStatus,
     String? currentMedications,
     Map<String, String>? photos,
+    Map<String, HairPhotoAnalysis>? photoAnalysis,
     bool? isSubmitted,
     bool? isCompleted,
     bool? isSubmitting,
@@ -100,6 +105,7 @@ class HairTestState {
           currentMedicationsStatus ?? this.currentMedicationsStatus,
       currentMedications: currentMedications ?? this.currentMedications,
       photos: photos ?? this.photos,
+      photoAnalysis: photoAnalysis ?? this.photoAnalysis,
       isSubmitted: isSubmitted ?? this.isSubmitted,
       isCompleted: isCompleted ?? this.isCompleted,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -117,6 +123,10 @@ class HairTestState {
       photos.containsKey(label) &&
       photos[label] != null &&
       photos[label]!.isNotEmpty;
+
+  HairPhotoAnalysis? getAnalysis(String label) => photoAnalysis[label];
+  bool get hasNonHairPhoto =>
+      photoAnalysis.values.any((a) => a.status == HairDetectionStatus.notHair);
 
   /// Plain-language summary based on the answers selected by the user.
   String get assessmentSummary {

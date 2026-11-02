@@ -20,6 +20,9 @@ class AuthState {
   final String? developmentOtp;
   final bool isRegistered;
   final bool isAdmin;
+  final bool hasCompletedAssessment;
+  final String? nextStep;
+  final Map<String, dynamic>? latestAssessment;
 
   const AuthState({
     this.status = AuthStatus.initial,
@@ -32,6 +35,9 @@ class AuthState {
     this.developmentOtp,
     this.isRegistered = false,
     this.isAdmin = false,
+    this.hasCompletedAssessment = false,
+    this.nextStep,
+    this.latestAssessment,
   });
 
   bool get isAuthenticated =>
@@ -53,10 +59,14 @@ class AuthState {
     String? developmentOtp,
     bool? isRegistered,
     bool? isAdmin,
+    bool? hasCompletedAssessment,
+    String? nextStep,
+    Map<String, dynamic>? latestAssessment,
     bool clearUser = false,
     bool clearError = false,
     bool clearSession = false,
     bool clearDevelopmentOtp = false,
+    bool clearLatestAssessment = false,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -71,6 +81,12 @@ class AuthState {
           : (developmentOtp ?? this.developmentOtp),
       isRegistered: isRegistered ?? this.isRegistered,
       isAdmin: isAdmin ?? this.isAdmin,
+      hasCompletedAssessment:
+          hasCompletedAssessment ?? this.hasCompletedAssessment,
+      nextStep: nextStep ?? this.nextStep,
+      latestAssessment: clearLatestAssessment
+          ? null
+          : (latestAssessment ?? this.latestAssessment),
     );
   }
 }

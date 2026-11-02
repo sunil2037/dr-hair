@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dr_hair/features/auth/presentation/viewmodels/auth_cubit.dart';
 import 'package:dr_hair/features/auth/presentation/views/splash_view.dart';
 import 'package:dr_hair/features/auth/presentation/views/signin_view.dart';
+import 'package:dr_hair/features/auth/presentation/views/complete_profile_view.dart';
+import 'package:dr_hair/features/hair_test/presentation/views/hair_test_view.dart';
 import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
 import 'package:dr_hair/features/shop/presentation/viewmodels/cart_cubit.dart';
 import 'package:dr_hair/core/routes/app_router.dart';
+import 'package:dr_hair/core/routes/route_names.dart';
 import 'package:dr_hair/core/constants/app_strings.dart';
 import 'package:dr_hair/core/theme/app_theme.dart';
 import 'package:dr_hair/features/home/presentation/views/home_view.dart';
@@ -138,6 +141,7 @@ void main() {
     testWidgets('End-to-end Splash -> Login -> Home routing flow works', (
       tester,
     ) async {
+      AppRouter.router.go(RouteNames.splash);
       final authCubit = AuthCubit(repository: FakeAuthRepository());
 
       await tester.pumpWidget(
@@ -181,5 +185,59 @@ void main() {
       expect(find.byType(HomeView), findsOneWidget);
       expect(find.text('Personal Care'), findsOneWidget);
     });
+
+    testWidgets(
+      'New user signs up, completes profile, and lands on Assessment Screen (not Home)',
+      (tester) async {
+        AppRouter.router.go(RouteNames.splash);
+        final authCubit = AuthCubit(
+          repository: FakeAuthRepository(registered: false),
+        );
+
+        await tester.pumpWidget(
+          MultiBlocProvider(
+            providers: [
+              BlocProvider<AuthCubit>.value(value: authCubit),
+              BlocProvider<CartCubit>(create: (_) => CartCubit()),
+              BlocProvider<CareCubit>(create: (_) => CareCubit()),
+              BlocProvider<HairTestCubit>(create: (_) => HairTestCubit()),
+            ],
+            child: MaterialApp.router(
+              title: AppStrings.appName,
+              theme: AppTheme.lightTheme,
+              routerConfig: AppRouter.router,
+            ),
+          ),
+        );
+
+        // 1. Initial screen is SplashView -> Proceed to SigninView
+        await tester.tap(find.byType(SplashView));
+        await tester.pumpAndSettle();
+
+        // 2. SigninView
+        await tester.enterText(find.byType(TextField).first, '9876543210');
+        await tester.tap(find.text('Send Verification OTP'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Fill'));
+        await tester.tap(find.text('Verify & Proceed'));
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+
+        // 3. User requires profile completion (CompleteProfileView)
+        expect(find.byType(CompleteProfileView), findsOneWidget);
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Full name *'),
+          'New Patient',
+        );
+        await tester.tap(find.text('Save & Continue'));
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+
+        // 4. Lands on Assessment Screen (HairTestView), NOT HomeView
+        expect(find.byType(HairTestView), findsOneWidget);
+        expect(find.text('Hair & Scalp Assessment'), findsOneWidget);
+        expect(find.byType(HomeView), findsNothing);
+      },
+    );
   });
 }

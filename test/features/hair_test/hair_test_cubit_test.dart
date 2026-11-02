@@ -1,3 +1,4 @@
+import 'package:dr_hair/features/hair_test/domain/models/hair_photo_analysis.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,8 +26,7 @@ void main() {
     test('initial state requires the user to provide answers', () {
       final cubit = HairTestCubit();
       expect(cubit.state.currentStep, 0);
-      expect(cubit.state.totalSteps, 9);
-      expect(cubit.state.selectedGender, isNull);
+      expect(cubit.state.totalSteps, 8);
       expect(cubit.state.primaryConcern, isNull);
       expect(cubit.state.duration, isNull);
       expect(cubit.state.stressLevel, isNull);
@@ -44,7 +44,7 @@ void main() {
       expect(cubit.state.currentStep, 0);
       expect(cubit.state.errorMessage, isNotNull);
 
-      cubit.selectGender('Male');
+      cubit.selectPrimaryConcern('Crown Thinning');
       cubit.nextStep();
       expect(cubit.state.currentStep, 1);
 
@@ -56,25 +56,22 @@ void main() {
       expect(cubit.state.currentStep, 0);
 
       // Each question must be answered before advancing.
-      cubit.nextStep(); // blocked at 0
-      cubit.selectGender('Male');
-      cubit.nextStep(); // 1
-      cubit.selectPrimaryConcern('Crown Thinning');
-      cubit.nextStep(); // 2
+      cubit.nextStep(); // advances to 1 since concern was selected
+      expect(cubit.state.currentStep, 1);
       cubit.selectDuration('1 - 3 years');
-      cubit.nextStep(); // 3
+      cubit.nextStep(); // 2
       cubit.selectDandruff('Occasional flakes or itching');
-      cubit.nextStep(); // 4
+      cubit.nextStep(); // 3
       cubit.selectStressLevel('Moderate');
-      cubit.nextStep(); // 5
+      cubit.nextStep(); // 4
       cubit.selectGutHealth('Normal');
-      cubit.nextStep(); // 6
+      cubit.nextStep(); // 5
       cubit.selectFamilyHistory("Mother's side");
-      cubit.nextStep(); // 7
+      cubit.nextStep(); // 6
       cubit.setAllergyStatus('No known allergies');
       cubit.setCurrentMedicationsStatus('No');
-      cubit.nextStep(); // 8
-      expect(cubit.state.currentStep, 8);
+      cubit.nextStep(); // 7
+      expect(cubit.state.currentStep, 7);
       expect(cubit.state.isSubmitted, false);
 
       for (final label in [
@@ -125,8 +122,49 @@ void main() {
 
       cubit.removePhoto('Front Hairline');
       expect(cubit.state.hasPhoto('Front Hairline'), isFalse);
+      expect(cubit.state.getAnalysis('Front Hairline'), isNull);
 
       cubit.close();
+    });
+
+    test('pickPhoto analyzes photo and detects hair vs non-hair images', () async {
+      // 1. Genuine hair photo
+      final hairPicker = _FakeImagePicker(
+        fileToReturn: XFile('/tmp/scalp_crown.jpg'),
+      );
+      final hairCubit = HairTestCubit(imagePicker: hairPicker);
+
+      await hairCubit.pickPhoto(
+        label: 'Crown / Top',
+        source: ImageSource.camera,
+      );
+
+      final analysis = hairCubit.state.getAnalysis('Crown / Top');
+      expect(analysis, isNotNull);
+      expect(analysis!.isHair, isTrue);
+      expect(analysis.status, HairDetectionStatus.hairDetected);
+      expect(analysis.message, contains('Hair & scalp detected'));
+      expect(hairCubit.state.hasNonHairPhoto, isFalse);
+      hairCubit.close();
+
+      // 2. Non-hair photo (e.g. document, car, random object)
+      final nonHairPicker = _FakeImagePicker(
+        fileToReturn: XFile('/tmp/car_non_hair.jpg'),
+      );
+      final nonHairCubit = HairTestCubit(imagePicker: nonHairPicker);
+
+      await nonHairCubit.pickPhoto(
+        label: 'Front Hairline',
+        source: ImageSource.gallery,
+      );
+
+      final nonHairAnalysis = nonHairCubit.state.getAnalysis('Front Hairline');
+      expect(nonHairAnalysis, isNotNull);
+      expect(nonHairAnalysis!.isNotHair, isTrue);
+      expect(nonHairAnalysis.status, HairDetectionStatus.notHair);
+      expect(nonHairAnalysis.message, contains('No hair or scalp detected'));
+      expect(nonHairCubit.state.hasNonHairPhoto, isTrue);
+      nonHairCubit.close();
     });
 
     test('reset clears state to initial defaults', () {

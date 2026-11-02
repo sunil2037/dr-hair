@@ -38,6 +38,9 @@ class AuthCubit extends Cubit<AuthState> {
           phoneNumber: restored.login,
           isAdmin: restored.isAdmin,
           isRegistered: restored.isRegistered && restored.user != null,
+          hasCompletedAssessment: restored.hasCompletedAssessment,
+          nextStep: restored.nextStep,
+          latestAssessment: restored.latestAssessment,
         ),
       );
     } catch (error) {
@@ -161,6 +164,9 @@ class AuthCubit extends Cubit<AuthState> {
           isRegistered: result.isRegistered && result.user != null,
           isAdmin: result.isAdmin,
           phoneNumber: login,
+          hasCompletedAssessment: result.hasCompletedAssessment,
+          nextStep: result.nextStep,
+          latestAssessment: result.latestAssessment,
         ),
       );
       return true;
@@ -205,6 +211,8 @@ class AuthCubit extends Cubit<AuthState> {
           status: AuthStatus.authenticated,
           user: user,
           isRegistered: true,
+          hasCompletedAssessment: false,
+          nextStep: 'ASSESSMENT',
           isOtpSent: false,
           clearError: true,
         ),

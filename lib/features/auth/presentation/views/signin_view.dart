@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/storage/app_local_cache.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../viewmodels/auth_cubit.dart';
 import '../viewmodels/auth_state.dart';
@@ -251,7 +252,8 @@ class _SigninViewState extends State<SigninView>
       } catch (_) {
         // SigninView can also be previewed in a plain MaterialApp in tests.
       }
-      if (authCubit.state.requiresProfileCompletion) {
+      if (authCubit.state.requiresProfileCompletion ||
+          authCubit.state.nextStep == 'COMPLETE_PROFILE') {
         final target = redirect != null && redirect.isNotEmpty
             ? '${RouteNames.completeProfile}?redirect=${Uri.encodeComponent(redirect)}'
             : RouteNames.completeProfile;
@@ -260,6 +262,15 @@ class _SigninViewState extends State<SigninView>
           redirect.isNotEmpty &&
           redirect != RouteNames.signin) {
         context.go(redirect);
+      } else if (authCubit.state.nextStep == 'ASSESSMENT' ||
+          !authCubit.state.hasCompletedAssessment) {
+        final cachedCompleted =
+            AppLocalCache.instance.getBool('has_completed_hair_test') ?? false;
+        if (!cachedCompleted) {
+          context.go(RouteNames.hairTest);
+        } else {
+          _navigateToHome();
+        }
       } else {
         _navigateToHome();
       }

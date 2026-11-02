@@ -52,7 +52,9 @@ class DioClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          _startLoading();
+          if (options.extra['silent'] != true) {
+            _startLoading();
+          }
           final sensitive = options.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
@@ -78,7 +80,9 @@ class DioClient {
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          _stopLoading();
+          if (response.requestOptions.extra['silent'] != true) {
+            _stopLoading();
+          }
           final sensitive = response.requestOptions.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
@@ -97,7 +101,9 @@ class DioClient {
           return handler.next(response);
         },
         onError: (DioException err, handler) {
-          _stopLoading();
+          if (err.requestOptions.extra['silent'] != true) {
+            _stopLoading();
+          }
           final sensitive = err.requestOptions.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(

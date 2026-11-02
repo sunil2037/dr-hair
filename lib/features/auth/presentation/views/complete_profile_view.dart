@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
@@ -271,7 +272,8 @@ class _CompleteProfileSheetContentState
               redirect != RouteNames.completeProfile) {
             context.go(redirect);
           } else {
-            context.go(RouteNames.mainShell);
+            // First-time account creation: show assessment screen, do not show home screen directly.
+            context.go(RouteNames.hairTest);
           }
         } catch (_) {
           if (Navigator.of(context).canPop()) {
@@ -566,11 +568,15 @@ class _CompleteProfileSheetContentState
               ),
             ),
             child: isBusy
-                ? const SizedBox.square(
-                    dimension: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+                ? Skeletonizer(
+                    enabled: true,
+                    child: Container(
+                      width: 130,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   )
                 : const Text(

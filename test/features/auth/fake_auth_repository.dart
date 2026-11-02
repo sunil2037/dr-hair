@@ -49,6 +49,8 @@ class FakeAuthRepository implements AuthRepository {
       isRegistered: registered,
       isAdmin: false,
       user: registered ? _user(login) : null,
+      hasCompletedAssessment: registered,
+      nextStep: registered ? 'HOME' : 'COMPLETE_PROFILE',
     );
   }
 

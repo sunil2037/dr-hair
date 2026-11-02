@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../../../../core/storage/app_local_cache.dart';
 import '../../../../core/storage/secure_session_store.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -45,7 +46,13 @@ class AuthRepositoryImpl implements AuthRepository {
         );
       }
       final isRegistered = response['is_registered'] == true;
+      final hasCompletedAssessment =
+          response['has_completed_assessment'] == true;
+      final nextStep = response['next_step']?.toString();
       await _sessionStore.writeSession(token: token, login: login);
+      if (hasCompletedAssessment) {
+        await AppLocalCache.instance.put('has_completed_hair_test', true);
+      }
       final profile = _mapValue(response['data']);
       var user = profile == null
           ? null
@@ -59,6 +66,8 @@ class AuthRepositoryImpl implements AuthRepository {
         isRegistered: isRegistered,
         isAdmin: response['is_admin'] == true,
         user: user,
+        hasCompletedAssessment: hasCompletedAssessment,
+        nextStep: nextStep,
       );
     } on DioException catch (error) {
       throw _mapError(error, fallback: 'Could not verify the code.');
@@ -74,12 +83,30 @@ class AuthRepositoryImpl implements AuthRepository {
       final sessionResponse = await _remote.getSession(token);
       final sessionData = _mapValue(sessionResponse['data']);
       final isRegistered = sessionData?['is_registered'] == true;
+      final hasCompletedAssessment =
+          sessionData?['has_completed_assessment'] == true;
+      final nextStep = sessionData?['next_step']?.toString();
+      final latestAssessment = _mapValue(sessionData?['latest_assessment']);
+
+      if (hasCompletedAssessment) {
+        await AppLocalCache.instance.put('has_completed_hair_test', true);
+        if (latestAssessment != null) {
+          final stage = latestAssessment['hair_loss_stage']?.toString();
+          if (stage != null && stage.isNotEmpty) {
+            await AppLocalCache.instance.put('hair_test_stage', stage);
+          }
+        }
+      }
+
       if (!isRegistered) {
         return AuthVerification(
           token: token,
           login: sessionData?['login']?.toString() ?? login,
           isRegistered: false,
           isAdmin: sessionData?['is_admin'] == true,
+          hasCompletedAssessment: hasCompletedAssessment,
+          nextStep: nextStep,
+          latestAssessment: latestAssessment,
         );
       }
       final profile = _mapValue(sessionData?['user']);
@@ -92,6 +119,9 @@ class AuthRepositoryImpl implements AuthRepository {
         isRegistered: true,
         isAdmin: sessionData?['is_admin'] == true,
         user: user,
+        hasCompletedAssessment: hasCompletedAssessment,
+        nextStep: nextStep,
+        latestAssessment: latestAssessment,
       );
     } on DioException catch (error) {
       if (error.response?.statusCode == 401) {

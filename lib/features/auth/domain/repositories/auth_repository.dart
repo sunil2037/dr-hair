@@ -8,6 +8,9 @@ class AuthVerification {
   final bool isRegistered;
   final bool isAdmin;
   final UserModel? user;
+  final bool hasCompletedAssessment;
+  final String? nextStep;
+  final Map<String, dynamic>? latestAssessment;
 
   const AuthVerification({
     required this.token,
@@ -15,6 +18,9 @@ class AuthVerification {
     required this.isRegistered,
     required this.isAdmin,
     this.user,
+    this.hasCompletedAssessment = false,
+    this.nextStep,
+    this.latestAssessment,
   });
 }
 

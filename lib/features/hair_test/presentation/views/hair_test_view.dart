@@ -12,8 +12,10 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../../../auth/presentation/viewmodels/auth_cubit.dart';
+import '../../domain/models/hair_photo_analysis.dart';
 import '../viewmodels/hair_test_cubit.dart';
 import '../viewmodels/hair_test_state.dart';
+import '../widgets/hair_detection_analysis_widget.dart';
 
 class HairTestView extends StatelessWidget {
   final HairTestCubit? cubit;
@@ -77,7 +79,7 @@ class _HairTestContent extends StatelessWidget {
             automaticallyImplyLeading: false,
             title: const Text(
               'Hair & Scalp Assessment',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             leading: (!isFirstStep)
                 ? IconButton(
@@ -88,10 +90,11 @@ class _HairTestContent extends StatelessWidget {
                   )
                 : null,
             actions: [
-              TextButton(
-                onPressed: () {
+              InkWell(
+                onTap: () {
                   context.go(RouteNames.mainShell);
                 },
+                borderRadius: BorderRadius.circular(12),
                 child: const Text(
                   'Skip',
                   style: TextStyle(
@@ -101,12 +104,12 @@ class _HairTestContent extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 16),
             ],
           ),
           body: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -167,7 +170,7 @@ class _HairTestContent extends StatelessWidget {
                     },
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
 
                   // Step Questions
                   Expanded(
@@ -176,16 +179,17 @@ class _HairTestContent extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
-
                   // Navigation Buttons with Smooth Hide/Show Motion
-                  _buildNavigationButtons(
-                    context: context,
-                    state: state,
-                    motionDuration: motionDuration,
-                  ),
                 ],
               ),
+            ),
+          ),
+          extendBody: true,
+          bottomNavigationBar: SafeArea(
+            child: _buildNavigationButtons(
+              context: context,
+              state: state,
+              motionDuration: motionDuration,
             ),
           ),
         );
@@ -200,91 +204,148 @@ class _HairTestContent extends StatelessWidget {
   }) {
     final bool showBack = state.currentStep > 0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double totalWidth = constraints.maxWidth;
-        const double gap = 14.0;
-        final double targetBackWidth = (totalWidth - gap) / 2.2;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 10),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double totalWidth = constraints.maxWidth;
+          const double gap = 14.0;
+          final double targetBackWidth = (totalWidth - gap) / 2.2;
 
-        return TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0.0, end: showBack ? 1.0 : 0.0),
-          duration: motionDuration,
-          curve: Curves.easeOutCubic,
-          builder: (context, animValue, child) {
-            final double currentBackWidth = targetBackWidth * animValue;
-            final double currentGap = gap * animValue;
-            final double currentContinueWidth =
-                totalWidth - currentBackWidth - currentGap;
-            final double backOpacity = animValue.clamp(0.0, 1.0);
-            final double slideOffset = -20.0 * (1.0 - animValue);
+          return TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: showBack ? 1.0 : 0.0),
+            duration: motionDuration,
+            curve: Curves.easeOutCubic,
+            builder: (context, animValue, child) {
+              final double currentBackWidth = targetBackWidth * animValue;
+              final double currentGap = gap * animValue;
+              final double currentContinueWidth =
+                  totalWidth - currentBackWidth - currentGap;
+              final double backOpacity = animValue.clamp(0.0, 1.0);
+              final double slideOffset = -20.0 * (1.0 - animValue);
 
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (showBack || animValue > 0.001) ...[
-                  SizedBox(
-                    width: currentBackWidth,
-                    height: 50,
-                    child: ClipRect(
-                      child: Opacity(
-                        opacity: backOpacity,
-                        child: Transform.translate(
-                          offset: Offset(slideOffset, 0),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: SizedBox(
-                              width: targetBackWidth,
-                              height: 50,
-                              child: AppButton(
-                                text: 'Back',
-                                variant: AppButtonVariant.outlined,
-                                size: AppButtonSize.large,
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (showBack || animValue > 0.001) ...[
+                    SizedBox(
+                      width: currentBackWidth,
+                      height: 50,
+                      child: ClipRect(
+                        child: Opacity(
+                          opacity: backOpacity,
+                          child: Transform.translate(
+                            offset: Offset(slideOffset, 0),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: SizedBox(
                                 width: targetBackWidth,
-                                height: 54,
-                                onPressed: () {
-                                  context.read<HairTestCubit>().prevStep();
-                                },
+                                height: 50,
+                                child: AppButton(
+                                  text: 'Back',
+                                  variant: AppButtonVariant.outlined,
+                                  size: AppButtonSize.large,
+                                  width: targetBackWidth,
+                                  height: 54,
+                                  onPressed: () {
+                                    context.read<HairTestCubit>().prevStep();
+                                  },
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: currentGap),
-                ],
-                SizedBox(
-                  width: currentContinueWidth,
-                  child: AppButton(
-                    height: 50,
-                    text: state.isSubmitting
-                        ? 'Submitting…'
-                        : state.currentStep == state.totalSteps - 1
-                        ? 'Submit'
-                        : 'Continue',
-                    variant: AppButtonVariant.filled,
-                    size: AppButtonSize.large,
+                    SizedBox(width: currentGap),
+                  ],
+                  SizedBox(
                     width: currentContinueWidth,
-                    onPressed: state.isSubmitting
-                        ? null
-                        : () {
-                            final auth = context.read<AuthCubit?>()?.state;
-                            unawaited(
-                              context.read<HairTestCubit>().nextStep(
-                                sessionToken: auth?.sessionToken,
-                                patientName: auth?.user?.name,
-                                patientAge: auth?.user?.age,
-                              ),
-                            );
-                          },
+                    child: AppButton(
+                      height: 50,
+                      text: state.isSubmitting
+                          ? 'Submitting…'
+                          : state.currentStep == state.totalSteps - 1
+                          ? 'Submit'
+                          : 'Continue',
+                      variant: AppButtonVariant.filled,
+                      size: AppButtonSize.large,
+                      width: currentContinueWidth,
+                      onPressed: state.isSubmitting
+                          ? null
+                          : () async {
+                              final auth = context.read<AuthCubit?>()?.state;
+                              if (state.currentStep == state.totalSteps - 1 &&
+                                  state.hasNonHairPhoto) {
+                                final proceed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                    title: const Row(
+                                      children: [
+                                        Icon(
+                                          LucideIcons.alertTriangle,
+                                          color: Color(0xFFDC2626),
+                                          size: 20,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Non-Hair Image Flagged',
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    content: const Text(
+                                      'One or more uploaded photos do not appear to be hair or scalp photos. We recommend retaking them for the most accurate diagnosis.\n\nWould you like to proceed anyway?',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    actions: [
+                                      OutlinedButton(
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(false),
+                                        child: const Text('Retake Photos'),
+                                      ),
+                                      FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: AppColors.primary,
+                                        ),
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(true),
+                                        child: const Text('Proceed Anyway'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (proceed != true) return;
+                              }
+
+                              if (!context.mounted) return;
+                              unawaited(
+                                context.read<HairTestCubit>().nextStep(
+                                  sessionToken: auth?.sessionToken,
+                                  patientName: auth?.user?.name,
+                                  patientAge: auth?.user?.age,
+                                  patientGender: auth?.user?.gender,
+                                ),
+                              );
+                            },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
-        );
-      },
+                ],
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -293,16 +354,8 @@ class _HairTestContent extends StatelessWidget {
 
     switch (state.currentStep) {
       case 0:
-        return _buildOptionSelector(
-          title: 'How do you describe your gender?',
-          subtitle: 'This helps us make the screening questions more relevant.',
-          options: const ['Male', 'Female', 'Prefer not to say'],
-          selected: state.selectedGender,
-          onSelected: (val) => cubit.selectGender(val),
-        );
-      case 1:
         return _buildHairPatternSelector(state, cubit);
-      case 2:
+      case 1:
         return _buildOptionSelector(
           title: 'How long have you noticed hair loss or thinning?',
           subtitle: 'Choose the closest timeframe.',
@@ -315,7 +368,7 @@ class _HairTestContent extends StatelessWidget {
           selected: state.duration,
           onSelected: cubit.selectDuration,
         );
-      case 3:
+      case 2:
         return _buildOptionSelector(
           title: 'How is your scalp feeling lately?',
           subtitle: 'Choose the closest description. You can discuss symptoms with a clinician.',
@@ -328,7 +381,7 @@ class _HairTestContent extends StatelessWidget {
           selected: state.dandruff,
           onSelected: cubit.selectDandruff,
         );
-      case 4:
+      case 3:
         return _buildOptionSelector(
           title: 'How would you describe your recent stress level?',
           subtitle: 'There are no right or wrong answers.',
@@ -341,7 +394,7 @@ class _HairTestContent extends StatelessWidget {
           selected: state.stressLevel,
           onSelected: cubit.selectStressLevel,
         );
-      case 5:
+      case 4:
         return _buildOptionSelector(
           title: 'Any digestion or gut-health concerns?',
           subtitle: 'Choose the option that best reflects your experience.',
@@ -349,7 +402,7 @@ class _HairTestContent extends StatelessWidget {
           selected: state.gutHealth,
           onSelected: cubit.selectGutHealth,
         );
-      case 6:
+      case 5:
         return _buildOptionSelector(
           title: 'Is hair thinning common in your family?',
           subtitle: 'This is optional context for a future conversation with a clinician.',
@@ -357,31 +410,65 @@ class _HairTestContent extends StatelessWidget {
           selected: state.familyHistory,
           onSelected: cubit.selectFamilyHistory,
         );
-      case 7:
+      case 6:
         return _buildMedicationSafetyStep(state, cubit);
-      case 8:
+      case 7:
+        final bool hasNonHair = state.hasNonHairPhoto;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Upload Scalp Photos',
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
                 color: AppColors.primaryDark,
               ),
             ),
             const SizedBox(height: 6),
             const Text(
-              'Optional photos are separate from the illustrated choices. In this demo, they stay on this device as part of your assessment preview; they are not analyzed, sent to a clinician, or automatically reviewed.',
+              'Optional photos are analyzed to verify hair and scalp patterns for clinical assessment.',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.secondaryDark,
-                height: 1.4,
+                height: 1.2,
               ),
             ),
+            if (hasNonHair) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      LucideIcons.alertTriangle,
+                      color: Color(0xFFDC2626),
+                      size: 18,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'One or more uploaded photos do not appear to be hair or scalp photos. Please retake flagged photos.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFB91C1C),
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _buildPhotoUploadBox(
@@ -434,6 +521,7 @@ class _HairTestContent extends StatelessWidget {
                             sessionToken: auth?.sessionToken,
                             patientName: auth?.user?.name,
                             patientAge: auth?.user?.age,
+                            patientGender: auth?.user?.gender,
                           ),
                         );
                       },
@@ -546,165 +634,475 @@ class _HairTestContent extends StatelessWidget {
   ) {
     final String? photoPath = state.getPhoto(label);
     final bool hasPhoto = photoPath != null && photoPath.isNotEmpty;
+    final HairPhotoAnalysis? analysis = state.getAnalysis(label);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _showPhotoSourceBottomSheet(context, label),
-        borderRadius: BorderRadius.circular(20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: double.infinity,
-          height: 154,
-          decoration: BoxDecoration(
-            color: hasPhoto ? Colors.black : AppColors.primary5,
+    Color borderColor;
+    if (!hasPhoto) {
+      borderColor = AppColors.primary100;
+    } else if (analysis == null || analysis.isAnalyzing) {
+      borderColor = AppColors.primary;
+    } else if (analysis.isHair) {
+      borderColor = const Color(0xFF16A34A);
+    } else if (analysis.isNotHair) {
+      borderColor = const Color(0xFFDC2626);
+    } else {
+      borderColor = const Color(0xFFD97706);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showPhotoSourceBottomSheet(context, label),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: hasPhoto ? AppColors.primary : AppColors.primary100,
-              width: hasPhoto ? 2 : 1.5,
-            ),
-            boxShadow: hasPhoto
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (hasPhoto) ...[
-                  Image.file(
-                    File(photoPath),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Center(
-                      child: Icon(icon, color: Colors.white70, size: 36),
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.8),
-                          ],
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: double.infinity,
+              height: 154,
+              decoration: BoxDecoration(
+                color: hasPhoto ? Colors.black : AppColors.primary5,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: borderColor,
+                  width: hasPhoto ? 2 : 1.5,
+                ),
+                boxShadow: hasPhoto
+                    ? [
+                        BoxShadow(
+                          color: (analysis?.isNotHair == true
+                                  ? const Color(0xFFDC2626)
+                                  : AppColors.primary)
+                              .withValues(alpha: 0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (hasPhoto) ...[
+                      Image.file(
+                        File(photoPath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(icon, color: Colors.white70, size: 36),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.82),
+                              ],
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Retake',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: _buildDetectionBadge(analysis),
+                      ),
+                    ] else ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 16,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.primary100.withValues(alpha: 0.4),
+                                shape: BoxShape.circle,
+                              ),
+                              child:
+                                  Icon(icon, color: AppColors.primary, size: 28),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
                               label,
+                              textAlign: TextAlign.center,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: AppColors.primaryDark,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Retake',
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Tap to upload photo',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                fontSize: 11,
+                                color: AppColors.secondaryDark,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: const BoxDecoration(
-                        color: AppColors.success,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        LucideIcons.check,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                    ),
-                  ),
-                ] else ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 16,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary100.withValues(alpha: 0.4),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(icon, color: AppColors.primary, size: 28),
+                          ],
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Tap to upload photo',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.secondaryDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
+        if (hasPhoto && analysis != null)
+          _buildDetectionMessageCard(context, label, analysis),
+      ],
+    );
+  }
+
+  Widget _buildDetectionBadge(HairPhotoAnalysis? analysis) {
+    if (analysis == null || analysis.isAnalyzing) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.75),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox.square(
+              dimension: 11,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.6,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 5),
+            Text(
+              'Scanning...',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (analysis.isHair) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF16A34A),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(LucideIcons.check, size: 12, color: Colors.white),
+            const SizedBox(width: 4),
+            Text(
+              'Hair Detected (${(analysis.confidence * 100).toInt()}%)',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (analysis.isNotHair) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDC2626),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.alertTriangle, size: 12, color: Colors.white),
+            SizedBox(width: 4),
+            Text(
+              'No Hair Detected',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Low Clarity
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD97706),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(LucideIcons.alertCircle, size: 12, color: Colors.white),
+          SizedBox(width: 4),
+          Text(
+            'Low Clarity',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetectionMessageCard(
+    BuildContext context,
+    String label,
+    HairPhotoAnalysis analysis,
+  ) {
+    if (analysis.isAnalyzing) {
+      return Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary5,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.primary100),
+        ),
+        child: const Row(
+          children: [
+            SizedBox.square(
+              dimension: 13,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.8,
+                color: AppColors.primary,
+              ),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Analyzing image for scalp & hair features...',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (analysis.isHair) {
+      return Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFBBF7D0)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              LucideIcons.checkCircle2,
+              color: Color(0xFF16A34A),
+              size: 15,
+            ),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Text(
+                analysis.message,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF15803D),
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (analysis.isNotHair) {
+      return Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  LucideIcons.alertTriangle,
+                  color: Color(0xFFDC2626),
+                  size: 15,
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    analysis.message,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFB91C1C),
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => _showPhotoSourceBottomSheet(context, label),
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDC2626),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.refreshCw, size: 11, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'Retake Photo',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Low Clarity
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            LucideIcons.alertCircle,
+            color: Color(0xFFD97706),
+            size: 15,
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              analysis.message,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFB45309),
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1353,6 +1751,12 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                     ),
                   ],
                 ),
+              ),
+
+              const SizedBox(height: 24),
+              HairDetectionAnalysisWidget(
+                state: state,
+                cubit: context.read<HairTestCubit?>(),
               ),
 
               const SizedBox(height: 24),
