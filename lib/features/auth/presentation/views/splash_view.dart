@@ -38,9 +38,17 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
           if (status == AnimationStatus.completed) _onSplashComplete();
         });
     _entranceController.forward();
-    // Keep navigation resilient if the entrance animation is interrupted by
-    // lifecycle changes or reduced-motion settings on a device.
-    _navigationFallback = Timer(const Duration(seconds: 2), _onSplashComplete);
+    // Keep navigation resilient: after 2.5 seconds, smoothly transition even if
+    // an initial network request is still resolving in the background.
+    _navigationFallback = Timer(const Duration(milliseconds: 2500), () {
+      if (!mounted || _hasNavigated) return;
+      final authState = context.read<AuthCubit>().state;
+      if (authState.status == AuthStatus.loading) {
+        _forceProceed();
+        return;
+      }
+      _onSplashComplete();
+    });
 
     // Continuous soothing motion loop (vitality ripples, levitation, sparkles)
     _motionController = AnimationController(
@@ -98,6 +106,18 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
     }
   }
 
+  void _forceProceed() {
+    if (!mounted || _hasNavigated) return;
+    _hasNavigated = true;
+    _navigationFallback?.cancel();
+    final authState = context.read<AuthCubit>().state;
+    if (authState.isAuthenticated) {
+      context.go(RouteNames.mainShell);
+    } else {
+      context.go(RouteNames.signin);
+    }
+  }
+
   void _continueToSignIn() {
     if (!mounted || _hasNavigated) return;
     _hasNavigated = true;
@@ -111,9 +131,12 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state.status != AuthStatus.loading &&
-            state.status != AuthStatus.failure) {
-          _onSplashComplete();
+        if (!_hasNavigated) {
+          if (state.status == AuthStatus.failure) {
+            _continueToSignIn();
+          } else if (state.status != AuthStatus.loading) {
+            _onSplashComplete();
+          }
         }
       },
       child: BlocBuilder<AuthCubit, AuthState>(

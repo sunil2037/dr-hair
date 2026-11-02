@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/widgets/custom_cached_image.dart';
-import '../../../../core/widgets/photo_source_bottom_sheet.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_dropdown_form_field.dart';
+import '../../../../core/widgets/app_error_banner.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/profile_photo_picker.dart';
 import '../viewmodels/auth_cubit.dart';
 import '../viewmodels/auth_state.dart';
 
@@ -19,9 +20,7 @@ class CompleteProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const CompleteProfileSheetContent(
-      isBottomSheet: false,
-    );
+    return const CompleteProfileSheetContent(isBottomSheet: false);
   }
 }
 
@@ -120,8 +119,9 @@ class _CompleteProfileSheetContentState
     super.initState();
     final user = context.read<AuthCubit>().state.user;
     _nameController = TextEditingController(text: user?.name ?? '');
-    _ageController =
-        TextEditingController(text: user?.age != null ? '${user!.age}' : '');
+    _ageController = TextEditingController(
+      text: user?.age != null ? '${user!.age}' : '',
+    );
     _cityController = TextEditingController(text: user?.city ?? '');
     _occupationController = TextEditingController(text: user?.occupation ?? '');
     _gender = _genderOptions.contains(user?.gender) ? user?.gender : null;
@@ -137,65 +137,13 @@ class _CompleteProfileSheetContentState
     super.dispose();
   }
 
-  Future<void> _pickProfilePhoto() async {
-    HapticFeedback.selectionClick();
-    final hasPhoto = _photoBytes != null ||
-        (!_isPhotoRemoved &&
-            _existingPhotoUrl != null &&
-            _existingPhotoUrl!.isNotEmpty);
-
-    await PhotoSourceBottomSheet.show(
-      context,
-      title: 'Profile Photo',
-      subtitle: 'Choose a photo for your Dr.Hair patient profile',
-      cameraSubtitle: 'Take a new profile photo with your camera',
-      gallerySubtitle: 'Choose an existing photo from your library',
-      removeTitle: 'Remove Profile Photo',
-      removeSubtitle: 'Clear current photo and use the default avatar',
-      hasExistingPhoto: hasPhoto,
-      onSelectSource: (source) async {
-        try {
-          final picker = ImagePicker();
-          final image = await picker.pickImage(
-            source: source,
-            maxWidth: 1024,
-            maxHeight: 1024,
-            imageQuality: 85,
-          );
-          if (image == null || !mounted) return;
-          final bytes = await image.readAsBytes();
-          if (!mounted) return;
-          setState(() {
-            _photoBytes = bytes;
-            _photoFilename = image.name;
-            _isPhotoRemoved = false;
-          });
-        } catch (e) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not access image: $e')),
-          );
-        }
-      },
-      onRemovePhoto: () {
-        setState(() {
-          _photoBytes = null;
-          _photoFilename = null;
-          _existingPhotoUrl = null;
-          _isPhotoRemoved = true;
-        });
-      },
-    );
-  }
-
   Future<void> _submit() async {
     if (_submitting || !(_formKey.currentState?.validate() ?? false)) return;
 
     final auth = context.read<AuthCubit>();
     final currentUser = auth.state.user;
-    final login = auth.state.phoneNumber?.trim() ??
-        currentUser?.phone?.trim() ??
-        '';
+    final login =
+        auth.state.phoneNumber?.trim() ?? currentUser?.phone?.trim() ?? '';
 
     setState(() {
       _submitting = true;
@@ -264,8 +212,9 @@ class _CompleteProfileSheetContentState
         Navigator.of(context).pop(true);
       } else {
         try {
-          final redirect =
-              GoRouterState.of(context).uri.queryParameters['redirect'];
+          final redirect = GoRouterState.of(context)
+              .uri
+              .queryParameters['redirect'];
           if (redirect != null &&
               redirect.isNotEmpty &&
               redirect != RouteNames.signin &&
@@ -284,133 +233,44 @@ class _CompleteProfileSheetContentState
     }
   }
 
-  Widget _buildAvatar() {
-    Widget imageContent;
-    if (_photoBytes != null) {
-      imageContent = Image.memory(
-        _photoBytes!,
-        width: 90,
-        height: 90,
-        fit: BoxFit.cover,
-      );
-    } else if (!_isPhotoRemoved &&
-        _existingPhotoUrl != null &&
-        _existingPhotoUrl!.isNotEmpty) {
-      imageContent = CustomCachedImage(
-        imageUrl: _existingPhotoUrl!,
-        width: 90,
-        height: 90,
-        fit: BoxFit.cover,
-      );
-    } else {
-      imageContent = Container(
-        width: 90,
-        height: 90,
-        color: AppColors.primary5,
-        alignment: Alignment.center,
-        child: const Icon(
-          LucideIcons.userRound,
-          size: 44,
-          color: AppColors.primary,
-        ),
-      );
-    }
-
-    final hasPhoto = _photoBytes != null ||
-        (!_isPhotoRemoved &&
-            _existingPhotoUrl != null &&
-            _existingPhotoUrl!.isNotEmpty);
-
-    return Center(
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              GestureDetector(
-                onTap: _pickProfilePhoto,
-                child: Container(
-                  width: 94,
-                  height: 94,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(child: imageContent),
-                ),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: GestureDetector(
-                  onTap: _pickProfilePhoto,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      LucideIcons.camera,
-                      size: 15,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          TextButton.icon(
-            onPressed: _pickProfilePhoto,
-            icon: const Icon(LucideIcons.imagePlus, size: 15),
-            label: Text(
-              hasPhoto ? 'Change photo' : 'Upload photo (optional)',
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFormFields(bool isBusy) {
     final requireAgeAndGender = widget.requireAgeAndGender;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildAvatar(),
+        // Reusable Profile Photo Picker
+        ProfilePhotoPicker(
+          photoBytes: _photoBytes,
+          photoUrl: _existingPhotoUrl,
+          isPhotoRemoved: _isPhotoRemoved,
+          onPhotoSelected: (selected) {
+            setState(() {
+              _photoBytes = selected.bytes;
+              _photoFilename = selected.filename;
+              _isPhotoRemoved = false;
+            });
+          },
+          onPhotoRemoved: () {
+            setState(() {
+              _photoBytes = null;
+              _photoFilename = null;
+              _existingPhotoUrl = null;
+              _isPhotoRemoved = true;
+            });
+          },
+        ),
         const SizedBox(height: 14),
 
         // Full Name (Required)
-        TextFormField(
+        AppTextFormField(
           controller: _nameController,
+          labelText: 'Full name *',
+          hintText: 'Enter your full name',
+          prefixIcon: const Icon(LucideIcons.userRound),
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.name],
-          decoration: const InputDecoration(
-            labelText: 'Full name *',
-            hintText: 'Enter your full name',
-            prefixIcon: Icon(LucideIcons.userRound),
-            border: OutlineInputBorder(),
-          ),
           validator: (value) {
             final name = value?.trim() ?? '';
             if (name.length < 2) return 'Please enter your full name';
@@ -420,16 +280,13 @@ class _CompleteProfileSheetContentState
         const SizedBox(height: 14),
 
         // Age (Optional unless requireAgeAndGender is true)
-        TextFormField(
+        AppTextFormField(
           controller: _ageController,
+          labelText: requireAgeAndGender ? 'Age *' : 'Age (optional)',
+          hintText: 'e.g. 28',
+          prefixIcon: const Icon(LucideIcons.calendarDays, size: 20),
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            labelText: requireAgeAndGender ? 'Age *' : 'Age (optional)',
-            hintText: 'e.g. 28',
-            prefixIcon: const Icon(LucideIcons.calendarDays),
-            border: const OutlineInputBorder(),
-          ),
           validator: (value) {
             final age = value?.trim() ?? '';
             if (age.isEmpty) {
@@ -448,18 +305,15 @@ class _CompleteProfileSheetContentState
         const SizedBox(height: 14),
 
         // Gender (Optional unless requireAgeAndGender is true)
-        DropdownButtonFormField<String>(
+        AppDropdownFormField<String>(
           initialValue: _gender,
-          decoration: InputDecoration(
-            labelText: requireAgeAndGender ? 'Gender *' : 'Gender (optional)',
-            prefixIcon: const Icon(LucideIcons.usersRound),
-            border: const OutlineInputBorder(),
-          ),
+          labelText: requireAgeAndGender ? 'Gender *' : 'Gender (optional)',
+          prefixIcon: const Icon(LucideIcons.usersRound),
           items: _genderOptions
-              .map((gender) => DropdownMenuItem(
-                    value: gender,
-                    child: Text(gender),
-                  ))
+              .map(
+                (gender) =>
+                    DropdownMenuItem(value: gender, child: Text(gender)),
+              )
               .toList(),
           validator: (value) {
             if (requireAgeAndGender &&
@@ -468,71 +322,36 @@ class _CompleteProfileSheetContentState
             }
             return null;
           },
-          onChanged:
-              isBusy ? null : (value) => setState(() => _gender = value),
+          isBusy: isBusy,
+          onChanged: (value) => setState(() => _gender = value),
         ),
         const SizedBox(height: 14),
 
         // City (Optional)
-        TextFormField(
+        AppTextFormField(
           controller: _cityController,
+          labelText: 'City (optional)',
+          hintText: 'e.g. Jaipur',
+          prefixIcon: const Icon(LucideIcons.mapPin),
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            labelText: 'City (optional)',
-            hintText: 'e.g. Jaipur',
-            prefixIcon: Icon(LucideIcons.mapPin),
-            border: OutlineInputBorder(),
-          ),
         ),
         const SizedBox(height: 14),
 
         // Occupation (Optional)
-        TextFormField(
+        AppTextFormField(
           controller: _occupationController,
+          labelText: 'Occupation (optional)',
+          hintText: 'e.g. Consultant',
+          prefixIcon: const Icon(LucideIcons.briefcaseBusiness),
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(
-            labelText: 'Occupation (optional)',
-            hintText: 'e.g. Consultant',
-            prefixIcon: Icon(LucideIcons.briefcaseBusiness),
-            border: OutlineInputBorder(),
-          ),
           onFieldSubmitted: (_) => _submit(),
         ),
 
         if (_error != null) ...[
           const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.danger.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.danger.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  LucideIcons.alertCircle,
-                  color: AppColors.danger,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(
-                      color: AppColors.danger,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          AppErrorBanner(message: _error!),
         ],
       ],
     );
@@ -555,37 +374,19 @@ class _CompleteProfileSheetContentState
       child: SafeArea(
         top: false,
         bottom: widget.isBottomSheet,
-        child: SizedBox(
-          width: double.infinity,
+        child: AppButton(
+          text: 'Save & Continue',
+          isLoading: isBusy,
+          onPressed: isBusy ? null : _submit,
           height: 50,
-          child: FilledButton(
-            onPressed: isBusy ? null : _submit,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: isBusy
-                ? Skeletonizer(
-                    enabled: true,
-                    child: Container(
-                      width: 130,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  )
-                : const Text(
-                    'Save & Continue',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+          width: double.infinity,
+          borderRadius: BorderRadius.circular(12),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
         ),
       ),
@@ -679,10 +480,7 @@ class _CompleteProfileSheetContentState
               Flexible(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  child: Form(
-                    key: _formKey,
-                    child: _buildFormFields(isBusy),
-                  ),
+                  child: Form(key: _formKey, child: _buildFormFields(isBusy)),
                 ),
               ),
 
@@ -696,9 +494,17 @@ class _CompleteProfileSheetContentState
 
     // Full-screen route presentation
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Complete your profile'),
+        centerTitle: true,
+        title: const Text(
+          'Complete your profile',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryDark,
+          ),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.primaryDark,
         automaticallyImplyLeading: false,
@@ -715,17 +521,12 @@ class _CompleteProfileSheetContentState
               const Text(
                 'Tell us a little about yourself',
                 style: TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
+                  fontSize: 13.5,
+                  color: AppColors.secondaryDark,
+                  height: 1.35,
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Your name is required. The other details are optional and help personalize your care.',
-                style: TextStyle(color: AppColors.secondaryDark, height: 1.45),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _buildFormFields(isBusy),
             ],
           ),

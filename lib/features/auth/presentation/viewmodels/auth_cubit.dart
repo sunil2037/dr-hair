@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/notifications/firebase_push_service.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'auth_state.dart';
@@ -43,6 +44,9 @@ class AuthCubit extends Cubit<AuthState> {
           latestAssessment: restored.latestAssessment,
         ),
       );
+      if (restored.token.isNotEmpty) {
+        unawaited(FirebasePushService.syncDeviceTokenWithBackend(accessToken: restored.token));
+      }
     } catch (error) {
       emit(
         state.copyWith(
@@ -169,6 +173,9 @@ class AuthCubit extends Cubit<AuthState> {
           latestAssessment: result.latestAssessment,
         ),
       );
+      if (result.token.isNotEmpty) {
+        unawaited(FirebasePushService.syncDeviceTokenWithBackend(accessToken: result.token));
+      }
       return true;
     } catch (error) {
       emit(
@@ -217,6 +224,9 @@ class AuthCubit extends Cubit<AuthState> {
           clearError: true,
         ),
       );
+      if (state.sessionToken?.isNotEmpty == true) {
+        unawaited(FirebasePushService.syncDeviceTokenWithBackend(accessToken: state.sessionToken));
+      }
       return true;
     } catch (error) {
       emit(
@@ -325,6 +335,10 @@ class AuthCubit extends Cubit<AuthState> {
 
   void signOut() {
     _countdownTimer?.cancel();
+    final currentToken = state.sessionToken;
+    if (currentToken != null && currentToken.isNotEmpty) {
+      unawaited(FirebasePushService.unregisterDeviceToken(accessToken: currentToken));
+    }
     final clearFuture = repository?.clearSession();
     if (clearFuture != null) unawaited(clearFuture.catchError((_) {}));
     emit(const AuthState(status: AuthStatus.unauthenticated));

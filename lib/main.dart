@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/constants/app_strings.dart';
-import 'core/network/dio_client.dart';
 import 'core/notifications/firebase_push_service.dart';
 import 'core/routes/app_router.dart';
 import 'core/storage/app_local_cache.dart';
@@ -48,10 +48,60 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final AuthCubit? authCubit;
 
   const MyApp({super.key, this.authCubit});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  StreamSubscription<RemoteMessage>? _tapSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initPushNotifications();
+    });
+  }
+
+  void _initPushNotifications() {
+    if (FirebasePushService.isTesting) return;
+
+    FirebasePushService.syncDeviceTokenWithBackend();
+
+    // Check cold-start notification message when app was terminated
+    FirebasePushService.initialNotificationMessage
+        .then((message) {
+          if (message != null) {
+            _navigateFromMessage(message);
+          }
+        })
+        .catchError((_) {});
+
+    // Listen to notification taps when app is in background
+    _tapSubscription = FirebasePushService.notificationTapMessages.listen((
+      message,
+    ) {
+      _navigateFromMessage(message);
+    });
+  }
+
+  void _navigateFromMessage(RemoteMessage message) {
+    final location = FirebasePushService.resolveMessageLocation(message);
+    if (location != null && location.isNotEmpty) {
+      AppRouter.router.push(location);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tapSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,15 +114,15 @@ class MyApp extends StatelessWidget {
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           behavior: HitTestBehavior.translucent,
-          child: GlobalDioLoadingOverlay(child: child ?? const SizedBox.shrink()),
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
 
     return MultiBlocProvider(
       providers: [
-        if (authCubit != null)
-          BlocProvider<AuthCubit>.value(value: authCubit!)
+        if (widget.authCubit != null)
+          BlocProvider<AuthCubit>.value(value: widget.authCubit!)
         else
           BlocProvider<AuthCubit>(
             create: (_) =>

@@ -40,6 +40,7 @@ void main() {
 
     setUp(() {
       cubit = VideosCubit(
+        repository: _FakeVideoRepository(),
         initialState: VideosState(
           videos: [sampleVideo, dandruffVideo],
           isLoading: false,

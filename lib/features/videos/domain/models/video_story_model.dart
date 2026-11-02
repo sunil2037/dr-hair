@@ -222,12 +222,12 @@ class VideoStoryModel {
 
   static List<VideoStoryModel> get initialStories => [
         const VideoStoryModel(
-          id: '1',
+          id: 'vid-1',
           name: 'Yashveer Soni',
           handle: '@yashveer.soni',
-          category: 'Stage 2 Hair Fall Recovery',
+          category: 'Hair Fall',
           tag: 'Hair Fall',
-          duration: '3:45',
+          duration: '0:52',
           views: 52400,
           likes: 3120,
           commentsCount: 248,
@@ -235,8 +235,10 @@ class VideoStoryModel {
           caption:
               'Dr. Hair protocol helped me regain crown density naturally. Noticeable reduction in shedding within 6 weeks, and density improved dramatically in 4 months.',
           treatment: 'Scalp Serum + Minoxidil 5%',
+          videoUrl:
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/elephants.mp4',
           thumbnail:
-              'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=800',
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/elephants.jpg',
           avatar:
               'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200',
           comments: [
@@ -266,12 +268,12 @@ class VideoStoryModel {
           ],
         ),
         const VideoStoryModel(
-          id: '2',
+          id: 'vid-2',
           name: 'Rahul Sharma',
           handle: '@rahul.sharma',
-          category: 'Hair Regrowth Journey',
+          category: 'Regrowth',
           tag: 'Regrowth',
-          duration: '4:12',
+          duration: '0:14',
           views: 41200,
           likes: 2890,
           commentsCount: 312,
@@ -279,8 +281,10 @@ class VideoStoryModel {
           caption:
               'My follicle density noticeably improved in just 3 months! Genetic hair fall completely halted without surgery.',
           treatment: 'DHT Blocker Kit + Redensyl',
+          videoUrl:
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/dog.mp4',
           thumbnail:
-              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800',
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/dog.jpg',
           avatar:
               'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=200',
           comments: [
@@ -301,40 +305,12 @@ class VideoStoryModel {
           ],
         ),
         const VideoStoryModel(
-          id: '3',
-          name: 'Aarav Patel',
-          handle: '@aarav.patel',
-          category: 'DHT Blocker Regrowth',
-          tag: 'Regrowth',
-          duration: '2:58',
-          views: 18900,
-          likes: 980,
-          commentsCount: 86,
-          shares: 45,
-          caption:
-              'Doctor consultation was transparent and totally tailored. Hairline has started filling in with thick baby hairs.',
-          treatment: 'Scalp Peptide + Biotin Booster',
-          thumbnail:
-              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800',
-          avatar:
-              'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200',
-          comments: [
-            VideoComment(
-              id: 'c6',
-              user: 'Harsh Gupta',
-              time: '1d ago',
-              text: 'Biotin booster worked like magic for me too!',
-              likes: 8,
-            ),
-          ],
-        ),
-        const VideoStoryModel(
-          id: '4',
+          id: 'vid-3',
           name: 'Ananya Mehra',
           handle: '@ananya.mehra',
-          category: 'Dandruff Scalp Detox',
+          category: 'Dandruff',
           tag: 'Dandruff',
-          duration: '3:15',
+          duration: '0:15',
           views: 35400,
           likes: 3420,
           commentsCount: 420,
@@ -342,8 +318,10 @@ class VideoStoryModel {
           caption:
               'Severe flakes and itching cleared within 3 weeks of the kit. Scalp feels clean and refreshed every single day.',
           treatment: 'Ketoconazole 2% + Salicylic Wash',
+          videoUrl:
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/finish_line.mp4',
           thumbnail:
-              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=800',
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/finish_line.jpg',
           avatar:
               'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200',
           comments: [
@@ -361,6 +339,36 @@ class VideoStoryModel {
               text:
                   'No, paired with the hydrating conditioner it leaves hair super soft!',
               likes: 28,
+            ),
+          ],
+        ),
+        const VideoStoryModel(
+          id: 'vid-4',
+          name: 'Aarav Patel',
+          handle: '@aarav.patel',
+          category: 'Regrowth',
+          tag: 'Regrowth',
+          duration: '0:12',
+          views: 18900,
+          likes: 980,
+          commentsCount: 86,
+          shares: 45,
+          caption:
+              'Doctor consultation was transparent and totally tailored. Hairline has started filling in with thick baby hairs.',
+          treatment: 'Scalp Peptide + Biotin Booster',
+          videoUrl:
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/ski_jump.mp4',
+          thumbnail:
+              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/ski_jump.jpg',
+          avatar:
+              'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200',
+          comments: [
+            VideoComment(
+              id: 'c6',
+              user: 'Harsh Gupta',
+              time: '1d ago',
+              text: 'Biotin booster worked like magic for me too!',
+              likes: 8,
             ),
           ],
         ),

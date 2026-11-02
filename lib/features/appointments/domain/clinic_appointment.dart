@@ -67,25 +67,25 @@ class ClinicAppointment {
 
   static ClinicAppointment? fromJson(Object? value) {
     if (value is! Map) return null;
-    final id = value['id'];
-    final patientId = value['patientId'];
+    final id = value['id']?.toString() ?? value['_id']?.toString() ?? '';
+    final patientId = value['patientId']?.toString() ??
+        value['patient_code']?.toString() ??
+        value['userId']?.toString() ??
+        '';
     final startsAt = DateTime.tryParse(value['startsAt']?.toString() ?? value['starts_at']?.toString() ?? '');
-    final reason = value['reason'] ?? value['service'];
-    final status = value['status'] ?? value['opdStatus'];
-    final tokenNumber = value['tokenNumber'] ?? value['opd_token'] ?? '';
-    final doctorName = value['doctorName'] ?? value['doctor_name'] ?? 'Dr. Jai Bansal';
-    final room = value['room'] ?? 'Room 101 - Chamber A';
+    final reason = value['reason']?.toString() ?? value['service']?.toString() ?? 'General hair consultation';
+    final status = value['status']?.toString() ?? value['opdStatus']?.toString() ?? 'Requested';
+    final tokenNumber = value['tokenNumber']?.toString() ?? value['opd_token']?.toString() ?? '';
+    final doctorName = value['doctorName']?.toString() ?? value['doctor_name']?.toString() ?? 'Dr. Jai Bansal';
+    final room = value['room']?.toString() ?? 'Room 101 - Chamber A';
     final consultationFee = (value['consultationFee'] ?? value['consultation_fee']) is num
         ? ((value['consultationFee'] ?? value['consultation_fee']) as num).toInt()
         : 500;
-    final paymentStatus = value['paymentStatus'] ?? value['payment_status'] ?? 'Pending';
-    final paymentMethod = value['paymentMethod'] ?? value['payment_method'] ?? 'UPI';
-    final paymentTransactionId = value['paymentTransactionId'] ?? value['payment_transaction_id'] ?? '';
+    final paymentStatus = value['paymentStatus']?.toString() ?? value['payment_status']?.toString() ?? 'Pending';
+    final paymentMethod = value['paymentMethod']?.toString() ?? value['payment_method']?.toString() ?? 'UPI';
+    final paymentTransactionId = value['paymentTransactionId']?.toString() ?? value['payment_transaction_id']?.toString() ?? '';
 
-    if (id is! String ||
-        patientId is! String ||
-        startsAt == null ||
-        reason is! String) {
+    if (id.isEmpty || startsAt == null) {
       return null;
     }
     return ClinicAppointment(
@@ -93,14 +93,14 @@ class ClinicAppointment {
       patientId: patientId,
       startsAt: startsAt,
       reason: reason,
-      status: status is String && status.isNotEmpty ? status : 'Requested',
-      tokenNumber: tokenNumber is String ? tokenNumber : '',
-      doctorName: doctorName is String ? doctorName : 'Dr. Jai Bansal',
-      room: room is String ? room : 'Room 101 - Chamber A',
+      status: status.isNotEmpty ? status : 'Requested',
+      tokenNumber: tokenNumber,
+      doctorName: doctorName.isNotEmpty ? doctorName : 'Dr. Jai Bansal',
+      room: room.isNotEmpty ? room : 'Room 101 - Chamber A',
       consultationFee: consultationFee,
-      paymentStatus: paymentStatus is String ? paymentStatus : 'Pending',
-      paymentMethod: paymentMethod is String ? paymentMethod : 'UPI',
-      paymentTransactionId: paymentTransactionId is String ? paymentTransactionId : '',
+      paymentStatus: paymentStatus.isNotEmpty ? paymentStatus : 'Pending',
+      paymentMethod: paymentMethod.isNotEmpty ? paymentMethod : 'UPI',
+      paymentTransactionId: paymentTransactionId,
     );
   }
 }

@@ -51,9 +51,24 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     }
   }
 
-  List<ClinicAppointment> forPatient(String patientId) =>
-      state.where((item) => item.patientId == patientId).toList()
-        ..sort((a, b) => b.startsAt.compareTo(a.startsAt));
+  List<ClinicAppointment> forPatient(String patientId, {String? userId}) {
+    final cleanPatientId = patientId.trim();
+    final cleanUserId = (userId ?? '').trim();
+    return state.where((item) {
+      if (item.patientId == cleanPatientId) return true;
+      if (cleanUserId.isNotEmpty &&
+          (item.patientId == cleanUserId || item.patientId.contains(cleanUserId))) {
+        return true;
+      }
+      if (cleanPatientId.isNotEmpty &&
+          cleanPatientId != 'GUEST' &&
+          item.patientId.contains(cleanPatientId)) {
+        return true;
+      }
+      return false;
+    }).toList()
+      ..sort((a, b) => b.startsAt.compareTo(a.startsAt));
+  }
 
   Future<String?> saveRequest({
     required String patientId,
@@ -97,7 +112,7 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     if (accessToken != null && accessToken.isNotEmpty) {
       try {
         if (replacingId == null) {
-          await api.create(
+          final res = await api.create(
             token: accessToken,
             startsAt: startsAt,
             reason: reason.trim(),
@@ -106,6 +121,11 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
             paymentStatus: paymentStatus,
             paymentTransactionId: paymentTransactionId,
           );
+          final createdApt = ClinicAppointment.fromJson(res);
+          if (createdApt != null) {
+            emit([createdApt, ...state.where((i) => i.id != createdApt.id)]);
+            await _persist();
+          }
         } else {
           await api.update(
             token: accessToken,

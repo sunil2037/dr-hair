@@ -4,22 +4,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/routes/app_destination.dart';
+import '../../../../core/widgets/custom_cached_image.dart';
 import '../../../care/presentation/viewmodels/care_cubit.dart';
 import '../../../care/presentation/viewmodels/care_state.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_state.dart';
 import '../../../shop/data/models/product_model.dart';
+import '../../../videos/data/repositories/video_repository_impl.dart';
+import '../../../videos/domain/models/video_story_model.dart';
+import '../../../videos/domain/repositories/video_repository.dart';
 import '../viewmodels/home_journey_selector.dart';
 import '../widgets/medicine_card.dart';
 
 class HomeView extends StatefulWidget {
   final VoidCallback onStartHairTest;
-  const HomeView({super.key, required this.onStartHairTest});
+  final VideoRepository? videoRepository;
+
+  const HomeView({
+    super.key,
+    required this.onStartHairTest,
+    this.videoRepository,
+  });
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -31,11 +42,25 @@ class _HomeViewState extends State<HomeView>
   late final AnimationController _entranceController;
   late final List<Animation<double>> _sectionOpacity;
   late final List<Animation<Offset>> _sectionPosition;
+  late final Future<List<VideoStoryModel>> _videoStoriesFuture;
   bool _motionConfigured = false;
+
+  bool get _isTesting =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+      const bool.fromEnvironment('flutter.test');
 
   @override
   void initState() {
     super.initState();
+    if (_isTesting && widget.videoRepository == null) {
+      _videoStoriesFuture = Future.value(VideoStoryModel.initialStories);
+    } else {
+      _videoStoriesFuture = (widget.videoRepository ?? VideoRepositoryImpl())
+          .getVideos(limit: 6, placement: 'home')
+          .then((res) => res.items)
+          .catchError((_) => VideoStoryModel.initialStories);
+    }
+
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1150),
@@ -923,22 +948,56 @@ class _HomeViewState extends State<HomeView>
         const SizedBox(height: 16),
         SizedBox(
           height: 240,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildVideoCard(
-                image: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=600',
-                title: 'Yashveer Soni',
-                subtitle: 'Recovered full crown density in 4 months',
-              ),
-              const SizedBox(width: 16),
-              _buildVideoCard(
-                image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600',
-                title: 'Rahul Sharma',
-                subtitle: 'Stabilized genetic hair fall without surgery',
-              ),
-            ],
+          child: FutureBuilder<List<VideoStoryModel>>(
+            future: _videoStoriesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Skeletonizer(
+                  enabled: true,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _buildVideoCard(
+                        image: '',
+                        title: 'Patient Loading',
+                        subtitle: 'Clinical outcome and growth journey',
+                      ),
+                      const SizedBox(width: 16),
+                      _buildVideoCard(
+                        image: '',
+                        title: 'Patient Loading',
+                        subtitle: 'Clinical outcome and growth journey',
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final stories = (snapshot.data != null && snapshot.data!.isNotEmpty)
+                  ? snapshot.data!
+                  : VideoStoryModel.initialStories;
+
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: stories.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 16),
+                itemBuilder: (context, index) {
+                  final story = stories[index];
+                  return GestureDetector(
+                    onTap: () => context.push(RouteNames.videos),
+                    child: _buildVideoCard(
+                      image: story.thumbnail,
+                      title: story.name,
+                      subtitle: story.treatment.isNotEmpty
+                          ? story.treatment
+                          : story.caption,
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -957,12 +1016,13 @@ class _HomeViewState extends State<HomeView>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.network(
-            image,
+          CustomCachedImage(
+            imageUrl: image,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
+            borderRadius: 0,
+            errorWidget: Container(
               color: AppColors.primary100,
-              child: const Icon(LucideIcons.imageOff, color: AppColors.primary),
+              child: const Icon(LucideIcons.video, color: AppColors.primary),
             ),
           ),
           Container(
@@ -993,6 +1053,8 @@ class _HomeViewState extends State<HomeView>
                 const SizedBox(height: 12),
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,

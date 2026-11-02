@@ -1,100 +1,164 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/routes/app_destination.dart';
+import '../../data/models/notification_item_model.dart';
+import '../viewmodels/notifications_cubit.dart';
+import '../viewmodels/notifications_state.dart';
 
-class NotificationsView extends StatefulWidget {
-  const NotificationsView({super.key});
+class NotificationsView extends StatelessWidget {
+  final NotificationsCubit? cubit;
 
-  @override
-  State<NotificationsView> createState() => _NotificationsViewState();
-}
-
-class _NotificationsViewState extends State<NotificationsView> {
-  final Set<int> _read = {};
-
-  static const _notifications = [
-    (
-      LucideIcons.packageCheck,
-      'Your order is on its way',
-      'We’ll let you know when it reaches your doorstep.',
-      'Today · 10:42 AM',
-      Color(0xFF0F9F8F),
-    ),
-    (
-      LucideIcons.stethoscope,
-      'Your care plan is ready',
-      'Your personalized routine is waiting in your profile.',
-      'Yesterday · 6:18 PM',
-      Color(0xFF3876C5),
-    ),
-    (
-      LucideIcons.sparkles,
-      'A little progress adds up',
-      'Consistency is key. Remember your evening scalp routine.',
-      'Monday · 8:00 PM',
-      Color(0xFF9A69C7),
-    ),
-  ];
+  const NotificationsView({super.key, this.cubit});
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _notifications.length - _read.length;
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-            color: AppColors.primaryDark,
-          ),
-        ),
-        leading: IconButton(
-          tooltip: 'Back',
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(LucideIcons.arrowLeft, color: AppColors.primaryDark),
-        ),
-        actions: [
-          if (unreadCount > 0)
-            TextButton(
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                setState(
-                  () => _read.addAll(
-                    List.generate(_notifications.length, (index) => index),
-                  ),
-                );
-              },
-              child: const Text(
-                'Read all',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
+    if (cubit != null) {
+      return BlocProvider<NotificationsCubit>.value(
+        value: cubit!,
+        child: const _NotificationsContent(),
+      );
+    }
+    return BlocProvider<NotificationsCubit>(
+      create: (_) => NotificationsCubit()..loadNotifications(),
+      child: const _NotificationsContent(),
+    );
+  }
+}
+
+class _NotificationsContent extends StatelessWidget {
+  const _NotificationsContent();
+
+  static final List<NotificationItemModel> _skeletonItems = List.generate(
+    3,
+    (index) => NotificationItemModel(
+      id: 'skeleton-$index',
+      title: 'Your order is being processed for delivery',
+      body: 'Your personalized scalp treatment formulation is being packaged at the Dr. Hair clinic.',
+      type: 'order',
+      destination: const AppDestination.screen('orders'),
+      createdAt: DateTime.now(),
+      isRead: false,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NotificationsCubit, NotificationsState>(
+      builder: (context, state) {
+        final notifications = state.isLoading && state.notifications.isEmpty
+            ? _skeletonItems
+            : state.notifications;
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            title: const Text(
+              'Notifications',
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryDark,
               ),
             ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+            leading: IconButton(
+              tooltip: 'Back',
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(LucideIcons.arrowLeft, color: AppColors.primaryDark),
+            ),
+            actions: [
+              if (state.unreadCount > 0)
+                TextButton(
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    context.read<NotificationsCubit>().markAllAsRead();
+                  },
+                  child: const Text(
+                    'Read all',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          body: Skeletonizer(
+            enabled: state.isLoading && state.notifications.isEmpty,
+            child: RefreshIndicator(
+              onRefresh: () => context.read<NotificationsCubit>().loadNotifications(),
+              color: AppColors.primary,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                children: [
+                  if (!state.isLoading && notifications.isEmpty)
+                    _buildEmptyState(context)
+                  else ...[
+                    for (final item in notifications)
+                      _notificationCard(context, item),
+                    const SizedBox(height: 8),
+                    const Center(
+                      child: Text(
+                        'You’re all caught up',
+                        style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (_notifications.isEmpty)
-            const Center(child: Text('You’re all caught up'))
-          else
-            for (var index = 0; index < _notifications.length; index++)
-              _notificationCard(index),
-          const SizedBox(height: 8),
-          const Center(
-            child: Text(
-              'You’re all caught up',
-              style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              LucideIcons.bellOff,
+              size: 28,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No notifications yet',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Appointment updates, order tracking, and doctor care tips will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.secondaryDark,
+              height: 1.4,
             ),
           ),
         ],
@@ -102,9 +166,9 @@ class _NotificationsViewState extends State<NotificationsView> {
     );
   }
 
-  Widget _notificationCard(int index) {
-    final notification = _notifications[index];
-    final isRead = _read.contains(index);
+  Widget _notificationCard(BuildContext context, NotificationItemModel notification) {
+    final isRead = notification.isRead;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -114,7 +178,13 @@ class _NotificationsViewState extends State<NotificationsView> {
           borderRadius: BorderRadius.circular(18),
           onTap: () {
             HapticFeedback.selectionClick();
-            setState(() => _read.add(index));
+            context.read<NotificationsCubit>().markAsRead(notification.id);
+
+            // Dynamic deep link routing
+            final targetLocation = notification.destination.location;
+            if (targetLocation != null && targetLocation.isNotEmpty) {
+              context.push(targetLocation);
+            }
           },
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -125,12 +195,12 @@ class _NotificationsViewState extends State<NotificationsView> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: notification.$5.withValues(alpha: 0.11),
+                    color: notification.iconColor.withValues(alpha: 0.11),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    notification.$1,
-                    color: notification.$5,
+                    notification.iconData,
+                    color: notification.iconColor,
                     size: 21,
                   ),
                 ),
@@ -143,7 +213,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                         children: [
                           Expanded(
                             child: Text(
-                              notification.$2,
+                              notification.title,
                               style: const TextStyle(
                                 color: AppColors.primaryDark,
                                 fontSize: 14,
@@ -164,7 +234,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        notification.$3,
+                        notification.body,
                         style: const TextStyle(
                           color: AppColors.secondaryDark,
                           height: 1.4,
@@ -173,7 +243,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        notification.$4,
+                        notification.formattedTime,
                         style: const TextStyle(
                           color: AppColors.secondaryDark,
                           fontSize: 10.5,

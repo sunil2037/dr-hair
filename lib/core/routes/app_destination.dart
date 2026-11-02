@@ -18,15 +18,20 @@ class AppDestination {
       entityId = id;
 
   factory AppDestination.fromJson(Map<String, dynamic> json) {
-    if (json['type'] == 'product') {
-      final id = json['entityId'];
-      return AppDestination.product(id is String ? id : '');
+    final rawType = json['type'] ?? json['destination_type'];
+    if (rawType == 'product') {
+      final id = json['entityId'] ?? json['entity_id'] ?? json['productId'] ?? '';
+      return AppDestination.product(id is String ? id : id.toString());
     }
-    if (json['type'] == 'screen') {
-      final screen = json['screen'];
-      return AppDestination.screen(screen is String ? screen : '');
+    if (rawType == 'screen' || json.containsKey('screen')) {
+      final screen = json['screen'] ?? json['target'] ?? '';
+      return AppDestination.screen(screen is String ? screen : screen.toString());
     }
     return const AppDestination.screen('');
+  }
+
+  factory AppDestination.fromNotificationData(Map<String, dynamic> data) {
+    return AppDestination.fromJson(data);
   }
 
   String? get location {
@@ -47,6 +52,9 @@ class AppDestination {
       'profile' => RouteNames.profile,
       'orders' => RouteNames.orders,
       'clinic_appointment' => RouteNames.clinicAppointment,
+      'cart' => RouteNames.cart,
+      'reminders' => RouteNames.reminders,
+      'diet_plan' => RouteNames.dietPlan,
       _ => null,
     };
   }

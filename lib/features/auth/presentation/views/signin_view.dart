@@ -372,8 +372,8 @@ class _SigninViewState extends State<SigninView>
                       child: Container(
                         margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 22,
+                          horizontal: 16,
+                          vertical: 16,
                         ),
                         width: double.infinity,
                         decoration: BoxDecoration(
@@ -512,7 +512,7 @@ class _SigninViewState extends State<SigninView>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('🇮🇳', style: TextStyle(fontSize: 18)),
+                    const Text('🇮🇳', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 6),
                     Text(
                       _countryCode,
@@ -549,8 +549,8 @@ class _SigninViewState extends State<SigninView>
                   onChanged: _onPhoneChanged,
                   onSubmitted: (_) => _proceedToOtp(),
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,
                     color: AppColors.primaryDark,
                   ),
@@ -765,7 +765,7 @@ class _SigninViewState extends State<SigninView>
             children: List.generate(6, (index) {
               return SizedBox(
                 width: 44,
-                height: 52,
+                height: 44,
                 child: TextField(
                   controller: _otpControllers[index],
                   focusNode: _otpFocusNodes[index],
@@ -779,8 +779,8 @@ class _SigninViewState extends State<SigninView>
                     LengthLimitingTextInputFormatter(6),
                   ],
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.primaryDark,
                   ),
                   decoration: InputDecoration(
@@ -844,44 +844,9 @@ class _SigninViewState extends State<SigninView>
               ],
             ),
           ),
-        ] else ...[
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              color: AppColors.primary5.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  LucideIcons.sparkles,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Verification OTP: 123456 (Auto-filled)',
-                    style: TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: isBusy ? null : () => _fillOtp('123456'),
-                  child: const Text('Fill'),
-                ),
-              ],
-            ),
-          ),
         ],
 
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
 
         // Verify & Proceed Button with AppButton
         AppButton(
@@ -890,14 +855,9 @@ class _SigninViewState extends State<SigninView>
           isLoading: isBusy,
           onPressed: _verifyOtpAndLogin,
           text: 'Verify & Proceed',
-          trailingIcon: const Icon(
-            LucideIcons.check,
-            size: 18,
-            color: Colors.white,
-          ),
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
 
         // Resend code option with 30s countdown from cubit
         if (countdown > 0)

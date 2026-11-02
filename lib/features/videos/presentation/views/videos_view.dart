@@ -531,6 +531,8 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       final controller = VideoPlayerController.networkUrl(uri);
       _videoController = controller;
 
+      controller.addListener(_onVideoControllerTick);
+
       controller.initialize().then((_) {
         if (!mounted || _videoController != controller) return;
         controller.setLooping(true);
@@ -554,6 +556,18 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     }
   }
 
+  void _onVideoControllerTick() {
+    if (!mounted || _videoController == null || !_videoController!.value.isInitialized) return;
+    final dur = _videoController!.value.duration.inMilliseconds;
+    if (dur > 0) {
+      final pos = _videoController!.value.position.inMilliseconds;
+      final progress = (pos / dur).clamp(0.0, 1.0);
+      if ((progress - _progressController.value).abs() > 0.005) {
+        _progressController.value = progress;
+      }
+    }
+  }
+
   @override
   void didUpdateWidget(covariant _MinimalReelPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -562,6 +576,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     _videoController?.setVolume(isMuted ? 0.0 : 1.0);
 
     if (widget.video.videoUrl != oldWidget.video.videoUrl) {
+      _videoController?.removeListener(_onVideoControllerTick);
       _videoController?.pause();
       _videoController?.dispose();
       _videoController = null;
@@ -656,6 +671,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
   @override
   void dispose() {
+    _videoController?.removeListener(_onVideoControllerTick);
     _videoController?.pause();
     _videoController?.dispose();
     _videoController = null;
@@ -705,6 +721,29 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                   ),
           ),
         ),
+
+        // Buffering / Loading Video Placeholder (Zero CircularProgressIndicator)
+        if (widget.isActive && !_isPlayerInitialized && !_isTesting)
+          Positioned.fill(
+            child: Center(
+              child: Skeletonizer(
+                enabled: true,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    LucideIcons.play,
+                    color: Colors.white70,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ),
 
           // 2. Subtle Cinema Vignette Gradients
           // Top gradient for status bar and header

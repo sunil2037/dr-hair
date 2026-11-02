@@ -36,13 +36,14 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_didLoadAppointments) return;
-    _didLoadAppointments = true;
     final auth = context.read<AuthCubit>().state;
     final token = auth.sessionToken;
     if (token != null && token.isNotEmpty && auth.isGuest != true) {
       _accessToken = token;
-      context.read<ClinicAppointmentCubit>().loadFromApi(token);
+      if (!_didLoadAppointments) {
+        _didLoadAppointments = true;
+        context.read<ClinicAppointmentCubit>().loadFromApi(token);
+      }
     }
   }
 
@@ -185,9 +186,17 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-          children: [
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            final token = _accessToken ?? context.read<AuthCubit>().state.sessionToken;
+            if (token != null && token.isNotEmpty) {
+              await context.read<ClinicAppointmentCubit>().loadFromApi(token);
+            }
+          },
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            children: [
             // Doctor & Clinic Header Card
             Container(
               padding: const EdgeInsets.all(16),
@@ -594,7 +603,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
               builder: (context, _) {
                 final requests = context
                     .read<ClinicAppointmentCubit>()
-                    .forPatient(patientId);
+                    .forPatient(patientId, userId: user?.id);
 
                 if (requests.isEmpty) {
                   return Container(
@@ -836,6 +845,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
               },
             ),
           ],
+          ),
         ),
       ),
     );
