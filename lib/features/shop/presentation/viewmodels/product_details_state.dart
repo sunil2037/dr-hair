@@ -18,6 +18,8 @@ class ProductDetailsState {
   final int activeTab;
   final bool isAddedToCart;
   final bool isFullscreenOpen;
+  final bool isLoading;
+  final bool isNotFound;
 
   const ProductDetailsState({
     required this.product,
@@ -28,13 +30,21 @@ class ProductDetailsState {
     this.activeTab = 0,
     this.isAddedToCart = false,
     this.isFullscreenOpen = false,
+    this.isLoading = false,
+    this.isNotFound = false,
   });
 
-  factory ProductDetailsState.initial({ProductItem? product}) {
+  factory ProductDetailsState.initial({
+    ProductItem? product,
+    bool isLoading = false,
+    bool isNotFound = false,
+  }) {
     final prod = product ?? ProductItem.defaultProduct;
     return ProductDetailsState(
       product: prod,
       selectedSupplyIndex: prod.supplyPlans.length > 1 ? 1 : 0,
+      isLoading: isLoading,
+      isNotFound: isNotFound,
     );
   }
 
@@ -58,6 +68,8 @@ class ProductDetailsState {
     int? activeTab,
     bool? isAddedToCart,
     bool? isFullscreenOpen,
+    bool? isLoading,
+    bool? isNotFound,
   }) {
     return ProductDetailsState(
       product: product ?? this.product,
@@ -68,6 +80,8 @@ class ProductDetailsState {
       activeTab: activeTab ?? this.activeTab,
       isAddedToCart: isAddedToCart ?? this.isAddedToCart,
       isFullscreenOpen: isFullscreenOpen ?? this.isFullscreenOpen,
+      isLoading: isLoading ?? this.isLoading,
+      isNotFound: isNotFound ?? this.isNotFound,
     );
   }
 }

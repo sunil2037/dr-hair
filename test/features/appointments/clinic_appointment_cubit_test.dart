@@ -14,10 +14,19 @@ void main() {
           patientId: 'PAT-1',
           startsAt: time,
           reason: 'Scalp scan',
+          consultationFee: 500,
+          paymentMethod: 'UPI',
+          paymentStatus: 'Paid',
+          paymentTransactionId: 'TXN-TEST-1234',
         ),
         isNull,
       );
       expect(cubit.forPatient('PAT-1'), hasLength(1));
+      final apt = cubit.forPatient('PAT-1').first;
+      expect(apt.consultationFee, 500);
+      expect(apt.paymentStatus, 'Paid');
+      expect(apt.paymentMethod, 'UPI');
+      expect(apt.tokenNumber.isNotEmpty, true);
       expect(
         await cubit.saveRequest(
           patientId: 'PAT-1',

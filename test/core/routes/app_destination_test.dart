@@ -10,6 +10,18 @@ void main() {
     });
     expect(destination.location, '/products/follicle-booster-serum');
     expect(destination.fallbackLocation, '/products');
+
+    final upperCaseDestination = AppDestination.fromJson({
+      'type': 'product',
+      'entityId': 'PRD-17412345',
+    });
+    expect(upperCaseDestination.location, '/products/PRD-17412345');
+
+    final underscoreDestination = AppDestination.fromJson({
+      'type': 'product',
+      'entityId': 'prd_custom_101',
+    });
+    expect(underscoreDestination.location, '/products/prd_custom_101');
   });
 
   test('unknown and malformed destinations cannot create routes', () {

@@ -32,7 +32,7 @@ class AppDestination {
   String? get location {
     if (type == 'product') {
       final id = entityId;
-      if (id == null || !RegExp(r'^[a-z0-9]+(?:-[a-z0-9]+)*$').hasMatch(id)) {
+      if (id == null || !RegExp(r'^[a-zA-Z0-9_\-]+$').hasMatch(id)) {
         return null;
       }
       return RouteNames.productPath(id);

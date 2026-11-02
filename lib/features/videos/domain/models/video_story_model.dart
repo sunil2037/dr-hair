@@ -32,6 +32,7 @@ class VideoComment {
 
 class VideoStoryModel {
   final String id;
+  final String? publicId;
   final String name;
   final String handle;
   final String category;
@@ -48,10 +49,12 @@ class VideoStoryModel {
   final String treatment;
   final String thumbnail;
   final String avatar;
+  final String videoUrl;
   final List<VideoComment> comments;
 
   const VideoStoryModel({
     required this.id,
+    this.publicId,
     required this.name,
     required this.handle,
     required this.category,
@@ -65,14 +68,94 @@ class VideoStoryModel {
     required this.treatment,
     required this.thumbnail,
     required this.avatar,
+    this.videoUrl = '',
     this.isLiked = false,
     this.isSaved = false,
     this.isPlaying = true,
     this.comments = const [],
   });
 
+  factory VideoStoryModel.fromJson(Map<String, dynamic> json) {
+    final publicId = json['public_id']?.toString() ?? json['publicId']?.toString();
+    final id = json['id']?.toString() ?? publicId ?? '';
+    final name = json['author_name']?.toString() ?? json['name']?.toString() ?? 'Dr. Hair Patient';
+    final handle = json['author_handle']?.toString() ?? json['handle']?.toString() ?? '@drhair.patient';
+    final category = json['category']?.toString() ?? 'Hair Care';
+    final tag = json['tag']?.toString() ?? category;
+    final duration = json['duration']?.toString() ?? '1:00';
+    final views = (json['views'] is num)
+        ? (json['views'] as num).toInt()
+        : int.tryParse(json['views']?.toString() ?? '0') ?? 0;
+    final likes = (json['likes'] is num)
+        ? (json['likes'] as num).toInt()
+        : int.tryParse(json['likes']?.toString() ?? '0') ?? 0;
+    final commentsCount = (json['comments_count'] is num)
+        ? (json['comments_count'] as num).toInt()
+        : (json['commentsCount'] is num)
+            ? (json['commentsCount'] as num).toInt()
+            : 0;
+    final shares = (json['shares'] is num)
+        ? (json['shares'] as num).toInt()
+        : int.tryParse(json['shares']?.toString() ?? '0') ?? 0;
+    final caption = json['description']?.toString() ?? json['caption']?.toString() ?? '';
+    final treatment = json['treatment']?.toString() ?? 'Clinical Hair Care Protocol';
+    final thumbnail = json['thumbnail_url']?.toString() ?? json['thumbnail']?.toString() ?? '';
+    final avatar = json['avatar_url']?.toString() ?? json['avatar']?.toString() ?? '';
+    final videoUrl = json['secure_url']?.toString() ??
+        json['video_url']?.toString() ??
+        json['videoUrl']?.toString() ??
+        '';
+
+    return VideoStoryModel(
+      id: id,
+      publicId: publicId,
+      name: name,
+      handle: handle,
+      category: category,
+      tag: tag,
+      duration: duration,
+      views: views,
+      likes: likes,
+      commentsCount: commentsCount,
+      shares: shares,
+      caption: caption,
+      treatment: treatment,
+      thumbnail: thumbnail,
+      avatar: avatar,
+      videoUrl: videoUrl,
+      isLiked: json['is_liked'] == true || json['isLiked'] == true,
+      isSaved: json['is_saved'] == true || json['isSaved'] == true,
+      isPlaying: true,
+      comments: const [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'public_id': publicId,
+      'name': name,
+      'handle': handle,
+      'category': category,
+      'tag': tag,
+      'duration': duration,
+      'views': views,
+      'likes': likes,
+      'comments_count': commentsCount,
+      'shares': shares,
+      'caption': caption,
+      'treatment': treatment,
+      'thumbnail': thumbnail,
+      'avatar': avatar,
+      'video_url': videoUrl,
+      'is_liked': isLiked,
+      'is_saved': isSaved,
+    };
+  }
+
   VideoStoryModel copyWith({
     String? id,
+    String? publicId,
     String? name,
     String? handle,
     String? category,
@@ -89,10 +172,12 @@ class VideoStoryModel {
     String? treatment,
     String? thumbnail,
     String? avatar,
+    String? videoUrl,
     List<VideoComment>? comments,
   }) {
     return VideoStoryModel(
       id: id ?? this.id,
+      publicId: publicId ?? this.publicId,
       name: name ?? this.name,
       handle: handle ?? this.handle,
       category: category ?? this.category,
@@ -109,6 +194,7 @@ class VideoStoryModel {
       treatment: treatment ?? this.treatment,
       thumbnail: thumbnail ?? this.thumbnail,
       avatar: avatar ?? this.avatar,
+      videoUrl: videoUrl ?? this.videoUrl,
       comments: comments ?? this.comments,
     );
   }
@@ -134,20 +220,20 @@ class VideoStoryModel {
     return shares.toString();
   }
 
-  static List<VideoStoryModel> get initialStories => const [
-        VideoStoryModel(
+  static List<VideoStoryModel> get initialStories => [
+        const VideoStoryModel(
           id: '1',
           name: 'Yashveer Soni',
           handle: '@yashveer.soni',
-          category: 'Hair Fall Recovery',
+          category: 'Stage 2 Hair Fall Recovery',
           tag: 'Hair Fall',
           duration: '3:45',
-          views: 24800,
-          likes: 1420,
-          commentsCount: 184,
-          shares: 92,
+          views: 52400,
+          likes: 3120,
+          commentsCount: 248,
+          shares: 120,
           caption:
-              'I finally found a clinical solution that actually works! Follicle density improved dramatically in 4 months.',
+              'Dr. Hair protocol helped me regain crown density naturally. Noticeable reduction in shedding within 6 weeks, and density improved dramatically in 4 months.',
           treatment: 'Scalp Serum + Minoxidil 5%',
           thumbnail:
               'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=800',
@@ -179,7 +265,7 @@ class VideoStoryModel {
             ),
           ],
         ),
-        VideoStoryModel(
+        const VideoStoryModel(
           id: '2',
           name: 'Rahul Sharma',
           handle: '@rahul.sharma',
@@ -214,7 +300,7 @@ class VideoStoryModel {
             ),
           ],
         ),
-        VideoStoryModel(
+        const VideoStoryModel(
           id: '3',
           name: 'Aarav Patel',
           handle: '@aarav.patel',
@@ -242,7 +328,7 @@ class VideoStoryModel {
             ),
           ],
         ),
-        VideoStoryModel(
+        const VideoStoryModel(
           id: '4',
           name: 'Ananya Mehra',
           handle: '@ananya.mehra',

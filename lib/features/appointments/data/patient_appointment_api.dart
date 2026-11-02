@@ -28,10 +28,22 @@ class PatientAppointmentApi {
     required String token,
     required DateTime startsAt,
     required String reason,
+    int consultationFee = 500,
+    String paymentMethod = 'UPI',
+    String paymentStatus = 'Paid',
+    String? paymentTransactionId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/patient/appointments',
-      data: {'starts_at': startsAt.toUtc().toIso8601String(), 'reason': reason},
+      data: {
+        'starts_at': startsAt.toUtc().toIso8601String(),
+        'reason': reason,
+        'consultation_fee': consultationFee,
+        'payment_method': paymentMethod,
+        'payment_status': paymentStatus,
+        if (paymentTransactionId != null && paymentTransactionId.isNotEmpty)
+          'payment_transaction_id': paymentTransactionId,
+      },
       options: _authorized(token),
     );
     return _readData(response.data);

@@ -7,6 +7,11 @@ class VideosState {
   final int activeIndex;
   final bool isMuted;
   final Set<String> viewedVideoIds;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final int currentPage;
+  final String? errorMessage;
 
   const VideosState({
     this.videos = const [],
@@ -15,10 +20,18 @@ class VideosState {
     this.activeIndex = 0,
     this.isMuted = false,
     this.viewedVideoIds = const {},
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.currentPage = 1,
+    this.errorMessage,
   });
 
-  factory VideosState.initial() => VideosState(
-        videos: VideoStoryModel.initialStories,
+  factory VideosState.initial() => const VideosState(
+        videos: [],
+        isLoading: true,
+        hasMore: true,
+        currentPage: 1,
       );
 
   List<VideoStoryModel> get filteredVideos {
@@ -38,6 +51,11 @@ class VideosState {
     int? activeIndex,
     bool? isMuted,
     Set<String>? viewedVideoIds,
+    bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? currentPage,
+    String? errorMessage,
   }) {
     return VideosState(
       videos: videos ?? this.videos,
@@ -46,6 +64,11 @@ class VideosState {
       activeIndex: activeIndex ?? this.activeIndex,
       isMuted: isMuted ?? this.isMuted,
       viewedVideoIds: viewedVideoIds ?? this.viewedVideoIds,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      currentPage: currentPage ?? this.currentPage,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }

@@ -40,10 +40,21 @@ class AuthState {
     this.latestAssessment,
   });
 
-  bool get isAuthenticated =>
-      status == AuthStatus.authenticated &&
-          (user != null || sessionToken != null) ||
-      status == AuthStatus.profileRequired && sessionToken != null;
+  bool get isAuthenticated {
+    if (status == AuthStatus.unauthenticated || status == AuthStatus.initial) {
+      return false;
+    }
+    if (status == AuthStatus.authenticated) {
+      return user != null || sessionToken != null;
+    }
+    if (status == AuthStatus.profileRequired) {
+      return sessionToken != null;
+    }
+    if (status == AuthStatus.loading) {
+      return user != null || sessionToken != null;
+    }
+    return false;
+  }
   bool get requiresProfileCompletion => status == AuthStatus.profileRequired;
   bool get isGuest => false;
   bool get canResendOtp => resendCountdown <= 0;

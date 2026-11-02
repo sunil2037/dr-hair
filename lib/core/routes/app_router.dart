@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/views/signin_view.dart';
@@ -146,25 +145,10 @@ class AppRouter {
         builder: (context, state) {
           final id = state.pathParameters['productId'];
           final product = ProductItem.findById(id);
-          if (product == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Product unavailable')),
-              body: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('This product is no longer available.'),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: () => context.go(RouteNames.products),
-                      child: const Text('Browse products'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          return ProductDetailsView(initialProduct: product);
+          return ProductDetailsView(
+            productId: id,
+            initialProduct: product,
+          );
         },
       ),
       GoRoute(

@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -25,18 +27,20 @@ class VideosView extends StatelessWidget {
     if (cubit != null) {
       return BlocProvider<VideosCubit>.value(
         value: cubit!,
-        child: const _VideosContent(),
+        child: const _VideosContent(isCustomCubit: true),
       );
     }
     return BlocProvider<VideosCubit>(
       create: (_) => VideosCubit(),
-      child: const _VideosContent(),
+      child: const _VideosContent(isCustomCubit: false),
     );
   }
 }
 
 class _VideosContent extends StatefulWidget {
-  const _VideosContent();
+  final bool isCustomCubit;
+
+  const _VideosContent({this.isCustomCubit = false});
 
   @override
   State<_VideosContent> createState() => _VideosContentState();
@@ -51,6 +55,11 @@ class _VideosContentState extends State<_VideosContent> {
     super.initState();
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     _pageController = PageController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !widget.isCustomCubit) {
+        _cubit.loadInitialVideos();
+      }
+    });
   }
 
   @override
@@ -85,38 +94,43 @@ class _VideosContentState extends State<_VideosContent> {
           body: Stack(
             fit: StackFit.expand,
             children: [
-              // 1. Vertical Reel PageView
-              if (filtered.isEmpty)
+              // 1. Vertical Reel PageView with Skeletonizer
+              if (state.isLoading && filtered.isEmpty)
+                _buildSkeletonReel(context, state)
+              else if (filtered.isEmpty)
                 _buildEmptyState(context)
               else
-                PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  itemCount: filtered.length,
-                  onPageChanged: (index) {
-                    _cubit.onPageChanged(index);
-                  },
-                  itemBuilder: (context, index) {
-                    final video = filtered[index];
-                    final bool isActive = index == state.activeIndex;
+                Skeletonizer(
+                  enabled: state.isLoading,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    scrollDirection: Axis.vertical,
+                    itemCount: filtered.length,
+                    onPageChanged: (index) {
+                      _cubit.onPageChanged(index);
+                    },
+                    itemBuilder: (context, index) {
+                      final video = filtered[index];
+                      final bool isActive = index == state.activeIndex;
 
-                    return VisibilityDetector(
-                      key: Key('video_story_${video.id}'),
-                      onVisibilityChanged: (info) {
-                        if (mounted) {
-                          _cubit.onVisibilityChanged(
-                            video.id,
-                            info.visibleFraction,
-                          );
-                        }
-                      },
-                      child: _MinimalReelPlayer(
-                        key: ValueKey(video.id),
-                        video: video,
-                        isActive: isActive,
-                      ),
-                    );
-                  },
+                      return VisibilityDetector(
+                        key: Key('video_story_${video.id}'),
+                        onVisibilityChanged: (info) {
+                          if (mounted) {
+                            _cubit.onVisibilityChanged(
+                              video.id,
+                              info.visibleFraction,
+                            );
+                          }
+                        },
+                        child: _MinimalReelPlayer(
+                          key: ValueKey(video.id),
+                          video: video,
+                          isActive: isActive,
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
               // 2. Minimal Top Floating Overlay (Title + Verified badge + Categories)
@@ -126,10 +140,135 @@ class _VideosContentState extends State<_VideosContent> {
                 right: 0,
                 child: _buildTopOverlay(context, state),
               ),
+
+              // 3. Chunk Loading Indicator at bottom
+              if (state.isLoadingMore)
+                Positioned(
+                  bottom: 96,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Skeletonizer(
+                      enabled: true,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Loading more stories...',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSkeletonReel(BuildContext context, VideosState state) {
+    return Skeletonizer(
+      enabled: true,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(
+            color: Colors.grey.shade900,
+          ),
+          Positioned(
+            right: 14,
+            bottom: 150,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 28,
+                  height: 12,
+                  color: Colors.white24,
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 28,
+                  height: 12,
+                  color: Colors.white24,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 84,
+            bottom: 105,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 140,
+                  height: 18,
+                  color: Colors.white30,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 200,
+                  height: 13,
+                  color: Colors.white24,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  height: 12,
+                  color: Colors.white24,
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 180,
+                  height: 12,
+                  color: Colors.white24,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 92,
+            child: Container(
+              height: 2,
+              color: Colors.white24,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -341,6 +480,8 @@ class _MinimalReelPlayer extends StatefulWidget {
 
 class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     with TickerProviderStateMixin {
+  VideoPlayerController? _videoController;
+  bool _isPlayerInitialized = false;
   bool _showPlayPauseOverlay = false;
   bool _showHeartAnimation = false;
   Offset _heartPosition = Offset.zero;
@@ -366,19 +507,76 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       duration: const Duration(milliseconds: 600),
     );
 
-    if (widget.isActive && widget.video.isPlaying) {
-      _startPlayback();
+    _initVideoPlayer();
+  }
+
+  void _initVideoPlayer() {
+    if (_isTesting) {
+      if (widget.isActive && widget.video.isPlaying) {
+        _startPlayback();
+      }
+      return;
+    }
+
+    final rawUrl = widget.video.videoUrl.trim();
+    if (rawUrl.isEmpty || !rawUrl.startsWith('http')) {
+      if (widget.isActive && widget.video.isPlaying) {
+        _startPlayback();
+      }
+      return;
+    }
+
+    try {
+      final uri = Uri.parse(rawUrl);
+      final controller = VideoPlayerController.networkUrl(uri);
+      _videoController = controller;
+
+      controller.initialize().then((_) {
+        if (!mounted || _videoController != controller) return;
+        controller.setLooping(true);
+        final isMuted = context.read<VideosCubit?>()?.state.isMuted ?? false;
+        controller.setVolume(isMuted ? 0.0 : 1.0);
+        setState(() {
+          _isPlayerInitialized = true;
+        });
+        if (widget.isActive && widget.video.isPlaying) {
+          controller.play();
+          _startPlayback();
+        }
+      }).catchError((error) {
+        debugPrint('VideoPlayer error for ${widget.video.id}: $error');
+        if (mounted && widget.isActive && widget.video.isPlaying) {
+          _startPlayback();
+        }
+      });
+    } catch (e) {
+      debugPrint('Failed to parse video url for player: $e');
     }
   }
 
   @override
   void didUpdateWidget(covariant _MinimalReelPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    final isMuted = context.read<VideosCubit?>()?.state.isMuted ?? false;
+    _videoController?.setVolume(isMuted ? 0.0 : 1.0);
+
+    if (widget.video.videoUrl != oldWidget.video.videoUrl) {
+      _videoController?.pause();
+      _videoController?.dispose();
+      _videoController = null;
+      _isPlayerInitialized = false;
+      _initVideoPlayer();
+      return;
+    }
+
     if (widget.isActive != oldWidget.isActive ||
         widget.video.isPlaying != oldWidget.video.isPlaying) {
       if (widget.isActive && widget.video.isPlaying) {
+        _videoController?.play();
         _startPlayback();
       } else {
+        _videoController?.pause();
         _pausePlayback();
       }
     }
@@ -458,6 +656,9 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
   @override
   void dispose() {
+    _videoController?.pause();
+    _videoController?.dispose();
+    _videoController = null;
     _progressController.dispose();
     _heartAnimController.dispose();
     super.dispose();
@@ -467,27 +668,43 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
   Widget build(BuildContext context) {
     final v = widget.video;
 
-    return GestureDetector(
-      onTap: _handleTap,
-      onDoubleTapDown: _handleDoubleTap,
-      behavior: HitTestBehavior.opaque,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 1. Full-screen Video Thumbnail via CustomCachedImage with Skeletonizer
-          CustomCachedImage(
-            imageUrl: v.thumbnail,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            borderRadius: 0,
-            errorWidget: Container(
-              color: Colors.black87,
-              child: const Center(
-                child: Icon(LucideIcons.video, color: Colors.white24, size: 64),
-              ),
-            ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1. Live Video Player or Thumbnail Poster via CustomCachedImage with tap/double-tap detection
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: _handleTap,
+            onDoubleTapDown: _handleDoubleTap,
+            behavior: HitTestBehavior.opaque,
+            child: _isPlayerInitialized &&
+                    _videoController != null &&
+                    _videoController!.value.isInitialized
+                ? SizedBox.expand(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _videoController!.value.size.width,
+                        height: _videoController!.value.size.height,
+                        child: VideoPlayer(_videoController!),
+                      ),
+                    ),
+                  )
+                : CustomCachedImage(
+                    imageUrl: v.thumbnail,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    borderRadius: 0,
+                    errorWidget: Container(
+                      color: Colors.black87,
+                      child: const Center(
+                        child: Icon(LucideIcons.video, color: Colors.white24, size: 64),
+                      ),
+                    ),
+                  ),
           ),
+        ),
 
           // 2. Subtle Cinema Vignette Gradients
           // Top gradient for status bar and header
@@ -611,6 +828,26 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                   iconColor: Colors.white,
                   onTap: _onShare,
                 ),
+
+                const SizedBox(height: 20),
+
+                // Minimal Mute / Sound Button
+                BlocBuilder<VideosCubit, VideosState>(
+                  buildWhen: (p, c) => p.isMuted != c.isMuted,
+                  builder: (context, state) {
+                    return _buildActionItem(
+                      icon: state.isMuted
+                          ? LucideIcons.volumeX
+                          : LucideIcons.volume2,
+                      label: state.isMuted ? 'Muted' : 'Sound',
+                      iconColor: Colors.white,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.read<VideosCubit>().toggleMute();
+                      },
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -706,8 +943,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildActionItem({

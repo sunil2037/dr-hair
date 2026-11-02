@@ -252,5 +252,14 @@ void main() {
         expect(repository.sessionCleared, true);
       },
     );
+
+    test('AuthCubit deleteAccount calls repository and resets to unauthenticated', () async {
+      final repository = FakeAuthRepository();
+      final authCubit = AuthCubit(repository: repository);
+      final success = await authCubit.deleteAccount();
+      expect(success, true);
+      expect(authCubit.state.status, AuthStatus.unauthenticated);
+      expect(repository.sessionCleared, true);
+    });
   });
 }

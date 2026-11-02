@@ -61,6 +61,10 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     required DateTime startsAt,
     required String reason,
     String? replacingId,
+    int consultationFee = 500,
+    String paymentMethod = 'UPI',
+    String paymentStatus = 'Paid',
+    String? paymentTransactionId,
   }) async {
     if (patientId.isEmpty || patientId == 'GUEST') {
       return 'Sign in to save an appointment request.';
@@ -93,7 +97,15 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     if (accessToken != null && accessToken.isNotEmpty) {
       try {
         if (replacingId == null) {
-          await api.create(token: accessToken, startsAt: startsAt, reason: reason.trim());
+          await api.create(
+            token: accessToken,
+            startsAt: startsAt,
+            reason: reason.trim(),
+            consultationFee: consultationFee,
+            paymentMethod: paymentMethod,
+            paymentStatus: paymentStatus,
+            paymentTransactionId: paymentTransactionId,
+          );
         } else {
           await api.update(
             token: accessToken,
@@ -112,6 +124,11 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
       patientId: patientId,
       startsAt: startsAt,
       reason: reason.trim(),
+      consultationFee: consultationFee,
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentStatus,
+      paymentTransactionId: paymentTransactionId ?? '',
+      tokenNumber: 'OPD-${state.length + 1}'.padLeft(8, '0'),
     );
     emit(
       replacingId == null

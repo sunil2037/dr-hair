@@ -231,8 +231,8 @@ void main() {
         await tester.tap(find.text('Confirm Slot'));
         await tester.pumpAndSettle();
 
-        // Now on ClinicAppointmentView, tap Confirm In-Clinic Appointment
-        final confirmBtn = find.text('Confirm In-Clinic Appointment');
+        // Now on ClinicAppointmentView, tap Proceed to Book & Pay
+        final confirmBtn = find.text('Proceed to Book & Pay (₹500)');
         await tester.ensureVisible(confirmBtn);
         await tester.tap(confirmBtn);
         await tester.pumpAndSettle();
@@ -269,6 +269,11 @@ void main() {
         // Profile should now be updated in cubit
         expect(cubit.state.user?.age, 34);
         expect(cubit.state.user?.gender, 'Male');
+
+        // AppointmentPaymentSheet appears to confirm consultation fee checkout
+        expect(find.text('Consultation Checkout'), findsOneWidget);
+        await tester.tap(find.text('Pay ₹500 & Confirm Visit'));
+        await tester.pumpAndSettle();
 
         // And the in-clinic appointment request should now be saved!
         expect(

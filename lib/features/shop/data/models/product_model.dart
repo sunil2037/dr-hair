@@ -15,6 +15,33 @@ class ProductSupplyPlan {
     required this.mrp,
     this.badge,
   });
+
+  factory ProductSupplyPlan.fromJson(Map<String, dynamic> json) {
+    final price = (json['price'] is num)
+        ? (json['price'] as num).toInt()
+        : int.tryParse(json['price']?.toString() ?? '0') ?? 0;
+    final mrp = (json['mrp'] is num)
+        ? (json['mrp'] as num).toInt()
+        : (json['compare_at_price'] is num)
+            ? (json['compare_at_price'] as num).toInt()
+            : int.tryParse(json['mrp']?.toString() ?? '0') ?? price;
+
+    return ProductSupplyPlan(
+      title: json['title']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString() ?? '',
+      price: price,
+      mrp: mrp,
+      badge: json['badge']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'subtitle': subtitle,
+        'price': price,
+        'mrp': mrp,
+        if (badge != null) 'badge': badge,
+      };
 }
 
 @immutable
@@ -23,6 +50,18 @@ class ProductBenefitItem {
   final String description;
 
   const ProductBenefitItem({required this.title, required this.description});
+
+  factory ProductBenefitItem.fromJson(Map<String, dynamic> json) {
+    return ProductBenefitItem(
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'description': description,
+      };
 }
 
 @immutable
@@ -36,6 +75,20 @@ class ProductIngredientItem {
     required this.concentration,
     required this.purpose,
   });
+
+  factory ProductIngredientItem.fromJson(Map<String, dynamic> json) {
+    return ProductIngredientItem(
+      name: json['name']?.toString() ?? '',
+      concentration: json['concentration']?.toString() ?? '',
+      purpose: json['purpose']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'concentration': concentration,
+        'purpose': purpose,
+      };
 }
 
 @immutable
@@ -49,6 +102,22 @@ class ProductUsageStep {
     required this.title,
     required this.description,
   });
+
+  factory ProductUsageStep.fromJson(Map<String, dynamic> json) {
+    return ProductUsageStep(
+      step: (json['step'] is num)
+          ? (json['step'] as num).toInt()
+          : int.tryParse(json['step']?.toString() ?? '1') ?? 1,
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'step': step,
+        'title': title,
+        'description': description,
+      };
 }
 
 @immutable
@@ -62,6 +131,20 @@ class ProductClinicalMetric {
     required this.claim,
     required this.source,
   });
+
+  factory ProductClinicalMetric.fromJson(Map<String, dynamic> json) {
+    return ProductClinicalMetric(
+      percentage: json['percentage']?.toString() ?? '',
+      claim: json['claim']?.toString() ?? '',
+      source: json['source']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'percentage': percentage,
+        'claim': claim,
+        'source': source,
+      };
 }
 
 @immutable
@@ -97,6 +180,105 @@ class ProductItem {
     required this.usageSteps,
     required this.clinicalMetrics,
   });
+
+  factory ProductItem.fromJson(Map<String, dynamic> json) {
+    final rawImages = json['images'] as List<dynamic>? ?? [];
+    final images = rawImages.map((e) => e.toString()).toList();
+    if (images.isEmpty && json['image_url'] != null) {
+      images.add(json['image_url'].toString());
+    }
+    if (images.isEmpty && json['media'] is List) {
+      final mediaList = json['media'] as List<dynamic>;
+      for (final item in mediaList) {
+        if (item is Map && item['name'] != null) {
+          images.add(item['name'].toString());
+        }
+      }
+    }
+
+    final rawPlans = json['supply_plans'] as List<dynamic>? ??
+        json['supplyPlans'] as List<dynamic>? ??
+        [];
+    final supplyPlans = rawPlans
+        .whereType<Map<String, dynamic>>()
+        .map(ProductSupplyPlan.fromJson)
+        .toList();
+
+    final rawBenefits = json['benefits'] as List<dynamic>? ?? [];
+    final benefits = rawBenefits
+        .whereType<Map<String, dynamic>>()
+        .map(ProductBenefitItem.fromJson)
+        .toList();
+
+    final rawIngredients = json['ingredients'] as List<dynamic>? ?? [];
+    final ingredients = rawIngredients
+        .whereType<Map<String, dynamic>>()
+        .map(ProductIngredientItem.fromJson)
+        .toList();
+
+    final rawSteps = json['usage_steps'] as List<dynamic>? ??
+        json['usageSteps'] as List<dynamic>? ??
+        [];
+    final usageSteps = rawSteps
+        .whereType<Map<String, dynamic>>()
+        .map(ProductUsageStep.fromJson)
+        .toList();
+
+    final rawMetrics = json['clinical_metrics'] as List<dynamic>? ??
+        json['clinicalMetrics'] as List<dynamic>? ??
+        [];
+    final clinicalMetrics = rawMetrics
+        .whereType<Map<String, dynamic>>()
+        .map(ProductClinicalMetric.fromJson)
+        .toList();
+
+    final rootCauses = json['root_causes'] as List<dynamic>? ??
+        json['rootCauses'] as List<dynamic>? ??
+        [];
+    final rootCause = json['root_cause']?.toString() ??
+        json['rootCause']?.toString() ??
+        (rootCauses.isNotEmpty ? rootCauses.first.toString() : 'Hair');
+
+    return ProductItem(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString() ?? json['description']?.toString() ?? '',
+      category: json['category']?.toString() ?? '',
+      rootCause: rootCause,
+      rating: (json['rating'] is num)
+          ? (json['rating'] as num).toDouble()
+          : double.tryParse(json['rating']?.toString() ?? '4.8') ?? 4.8,
+      reviewsCount: (json['reviews_count'] is num)
+          ? (json['reviews_count'] as num).toInt()
+          : (json['reviewsCount'] is num)
+              ? (json['reviewsCount'] as num).toInt()
+              : int.tryParse(json['reviews_count']?.toString() ?? '0') ?? 0,
+      inStock: json['in_stock'] == true || json['inStock'] == true,
+      images: images,
+      supplyPlans: supplyPlans,
+      benefits: benefits,
+      ingredients: ingredients,
+      usageSteps: usageSteps,
+      clinicalMetrics: clinicalMetrics,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'subtitle': subtitle,
+        'category': category,
+        'root_cause': rootCause,
+        'rating': rating,
+        'reviews_count': reviewsCount,
+        'in_stock': inStock,
+        'images': images,
+        'supply_plans': supplyPlans.map((p) => p.toJson()).toList(),
+        'benefits': benefits.map((b) => b.toJson()).toList(),
+        'ingredients': ingredients.map((i) => i.toJson()).toList(),
+        'usage_steps': usageSteps.map((u) => u.toJson()).toList(),
+        'clinical_metrics': clinicalMetrics.map((c) => c.toJson()).toList(),
+      };
 
   /// Curated demo catalog of realistic Dr Hair treatments
   static const List<ProductItem> demoCatalog = [
@@ -908,8 +1090,19 @@ class ProductItem {
 
   static ProductItem get defaultProduct => demoCatalog.first;
 
+  static final Map<String, ProductItem> _cachedProducts = {};
+
+  static void cacheProducts(Iterable<ProductItem> items) {
+    for (final p in items) {
+      _cachedProducts[p.id] = p;
+    }
+  }
+
   static ProductItem? findById(String? id) {
     if (id == null || id.isEmpty) return null;
+    if (_cachedProducts.containsKey(id)) {
+      return _cachedProducts[id];
+    }
     for (final p in demoCatalog) {
       if (p.id == id) return p;
     }

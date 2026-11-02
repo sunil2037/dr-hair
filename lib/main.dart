@@ -18,6 +18,7 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/appointments/presentation/clinic_appointment_cubit.dart';
 import 'features/care/presentation/viewmodels/care_cubit.dart';
 import 'features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
+import 'features/shop/data/datasources/cart_remote_data_source.dart';
 import 'features/shop/presentation/viewmodels/cart_cubit.dart';
 import 'firebase_options.dart';
 
@@ -77,7 +78,12 @@ class MyApp extends StatelessWidget {
             create: (_) =>
                 AuthCubit(repository: AuthRepositoryImpl())..restoreSession(),
           ),
-        BlocProvider<CartCubit>(create: (_) => CartCubit()),
+        BlocProvider<CartCubit>(
+          create: (_) => CartCubit(
+            remoteDataSource: CartRemoteDataSource(),
+            syncWithBackend: true,
+          ),
+        ),
         BlocProvider<ClinicAppointmentCubit>(
           create: (_) => ClinicAppointmentCubit()..load(),
         ),

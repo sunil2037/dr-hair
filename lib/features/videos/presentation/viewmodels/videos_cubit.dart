@@ -1,17 +1,111 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../data/repositories/video_repository_impl.dart';
 import '../../domain/models/video_story_model.dart';
+import '../../domain/repositories/video_repository.dart';
 import 'videos_state.dart';
 
 class VideosCubit extends Cubit<VideosState> {
-  VideosCubit({VideosState? initialState})
-      : super(initialState ?? VideosState.initial());
+  final VideoRepository _repository;
 
-  void changeFilter(int index) {
+  VideosCubit({
+    VideoRepository? repository,
+    VideosState? initialState,
+  })  : _repository = repository ?? VideoRepositoryImpl(),
+        super(initialState ?? VideosState.initial());
+
+  String? _categoryForIndex(int index) {
+    if (index <= 0 || index >= state.filters.length) return null;
+    return state.filters[index];
+  }
+
+  Future<void> loadInitialVideos() async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    try {
+      final category = _categoryForIndex(state.selectedFilterIndex);
+      final result = await _repository.getVideos(
+        page: 1,
+        limit: 10,
+        category: category,
+        placement: 'reels',
+      );
+
+      emit(state.copyWith(
+        videos: result.items,
+        hasMore: result.hasMore,
+        currentPage: result.page,
+        isLoading: false,
+        activeIndex: 0,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load videos: $e',
+      ));
+    }
+  }
+
+  Future<void> loadNextChunk() async {
+    if (state.isLoadingMore || !state.hasMore || state.isLoading) return;
+
+    emit(state.copyWith(isLoadingMore: true));
+    try {
+      final nextPage = state.currentPage + 1;
+      final category = _categoryForIndex(state.selectedFilterIndex);
+      final result = await _repository.getVideos(
+        page: nextPage,
+        limit: 10,
+        category: category,
+        placement: 'reels',
+      );
+
+      final existingIds = state.videos.map((v) => v.id).toSet();
+      final newItems = result.items.where((v) => !existingIds.contains(v.id)).toList();
+
+      emit(state.copyWith(
+        videos: [...state.videos, ...newItems],
+        hasMore: result.hasMore,
+        currentPage: result.page,
+        isLoadingMore: false,
+      ));
+    } catch (_) {
+      emit(state.copyWith(isLoadingMore: false));
+    }
+  }
+
+  Future<void> refresh() async {
+    await loadInitialVideos();
+  }
+
+  Future<void> changeFilter(int index) async {
     if (index < 0 || index >= state.filters.length) return;
+
     emit(state.copyWith(
       selectedFilterIndex: index,
       activeIndex: 0,
+      isLoading: true,
+      currentPage: 1,
     ));
+
+    try {
+      final category = _categoryForIndex(index);
+      final result = await _repository.getVideos(
+        page: 1,
+        limit: 10,
+        category: category,
+        placement: 'reels',
+      );
+
+      emit(state.copyWith(
+        videos: result.items,
+        hasMore: result.hasMore,
+        currentPage: result.page,
+        isLoading: false,
+        activeIndex: 0,
+      ));
+    } catch (_) {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
   void onPageChanged(int index) {
@@ -31,6 +125,11 @@ class VideosCubit extends Cubit<VideosState> {
       videos: updatedVideos,
       activeIndex: index,
     ));
+
+    // Trigger chunk loading when approaching end of reels
+    if (index >= filtered.length - 2 && state.hasMore && !state.isLoadingMore) {
+      loadNextChunk();
+    }
   }
 
   void togglePlayPause(String videoId) {
@@ -134,7 +233,10 @@ class VideosCubit extends Cubit<VideosState> {
 
     // Auto-pause if video scrolls far out of view
     if (visibleFraction < 0.2) {
-      final video = updatedVideos.firstWhere((v) => v.id == videoId);
+      final video = updatedVideos.firstWhere(
+        (v) => v.id == videoId,
+        orElse: () => updatedVideos.first,
+      );
       if (video.isPlaying) {
         updatedVideos = updatedVideos.map((v) {
           if (v.id == videoId) return v.copyWith(isPlaying: false);

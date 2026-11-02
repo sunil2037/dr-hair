@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/routes/route_names.dart';
 import '../../../../core/routes/app_destination.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../../data/models/product_model.dart';
+import '../../data/repositories/product_repository_impl.dart';
 import '../viewmodels/cart_cubit.dart';
+import '../viewmodels/products_cubit.dart';
+import '../viewmodels/products_state.dart';
 
 /// Category Tab Model for clinical root cause navigation
 class _CategoryTabItem {
@@ -26,14 +30,42 @@ class _CategoryTabItem {
 /// Dedicated Medicines & Products screen using [NestedScrollView] with SliverAppBar,
 /// category TabBar for clinical root causes (Thyroid, Dandruff, Hair, Stress, Gut, PCOS, Hormone),
 /// 2-column responsive product grid cards, and search icon beside cart button.
-class ProductsView extends StatefulWidget {
-  const ProductsView({super.key});
+class ProductsView extends StatelessWidget {
+  final ProductsCubit? cubit;
+
+  const ProductsView({super.key, this.cubit});
 
   @override
-  State<ProductsView> createState() => _ProductsViewState();
+  Widget build(BuildContext context) {
+    if (cubit != null) {
+      return BlocProvider<ProductsCubit>.value(
+        value: cubit!,
+        child: const _ProductsContent(),
+      );
+    }
+
+    try {
+      final existing = context.read<ProductsCubit?>();
+      if (existing != null) {
+        return const _ProductsContent();
+      }
+    } catch (_) {}
+
+    return BlocProvider<ProductsCubit>(
+      create: (_) => ProductsCubit()..loadProducts(),
+      child: const _ProductsContent(),
+    );
+  }
 }
 
-class _ProductsViewState extends State<ProductsView>
+class _ProductsContent extends StatefulWidget {
+  const _ProductsContent();
+
+  @override
+  State<_ProductsContent> createState() => _ProductsContentState();
+}
+
+class _ProductsContentState extends State<_ProductsContent>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
@@ -59,120 +91,33 @@ class _ProductsViewState extends State<ProductsView>
     _CategoryTabItem(id: 'hormone', label: 'Hormone', icon: LucideIcons.dna),
   ];
 
-  static final ProductItem _customKitProduct = ProductItem(
-    id: 'traya-custom-regrowth-kit',
-    name: '3-Month Hair Regrowth Kit',
-    subtitle: 'Follicle Booster Serum + Scalp Oil + DHT Blocker Supplements',
-    category: 'Doctor & Ayurvedic Regimen',
-    rootCause: 'Hair',
-    rating: 4.95,
-    reviewsCount: 3820,
-    inStock: true,
-    images: const [
-      'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=800',
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800',
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=800',
-    ],
-    supplyPlans: const [
-      ProductSupplyPlan(
-        title: 'Complete Kit',
-        subtitle: 'Serum + Oil + DHT Herbal Capsules',
-        price: 1445,
-        mrp: 2044,
-        badge: 'SAVINGS 29%',
-      ),
-      ProductSupplyPlan(
-        title: '6 Months Protocol',
-        subtitle: 'Double Kit + Scalp Dermaroller',
-        price: 2699,
-        mrp: 4088,
-        badge: 'BEST VALUE',
-      ),
-    ],
-    benefits: const [
-      ProductBenefitItem(
-        title: 'Dual-Science Regimen',
-        description: 'Combines dermatological actives with classical Ayurvedic scalp therapy.',
-      ),
-      ProductBenefitItem(
-        title: 'Addresses Root Causes',
-        description: 'Actively tackles scalp dandruff, DHT miniaturization, and micro-nutrient deficiencies.',
-      ),
-      ProductBenefitItem(
-        title: '93% Observed Visual Results',
-        description: 'Significant reduction in shedding within 45 days and hairline thickening by Month 5.',
-      ),
-    ],
-    ingredients: const [
-      ProductIngredientItem(
-        name: 'Redensyl + Procapil',
-        concentration: '8.0% Complex',
-        purpose: 'Stem cell follicular reactivation & localized DHT blockage.',
-      ),
-      ProductIngredientItem(
-        name: 'Kshirpak Bhringraj',
-        concentration: '100% Ayurvedic',
-        purpose: 'Cools scalp, clears follicular inflammation & promotes deep root anchoring.',
-      ),
-      ProductIngredientItem(
-        name: 'Saw Palmetto & Zinc',
-        concentration: '500mg',
-        purpose: 'Natural 5-alpha-reductase inhibitor to protect follicles internally.',
-      ),
-    ],
-    usageSteps: const [
-      ProductUsageStep(
-        step: 1,
-        title: 'Apply Follicle Serum',
-        description: 'Apply 1ml of serum to clean, dry scalp every morning and massage lightly.',
-      ),
-      ProductUsageStep(
-        step: 2,
-        title: 'Scalp Oil Therapy',
-        description:
-            'Apply herbal oil 3 nights a week before bedtime to nourish roots.',
-      ),
-      ProductUsageStep(
-        step: 3,
-        title: 'Daily Nutrition Capsule',
-        description: 'Take 1 capsule post-dinner with water for internal hormonal balance.',
-      ),
-    ],
-    clinicalMetrics: const [
-      ProductClinicalMetric(
-        percentage: '93%',
-        claim: 'saw significant hair shedding reduction',
-        source: 'Dr. Hair Clinical Registry Dec 2022',
-      ),
-      ProductClinicalMetric(
-        percentage: '89%',
-        claim: 'experienced crown density improvement',
-        source: 'Dermatological Trial Protocol',
-      ),
-    ],
-  );
-
-  List<ProductItem> get _allProducts => [
-    _customKitProduct,
-    ...ProductItem.demoCatalog,
-  ];
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (!_tabController.indexIsChanging) {
+      context.read<ProductsCubit>().selectCategory(_tabController.index);
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
-  List<ProductItem> _getFilteredProductsForCategory(String categoryId) {
-    Iterable<ProductItem> products = _allProducts;
+  List<ProductItem> _getFilteredProductsForCategory(
+    String categoryId,
+    List<ProductItem> source,
+  ) {
+    Iterable<ProductItem> products = source;
 
     switch (categoryId) {
       case 'hair':
@@ -357,159 +302,267 @@ class _ProductsViewState extends State<ProductsView>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            SliverOverlapAbsorber(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-              sliver: SliverAppBar(
-                pinned: true,
-                floating: true,
-                snap: false,
-                elevation: innerBoxIsScrolled ? 1 : 0,
-                backgroundColor: Colors.white,
-                surfaceTintColor: Colors.transparent,
-                title: const FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Medicines & Products',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
-                ),
-                actions: [
-                  // 1. Cart Button with badge
-                  _buildCartButton(context),
+      body: BlocConsumer<ProductsCubit, ProductsState>(
+        listener: (context, state) {
+          if (state.products.isNotEmpty) {
+            ProductItem.cacheProducts(state.products);
+          }
+        },
+        builder: (context, state) {
+          final catalog = state.products.isNotEmpty
+              ? state.products
+              : (state.errorMessage == null
+                    ? ProductRepositoryImpl.fallbackCatalog
+                    : const <ProductItem>[]);
 
-                  // 2. Search Icon on right side of Cart button
-                  IconButton(
-                    key: const ValueKey('appbar-search-button'),
-                    tooltip: 'Search products',
-                    icon: const Icon(
-                      Icons.search_rounded,
-                      color: AppColors.primaryDark,
+          return NestedScrollView(
+            headerSliverBuilder:
+                (BuildContext context, bool innerBoxIsScrolled) {
+                  return <Widget>[
+                    SliverOverlapAbsorber(
+                      handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                        context,
+                      ),
+                      sliver: SliverAppBar(
+                        pinned: true,
+                        floating: true,
+                        snap: false,
+                        elevation: innerBoxIsScrolled ? 1 : 0,
+                        backgroundColor: Colors.white,
+                        surfaceTintColor: Colors.transparent,
+                        title: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Medicines & Products',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                        ),
+                        actions: [
+                          // 1. Cart Button with badge
+                          _buildCartButton(context),
+
+                          // 2. Search Icon on right side of Cart button
+                          IconButton(
+                            key: const ValueKey('appbar-search-button'),
+                            tooltip: 'Search products',
+                            icon: const Icon(
+                              Icons.search_rounded,
+                              color: AppColors.primaryDark,
+                            ),
+                            onPressed: () {
+                              _searchFocusNode.requestFocus();
+                            },
+                          ),
+
+                          const SizedBox(width: 8),
+                        ],
+                        bottom: PreferredSize(
+                          preferredSize: const Size.fromHeight(104),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [_buildSearchBar(), _buildTabBar()],
+                          ),
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      _searchFocusNode.requestFocus();
+                  ];
+                },
+            body: TabBarView(
+              controller: _tabController,
+              children: _categories.map((category) {
+                return SafeArea(
+                  top: false,
+                  bottom: false,
+                  child: Builder(
+                    builder: (BuildContext context) {
+                      final products = _getFilteredProductsForCategory(
+                        category.id,
+                        catalog,
+                      );
+                      final isActuallyLoading =
+                          state.isLoading && state.products.isEmpty;
+                      final displayList = isActuallyLoading
+                          ? ProductRepositoryImpl.fallbackCatalog
+                                .take(4)
+                                .toList()
+                          : products;
+
+                      return CustomScrollView(
+                        key: PageStorageKey<String>(category.id),
+                        slivers: <Widget>[
+                          SliverOverlapInjector(
+                            handle:
+                                NestedScrollView.sliverOverlapAbsorberHandleFor(
+                                  context,
+                                ),
+                          ),
+                          if (state.errorMessage != null &&
+                              state.products.isNotEmpty)
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                              sliver: SliverToBoxAdapter(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColors.error.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.info_outline,
+                                        size: 16,
+                                        color: AppColors.error,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          state.errorMessage!,
+                                          style: const TextStyle(
+                                            fontSize: 11.5,
+                                            color: AppColors.error,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => context
+                                            .read<ProductsCubit>()
+                                            .loadProducts(refresh: true),
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: const Text(
+                                          'Retry',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+                            sliver: SliverToBoxAdapter(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary5,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: AppColors.primary100,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Demo catalog: product details and outcome figures are sample content for presentation.',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    height: 1.35,
+                                    color: AppColors.secondaryDark,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (displayList.isEmpty && !state.isLoading)
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: state.errorMessage != null
+                                  ? _buildErrorState(state.errorMessage!)
+                                  : _buildEmptyState(),
+                            )
+                          else ...[
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                              sliver: SliverToBoxAdapter(
+                                child: Skeletonizer(
+                                  enabled: state.isLoading,
+                                  child: Text(
+                                    '${displayList.length} ${displayList.length == 1 ? 'product' : 'products'}',
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(10, 8, 10, 32),
+                              sliver: SliverGrid(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount:
+                                          MediaQuery.sizeOf(context).width >=
+                                              1000
+                                          ? 4
+                                          : MediaQuery.sizeOf(context).width >=
+                                                640
+                                          ? 3
+                                          : 2,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                      mainAxisExtent:
+                                          MediaQuery.sizeOf(context).width < 360
+                                          ? 254
+                                          : 236,
+                                    ),
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  final product = displayList[index];
+                                  return Skeletonizer(
+                                    enabled: state.isLoading,
+                                    child: _ProductGridCard(
+                                      product: product,
+                                      onTap: () => context.push(
+                                        AppDestination.product(product.id)
+                                                .location ??
+                                            RouteNames.products,
+                                      ),
+                                      onAddToCart: () =>
+                                          _handleAddToCart(product),
+                                    ),
+                                  );
+                                }, childCount: displayList.length),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
                     },
                   ),
-
-                  const SizedBox(width: 8),
-                ],
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(104),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [_buildSearchBar(), _buildTabBar()],
-                  ),
-                ),
-              ),
+                );
+              }).toList(),
             ),
-          ];
+          );
         },
-        body: TabBarView(
-          controller: _tabController,
-          children: _categories.map((category) {
-            return SafeArea(
-              top: false,
-              bottom: false,
-              child: Builder(
-                builder: (BuildContext context) {
-                  final products = _getFilteredProductsForCategory(category.id);
-                  return CustomScrollView(
-                    key: PageStorageKey<String>(category.id),
-                    slivers: <Widget>[
-                      SliverOverlapInjector(
-                        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                          context,
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
-                        sliver: SliverToBoxAdapter(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary5,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.primary100),
-                            ),
-                            child: const Text(
-                              'Demo catalog: product details and outcome figures are sample content for presentation.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                height: 1.35,
-                                color: AppColors.secondaryDark,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (products.isEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: _buildEmptyState(),
-                        )
-                      else ...[
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                          sliver: SliverToBoxAdapter(
-                            child: Text(
-                              '${products.length} ${products.length == 1 ? 'product' : 'products'}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 32),
-                          sliver: SliverGrid(
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount:
-                                      MediaQuery.sizeOf(context).width >= 1000
-                                      ? 4
-                                      : MediaQuery.sizeOf(context).width >= 640
-                                      ? 3
-                                      : 2,
-                                  crossAxisSpacing: 8,
-                                  mainAxisSpacing: 8,
-                                  mainAxisExtent:
-                                      MediaQuery.sizeOf(context).width < 360
-                                      ? 254
-                                      : 236,
-                                ),
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final product = products[index];
-                              return _ProductGridCard(
-                                product: product,
-                                onTap: () => context.push(
-                                  AppDestination.product(product.id).location ??
-                                      RouteNames.products,
-                                ),
-                                onAddToCart: () => _handleAddToCart(product),
-                              );
-                            }, childCount: products.length),
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            );
-          }).toList(),
-        ),
       ),
     );
   }
@@ -518,10 +571,12 @@ class _ProductsViewState extends State<ProductsView>
     final cartCubit = context.read<CartCubit?>();
     if (cartCubit == null) {
       return IconButton(
-        icon: const Icon(
-          LucideIcons.shoppingBag,
-          color: AppColors.primaryDark,
-          size: 22,
+        icon: Center(
+          child: const Icon(
+            LucideIcons.shoppingBag,
+            color: AppColors.primaryDark,
+            size: 18,
+          ),
         ),
         tooltip: 'My Cart',
         onPressed: () => context.push(RouteNames.cart),
@@ -584,7 +639,10 @@ class _ProductsViewState extends State<ProductsView>
         key: const ValueKey('product-search'),
         controller: _searchController,
         focusNode: _searchFocusNode,
-        onChanged: (value) => setState(() => _searchQuery = value),
+        onChanged: (value) {
+          setState(() => _searchQuery = value);
+          context.read<ProductsCubit>().search(value);
+        },
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           hintText: 'Search medicines, products, ingredients…',
@@ -601,6 +659,7 @@ class _ProductsViewState extends State<ProductsView>
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
+                    context.read<ProductsCubit>().clearSearch();
                   },
                   icon: const Icon(Icons.close_rounded, size: 18),
                 ),
@@ -707,9 +766,63 @@ class _ProductsViewState extends State<ProductsView>
                 setState(() {
                   _searchQuery = '';
                 });
+                context.read<ProductsCubit>().clearSearch();
+                context.read<ProductsCubit>().selectCategory(0);
                 _tabController.animateTo(0);
               },
               child: const Text('Clear filters'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.primary5,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.cloud_off_rounded,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Unable to load products',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              key: const ValueKey('products-retry-button'),
+              onPressed: () =>
+                  context.read<ProductsCubit>().loadProducts(refresh: true),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Try Again'),
             ),
           ],
         ),

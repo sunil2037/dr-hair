@@ -96,7 +96,10 @@ class ProfileView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(LucideIcons.share2, color: AppColors.primary),
+                leading: const Icon(
+                  LucideIcons.share2,
+                  color: AppColors.primary,
+                ),
                 title: const Text('Export my care data'),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -104,22 +107,24 @@ class ProfileView extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(LucideIcons.trash2, color: AppColors.danger),
+                leading: const Icon(
+                  LucideIcons.trash2,
+                  color: AppColors.danger,
+                ),
                 title: const Text('Delete local care data'),
                 onTap: () async {
                   Navigator.pop(sheetContext);
                   final confirmed = await _showDeleteWarningSheet(
                     context,
                     title: 'Delete care data?',
-                    message:
-                        'This permanently removes saved assessment answers, check-ins, reminders, routine steps, and appointment requests from this device.',
+                    message: 'This permanently removes saved assessment answers, check-ins, reminders, routine steps, and appointment requests from this device.',
                     confirmLabel: 'Delete data',
                   );
                   if (confirmed == true && context.mounted) {
                     final hairCubit = context.read<HairTestCubit?>();
                     final careCubit = context.read<CareCubit?>();
-                    final appointmentCubit =
-                        context.read<ClinicAppointmentCubit?>();
+                    final appointmentCubit = context
+                        .read<ClinicAppointmentCubit?>();
                     final patientId =
                         context.read<AuthCubit?>()?.state.user?.patientId ??
                         'GUEST';
@@ -159,8 +164,7 @@ class ProfileView extends StatelessWidget {
     final confirmed = await _showDeleteWarningSheet(
       context,
       title: 'Delete account permanently?',
-      message:
-          'Are you sure you want to delete your Dr. Hair account? This will permanently erase your personal profile, active sessions, and login credentials.\n\nNote: Medical reports and clinical consultations are retained for doctor records according to medical regulations.\n\nThis action cannot be undone.',
+      message: 'Are you sure you want to delete your Dr. Hair account? This will permanently erase your personal profile, active sessions, and login credentials.\n\nNote: Medical reports and clinical consultations are retained for doctor records according to medical regulations.\n\nThis action cannot be undone.',
       confirmLabel: 'Delete account',
     );
     if (confirmed != true || !context.mounted) return;
@@ -196,7 +200,8 @@ class ProfileView extends StatelessWidget {
       final error =
           authCubit?.state.errorMessage ??
           'Could not delete your account. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -666,7 +671,7 @@ class ProfileView extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () => _resetDemoData(context),
-        icon: const Icon(LucideIcons.rotateCcw, size: 17),
+        icon: const Icon(LucideIcons.rotateCcw, size: 16),
         label: const Text('Reset demo data'),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.secondaryDark,
@@ -698,15 +703,16 @@ class ProfileView extends StatelessWidget {
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.secondaryDark,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -745,11 +751,7 @@ class ProfileView extends StatelessWidget {
       final patientId = profile?.patientId.isNotEmpty == true
           ? profile!.patientId
           : 'Complete your profile';
-      final contact = profile?.phone?.isNotEmpty == true
-          ? profile!.phone!
-          : profile?.email?.isNotEmpty == true
-          ? profile!.email!
-          : null;
+
       final photoUrl = user?.photoUrl;
 
       Widget avatarWidget;
@@ -788,7 +790,7 @@ class ProfileView extends StatelessWidget {
 
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
@@ -797,7 +799,7 @@ class ProfileView extends StatelessWidget {
         child: Row(
           children: [
             avatarWidget,
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -805,76 +807,64 @@ class ProfileView extends StatelessWidget {
                   Text(
                     name,
                     style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.primaryDark,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  // const SizedBox(height: 4),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
+                      Flexible(
                         child: Text(
                           'Patient ID: $patientId',
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 10,
                             color: AppColors.secondaryDark,
                           ),
                         ),
                       ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'Copy patient ID',
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: patientId));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Patient ID copied')),
-                          );
-                        },
-                        icon: const Icon(Icons.copy, size: 15),
-                        color: AppColors.primary,
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: patientId));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Patient ID copied')),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(Icons.copy, size: 12),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  if (contact != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      contact,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondaryDark,
-                      ),
-                    ),
-                  ],
-                  if (profile?.age != null ||
-                      profile?.city?.isNotEmpty == true) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      [
-                        if (profile?.age != null) 'Age ${profile!.age}',
-                        if (profile?.city?.isNotEmpty == true) profile!.city!,
-                      ].join(' · '),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.secondaryDark,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  tooltip: 'Edit profile',
-                  onPressed: () => context.push(RouteNames.updateProfile),
-                  icon: const Icon(
-                    LucideIcons.pencil,
-                    color: AppColors.primary,
-                    size: 20,
+                GestureDetector(
+                  onTap: () => context.push(RouteNames.updateProfile),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      LucideIcons.pencil,
+                      color: AppColors.primary,
+                      size: 16,
+                    ),
                   ),
                 ),
               ],

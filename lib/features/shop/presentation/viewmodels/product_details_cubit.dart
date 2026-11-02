@@ -1,14 +1,49 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/repositories/product_repository_impl.dart';
+import '../../domain/repositories/product_repository.dart';
 import 'product_details_state.dart';
 
 class ProductDetailsCubit extends Cubit<ProductDetailsState> {
+  final ProductRepository _repository;
+
   ProductDetailsCubit({
     ProductItem? initialProduct,
+    String? productId,
+    ProductRepository? repository,
     ProductDetailsState? initialState,
-  }) : super(
-         initialState ?? ProductDetailsState.initial(product: initialProduct),
-       );
+  })  : _repository = repository ?? ProductRepositoryImpl(),
+        super(
+          initialState ??
+              ProductDetailsState.initial(
+                product: initialProduct,
+                isLoading: initialProduct == null && productId != null,
+              ),
+        ) {
+    if (initialProduct == null && productId != null && productId.isNotEmpty) {
+      loadProduct(productId);
+    }
+  }
+
+  Future<void> loadProduct(String productId) async {
+    emit(state.copyWith(isLoading: true, isNotFound: false));
+    try {
+      final product = await _repository.getProductById(productId);
+      if (product != null) {
+        ProductItem.cacheProducts([product]);
+        emit(state.copyWith(
+          product: product,
+          isLoading: false,
+          isNotFound: false,
+          selectedSupplyIndex: product.supplyPlans.length > 1 ? 1 : 0,
+        ));
+      } else {
+        emit(state.copyWith(isLoading: false, isNotFound: true));
+      }
+    } catch (_) {
+      emit(state.copyWith(isLoading: false, isNotFound: true));
+    }
+  }
 
   void selectImage(int index) {
     if (index >= 0 && index < state.images.length) {

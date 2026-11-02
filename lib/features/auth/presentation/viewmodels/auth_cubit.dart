@@ -245,7 +245,7 @@ class AuthCubit extends Cubit<AuthState> {
   }) async {
     final current = state.user;
     if (current == null) return false;
-    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+    emit(state.copyWith(clearError: true));
     try {
       final repo = repository;
       UserModel updated;

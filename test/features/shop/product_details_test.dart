@@ -314,5 +314,22 @@ void main() {
         expect(find.text('₹2499'), findsWidgets);
       },
     );
+
+    testWidgets(
+      'ProductDetailsView displays unavailable page when product is not found',
+      (tester) async {
+        final cubit = ProductDetailsCubit(
+          initialState: ProductDetailsState.initial(isNotFound: true),
+        );
+        await tester.pumpWidget(
+          MaterialApp(home: ProductDetailsView(cubit: cubit)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Product unavailable'), findsOneWidget);
+        expect(find.text('This product is no longer available.'), findsOneWidget);
+        expect(find.text('Browse products'), findsOneWidget);
+      },
+    );
   });
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/storage/app_local_cache.dart';
+import '../../data/datasources/cart_remote_data_source.dart';
 import '../../data/models/product_model.dart';
 
 class CartState {
@@ -31,13 +32,23 @@ class CartState {
 class CartCubit extends Cubit<CartState> {
   static const _storageKey = 'shop_cart_v1';
 
-  CartCubit({AppLocalCache? cache})
-      : _cache = cache ?? AppLocalCache.instance,
+  final AppLocalCache _cache;
+  final CartRemoteDataSource? _remoteDataSource;
+
+  CartCubit({
+    AppLocalCache? cache,
+    CartRemoteDataSource? remoteDataSource,
+    bool syncWithBackend = true,
+  })  : _cache = cache ?? AppLocalCache.instance,
+        _remoteDataSource = remoteDataSource is CartRemoteDataSource
+            ? remoteDataSource
+            : null,
         super(const CartState()) {
     _restore();
+    if (syncWithBackend && _remoteDataSource != null) {
+      _syncFromBackend();
+    }
   }
-
-  final AppLocalCache _cache;
 
   void _restore() {
     final raw = _cache.getString(_storageKey);
@@ -65,6 +76,23 @@ class CartCubit extends Cubit<CartState> {
     } catch (_) {
       _cache.remove(_storageKey);
     }
+  }
+
+  Future<void> _syncFromBackend() async {
+    try {
+      final backendCart = await _remoteDataSource?.fetchCart();
+      if (backendCart != null && backendCart['items'] is List) {
+        final rawItems = backendCart['items'] as List<dynamic>;
+        if (rawItems.isNotEmpty) {
+          final items = rawItems
+              .whereType<Map<String, dynamic>>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList(growable: false);
+          emit(CartState(items: List.unmodifiable(items)));
+          _persist(items);
+        }
+      }
+    } catch (_) {}
   }
 
   void _persist(List<Map<String, dynamic>> items) {
@@ -111,6 +139,12 @@ class CartCubit extends Cubit<CartState> {
     }
     emit(CartState(items: List.unmodifiable(items)));
     _persist(items);
+
+    _remoteDataSource?.addItem(
+      productId: product.id,
+      planTitle: plan.title,
+      quantity: quantity,
+    );
   }
 
   void setQuantity(String id, int quantity) {
@@ -121,8 +155,10 @@ class CartCubit extends Cubit<CartState> {
     if (index < 0) return;
     if (quantity <= 0) {
       items.removeAt(index);
+      _remoteDataSource?.removeItem(id);
     } else {
       items[index]['quantity'] = quantity.clamp(1, 10).toInt();
+      _remoteDataSource?.updateQuantity(itemId: id, quantity: quantity);
     }
     emit(CartState(items: List.unmodifiable(items)));
     _persist(items);
@@ -135,6 +171,7 @@ class CartCubit extends Cubit<CartState> {
         .toList(growable: false);
     emit(CartState(items: List.unmodifiable(items)));
     _persist(items);
+    _remoteDataSource?.removeItem(id);
   }
 
   void restore(Map<String, dynamic> item, int index) {
@@ -142,9 +179,23 @@ class CartCubit extends Cubit<CartState> {
     final items = state.items
         .map((entry) => Map<String, dynamic>.from(entry))
         .toList();
-    items.insert(index.clamp(0, items.length).toInt(), Map<String, dynamic>.from(item));
+    items.insert(
+      index.clamp(0, items.length).toInt(),
+      Map<String, dynamic>.from(item),
+    );
     emit(CartState(items: List.unmodifiable(items)));
     _persist(items);
+
+    final productId = item['productId'] as String?;
+    final planTitle = item['plan'] as String?;
+    final quantity = (item['quantity'] as num?)?.toInt() ?? 1;
+    if (productId != null) {
+      _remoteDataSource?.addItem(
+        productId: productId,
+        planTitle: planTitle,
+        quantity: quantity,
+      );
+    }
   }
 
   void replaceAll(List<Map<String, dynamic>> items) {
@@ -156,5 +207,6 @@ class CartCubit extends Cubit<CartState> {
   void clear() {
     emit(const CartState());
     _persist(const []);
+    _remoteDataSource?.clearCart();
   }
 }

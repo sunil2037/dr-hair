@@ -10,6 +10,7 @@ import '../../auth/presentation/views/complete_profile_view.dart';
 import '../domain/clinic_appointment.dart';
 import 'clinic_appointment_cubit.dart';
 import 'widgets/appointment_date_picker_bottom_sheet.dart';
+import 'widgets/appointment_payment_sheet.dart';
 
 class ClinicAppointmentView extends StatefulWidget {
   const ClinicAppointmentView({super.key});
@@ -89,6 +90,19 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
         ? 'General hair & scalp consultation'
         : userReason;
 
+    AppointmentPaymentResult? payment;
+    if (_replacingId == null) {
+      payment = await AppointmentPaymentSheet.show(
+        context,
+        startsAt: _startsAt!,
+        doctorName: 'Dr. Jai Bansal',
+        fee: 500,
+      );
+      if (payment == null || !mounted) {
+        return;
+      }
+    }
+
     setState(() => _saving = true);
     final error = await context.read<ClinicAppointmentCubit>().saveRequest(
       patientId: activePatientId,
@@ -96,6 +110,10 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
       startsAt: _startsAt!,
       reason: finalReason,
       replacingId: _replacingId,
+      consultationFee: payment?.amount ?? 500,
+      paymentMethod: payment?.paymentMethod ?? 'UPI',
+      paymentStatus: payment?.paymentStatus ?? 'Paid',
+      paymentTransactionId: payment?.transactionId,
     );
     if (!mounted) return;
     setState(() {
@@ -470,6 +488,47 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
 
             const SizedBox(height: 18),
 
+            // Consultation Fee & OPD Token Information Card
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary5,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary100),
+              ),
+              child: const Row(
+                children: [
+                  Icon(LucideIcons.receipt, color: AppColors.primary, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Consultation & Trichoscopy Fee: ₹500',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                        SizedBox(height: 1),
+                        Text(
+                          'UPI / Card / Pay at Clinic · Full refund if cancelled 2h prior',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: AppColors.secondaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
             // Submit Button
             if (canRequest)
               FilledButton.icon(
@@ -486,7 +545,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                   _saving
                       ? 'Saving Request…'
                       : _replacingId == null
-                      ? 'Confirm In-Clinic Appointment'
+                      ? 'Proceed to Book & Pay (₹500)'
                       : 'Update Sitting Slot',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
@@ -649,6 +708,90 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                               ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                if (request.tokenNumber.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: const Color(0xFFCBD5E1),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          LucideIcons.ticket,
+                                          size: 12,
+                                          color: Color(0xFF475569),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Token: ${request.tokenNumber}',
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF334155),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: request.paymentStatus == 'Paid'
+                                        ? const Color(0xFFECFDF5)
+                                        : const Color(0xFFFFFBEB),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: request.paymentStatus == 'Paid'
+                                          ? const Color(0xFFA7F3D0)
+                                          : const Color(0xFFFDE68A),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        request.paymentStatus == 'Paid'
+                                            ? LucideIcons.checkCheck
+                                            : LucideIcons.circleDollarSign,
+                                        size: 12,
+                                        color: request.paymentStatus == 'Paid'
+                                            ? const Color(0xFF059669)
+                                            : const Color(0xFFD97706),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        request.paymentStatus == 'Paid'
+                                            ? '₹${request.consultationFee} Paid (${request.paymentMethod})'
+                                            : '₹${request.consultationFee} Due at Clinic',
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: request.paymentStatus == 'Paid'
+                                              ? const Color(0xFF047857)
+                                              : const Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                             if (!isCancelled &&
                                 request.startsAt.isAfter(DateTime.now())) ...[
