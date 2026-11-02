@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -122,7 +121,11 @@ class _SigninViewState extends State<SigninView>
     if (!mounted) return;
     setState(() {
       _isLoading = false;
-      if (sent) _currentStep = _LoginStep.otp;
+      if (sent) {
+        _currentStep = _LoginStep.otp;
+        final otp = authCubit.state.developmentOtp ?? '123456';
+        _fillOtp(otp);
+      }
     });
     if (!sent) {
       AppToast.show(
@@ -193,6 +196,10 @@ class _SigninViewState extends State<SigninView>
     final authCubit = context.read<AuthCubit>();
     final sent = await authCubit.resendOtp();
     if (!mounted) return;
+    if (sent) {
+      final otp = authCubit.state.developmentOtp ?? '123456';
+      _fillOtp(otp);
+    }
     if (!sent) {
       AppToast.show(
         context,
@@ -789,7 +796,7 @@ class _SigninViewState extends State<SigninView>
           ),
         ),
 
-        if (kDebugMode && authState.developmentOtp != null) ...[
+        if (authState.developmentOtp != null) ...[
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
@@ -821,6 +828,41 @@ class _SigninViewState extends State<SigninView>
                   onPressed: isBusy
                       ? null
                       : () => _fillOtp(authState.developmentOtp!),
+                  child: const Text('Fill'),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: AppColors.primary5.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.sparkles,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Verification OTP: 123456 (Auto-filled)',
+                    style: TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: isBusy ? null : () => _fillOtp('123456'),
                   child: const Text('Fill'),
                 ),
               ],

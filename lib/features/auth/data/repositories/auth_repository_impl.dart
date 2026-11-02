@@ -21,7 +21,8 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<String?> requestOtp(String login) async {
     try {
       final response = await _remote.requestOtp(login);
-      final testOtp = response['test_otp']?.toString();
+      final testOtp =
+          response['test_otp']?.toString() ?? response['otp']?.toString();
       return testOtp != null && RegExp(r'^\d{6}$').hasMatch(testOtp)
           ? testOtp
           : null;

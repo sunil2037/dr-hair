@@ -84,7 +84,7 @@ class AuthCubit extends Cubit<AuthState> {
           isOtpSent: true,
           phoneNumber: normalizedLogin,
           resendCountdown: 30,
-          developmentOtp: kDebugMode ? developmentOtp : null,
+          developmentOtp: developmentOtp,
           clearError: true,
         ),
       );
