@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/route_names.dart';
 import '../../auth/presentation/viewmodels/auth_cubit.dart';
+import '../../auth/presentation/views/complete_profile_view.dart';
 import '../domain/clinic_appointment.dart';
 import 'clinic_appointment_cubit.dart';
 import 'widgets/appointment_date_picker_bottom_sheet.dart';
@@ -64,6 +65,25 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
       return;
     }
 
+    final auth = context.read<AuthCubit>();
+    var user = auth.state.user;
+    final age = user?.age;
+    final gender = user?.gender?.trim();
+    if (age == null || gender == null || gender.isEmpty) {
+      final completed = await CompleteProfileBottomSheet.show(
+        context,
+        requireAgeAndGender: true,
+        title: 'Complete your profile',
+        subtitle:
+            'Age and gender are required before booking an in-clinic consultation.',
+      );
+      if (completed != true || !mounted) {
+        return;
+      }
+      user = context.read<AuthCubit>().state.user;
+    }
+
+    final activePatientId = user?.patientId ?? patientId;
     final userReason = _reasonController.text.trim();
     final finalReason = userReason.isEmpty
         ? 'General hair & scalp consultation'
@@ -71,8 +91,8 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
 
     setState(() => _saving = true);
     final error = await context.read<ClinicAppointmentCubit>().saveRequest(
-      patientId: patientId,
-      accessToken: _accessToken ?? '',
+      patientId: activePatientId,
+      accessToken: _accessToken ?? auth.state.sessionToken ?? '',
       startsAt: _startsAt!,
       reason: finalReason,
       replacingId: _replacingId,

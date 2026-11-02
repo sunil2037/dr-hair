@@ -85,7 +85,7 @@ class _AppointmentDatePickerBottomSheetState
     } else {
       // Pick first upcoming valid working day
       var candidate = now;
-      if (candidate.weekday == DateTime.sunday || _isHoliday(candidate)) {
+      while (candidate.weekday == DateTime.sunday || _isHoliday(candidate)) {
         candidate = candidate.add(const Duration(days: 1));
       }
       _selectedDate = DateTime(candidate.year, candidate.month, candidate.day);
@@ -173,26 +173,30 @@ class _AppointmentDatePickerBottomSheetState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Select Clinic Visit Slot',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDark,
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Select Clinic Visit Slot',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Dr. Jai Bansal · Dr. Hair & Cosmodent Clinic · Jaipur',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.secondaryDark,
+                      SizedBox(height: 2),
+                      Text(
+                        'Dr. Jai Bansal · Dr. Hair & Cosmodent Clinic · Jaipur',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.secondaryDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
