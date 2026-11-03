@@ -517,7 +517,18 @@ class _CompleteProfileSheetContentState
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-            children: [const SizedBox(height: 26), _buildFormFields(isBusy)],
+            children: [
+              const Text(
+                'Tell us a little about yourself',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: AppColors.secondaryDark,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildFormFields(isBusy),
+            ],
           ),
         ),
       ),

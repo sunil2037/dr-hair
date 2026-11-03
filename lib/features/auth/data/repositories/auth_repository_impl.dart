@@ -96,7 +96,13 @@ class AuthRepositoryImpl implements AuthRepository {
     var token = await _sessionStore.readToken();
     final refreshToken = await _sessionStore.readRefreshToken();
     final sessionId = await _sessionStore.readSessionId();
-    if (sessionId == null || sessionId.isEmpty) return null;
+    if ((token == null || token.isEmpty) &&
+        (refreshToken == null ||
+            refreshToken.isEmpty ||
+            sessionId == null ||
+            sessionId.isEmpty)) {
+      return null;
+    }
     final login = await _sessionStore.readLogin() ?? '';
     try {
       if (token == null || token.isEmpty) {
