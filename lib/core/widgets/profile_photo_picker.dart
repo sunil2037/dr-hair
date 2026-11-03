@@ -57,9 +57,9 @@ class ProfilePhotoPicker extends StatelessWidget {
           onPhotoSelected((bytes: bytes, filename: image.name));
         } catch (e) {
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not access image: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Could not access image: $e')));
         }
       },
       onRemovePhoto: onPhotoRemoved,
@@ -165,9 +165,9 @@ class ProfilePhotoPicker extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 10),
         ],
       ),
     );
   }
 }
-

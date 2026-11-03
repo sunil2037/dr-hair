@@ -267,7 +267,7 @@ class _CompleteProfileSheetContentState
           controller: _nameController,
           labelText: 'Full name *',
           hintText: 'Enter your full name',
-          prefixIcon: const Icon(LucideIcons.userRound),
+          prefixIcon: const Icon(LucideIcons.userRound, size: 20),
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.name],
@@ -308,7 +308,7 @@ class _CompleteProfileSheetContentState
         AppDropdownFormField<String>(
           initialValue: _gender,
           labelText: requireAgeAndGender ? 'Gender *' : 'Gender (optional)',
-          prefixIcon: const Icon(LucideIcons.usersRound),
+          prefixIcon: const Icon(LucideIcons.usersRound, size: 20),
           items: _genderOptions
               .map(
                 (gender) =>
@@ -332,7 +332,7 @@ class _CompleteProfileSheetContentState
           controller: _cityController,
           labelText: 'City (optional)',
           hintText: 'e.g. Jaipur',
-          prefixIcon: const Icon(LucideIcons.mapPin),
+          prefixIcon: const Icon(LucideIcons.mapPin, size: 20),
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
         ),
@@ -343,7 +343,7 @@ class _CompleteProfileSheetContentState
           controller: _occupationController,
           labelText: 'Occupation (optional)',
           hintText: 'e.g. Consultant',
-          prefixIcon: const Icon(LucideIcons.briefcaseBusiness),
+          prefixIcon: const Icon(LucideIcons.briefcaseBusiness, size: 20),
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.done,
           onFieldSubmitted: (_) => _submit(),
@@ -380,7 +380,7 @@ class _CompleteProfileSheetContentState
           onPressed: isBusy ? null : _submit,
           height: 50,
           width: double.infinity,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           textStyle: const TextStyle(
@@ -517,18 +517,7 @@ class _CompleteProfileSheetContentState
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-            children: [
-              const Text(
-                'Tell us a little about yourself',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: AppColors.secondaryDark,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildFormFields(isBusy),
-            ],
+            children: [const SizedBox(height: 26), _buildFormFields(isBusy)],
           ),
         ),
       ),

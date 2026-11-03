@@ -18,6 +18,28 @@ abstract interface class AuthSessionStore {
   Future<void> clear();
 }
 
+abstract interface class SessionSecretStorage {
+  Future<String?> read({required String key});
+  Future<void> write({required String key, required String value});
+  Future<void> delete({required String key});
+}
+
+class _FlutterSessionSecretStorage implements SessionSecretStorage {
+  const _FlutterSessionSecretStorage(this._storage);
+
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<String?> read({required String key}) => _storage.read(key: key);
+
+  @override
+  Future<void> write({required String key, required String value}) =>
+      _storage.write(key: key, value: value);
+
+  @override
+  Future<void> delete({required String key}) => _storage.delete(key: key);
+}
+
 /// Stores the bearer token primarily in secure storage and mirrors the
 /// authenticated session in Hive for reliable app bootstrap/web persistence.
 class SecureSessionStore implements AuthSessionStore {
@@ -26,31 +48,35 @@ class SecureSessionStore implements AuthSessionStore {
   static const String _refreshTokenKey = 'dr_hair_refresh_token_v1';
   static const String _sessionIdKey = 'dr_hair_session_id_v1';
 
-  final FlutterSecureStorage _storage;
+  final SessionSecretStorage _storage;
   final AppLocalCache _cache;
 
-  SecureSessionStore({FlutterSecureStorage? storage, AppLocalCache? cache})
-    : _storage = storage ?? const FlutterSecureStorage(),
+  SecureSessionStore({SessionSecretStorage? storage, AppLocalCache? cache})
+    : _storage =
+          storage ?? _FlutterSessionSecretStorage(const FlutterSecureStorage()),
       _cache = cache ?? AppLocalCache.instance;
 
+  @override
   Future<String?> readToken() async =>
-      await _storage.read(key: _tokenKey) ??
-      _cache.getString(_tokenKey);
+      await _storage.read(key: _tokenKey) ?? _cache.getString(_tokenKey);
 
+  @override
   Future<String?> readLogin() async =>
-      await _storage.read(key: _loginKey) ??
-      _cache.getString(_loginKey);
+      await _storage.read(key: _loginKey) ?? _cache.getString(_loginKey);
 
   /// Hive mirrors the session so app bootstrap and web builds have a durable
   /// local record, while secure storage remains the preferred token store.
+  @override
   Future<String?> readRefreshToken() async =>
       await _storage.read(key: _refreshTokenKey) ??
       _cache.getString(_refreshTokenKey);
 
+  @override
   Future<String?> readSessionId() async =>
       await _storage.read(key: _sessionIdKey) ??
       _cache.getString(_sessionIdKey);
 
+  @override
   Future<void> writeSession({
     required String token,
     required String login,
@@ -77,6 +103,7 @@ class SecureSessionStore implements AuthSessionStore {
     }
   }
 
+  @override
   Future<void> clear() async {
     await Future.wait([
       _storage.delete(key: _tokenKey),
