@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -7,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:video_player/video_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
@@ -67,8 +68,8 @@ class _VideosContentState extends State<_VideosContent>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted && !widget.isCustomCubit) {
-      _cubit.refresh();
+    if (state != AppLifecycleState.resumed) {
+      _cubit.pauseAll();
     }
   }
 
@@ -81,6 +82,7 @@ class _VideosContentState extends State<_VideosContent>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _cubit.pauseAll();
     _pageController.dispose();
     super.dispose();
   }
@@ -534,11 +536,14 @@ class _MinimalReelPlayer extends StatefulWidget {
 
 class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     with TickerProviderStateMixin {
-  VideoPlayerController? _videoController;
   YoutubePlayerController? _youtubeController;
+  StreamSubscription<YoutubePlayerValue>? _playerSubscription;
+  Timer? _progressPollTimer;
+
   bool _isPlayerInitialized = false;
   bool _showPlayPauseOverlay = false;
   bool _showHeartAnimation = false;
+  bool _hasPlaybackError = false;
   Offset _heartPosition = Offset.zero;
 
   late final AnimationController _progressController;
@@ -573,95 +578,93 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       return;
     }
 
-    if (widget.video.isYouTubeVideo) {
-      final ytid = widget.video.youtubeVideoId!;
-      final isMuted = widget.isMuted;
-      try {
-        final ytController = YoutubePlayerController.fromVideoId(
-          videoId: ytid,
-          autoPlay: widget.isActive && widget.video.isPlaying,
-          params: YoutubePlayerParams(
-            showControls: false,
-            showFullscreenButton: false,
-            loop: true,
-            mute: isMuted,
-            strictRelatedVideos: true,
-            showVideoAnnotations: false,
-            enableCaption: false,
-            pointerEvents: PointerEvents.none,
-          ),
-        );
-        _youtubeController = ytController;
-        if (mounted) {
-          setState(() {
-            _isPlayerInitialized = true;
-          });
-        }
-        if (widget.isActive && widget.video.isPlaying) {
-          _startPlayback();
-        }
-        return;
-      } catch (e) {
-        debugPrint('YouTube controller init error: $e');
-      }
-    }
-
-    final rawUrl = widget.video.videoUrl.trim();
-    if (rawUrl.isEmpty || !rawUrl.startsWith('http')) {
-      if (widget.isActive && widget.video.isPlaying) {
-        _startPlayback();
-      }
+    final ytid = widget.video.youtubeVideoId;
+    if (ytid == null || ytid.isEmpty) {
       return;
     }
 
     try {
-      final uri = Uri.parse(rawUrl);
-      final controller = VideoPlayerController.networkUrl(uri);
-      _videoController = controller;
+      final ytController = YoutubePlayerController.fromVideoId(
+        videoId: ytid,
+        autoPlay: widget.isActive && widget.video.isPlaying,
+        params: YoutubePlayerParams(
+          showControls: false,
+          showFullscreenButton: false,
+          loop: false,
+          mute: widget.isMuted,
+          strictRelatedVideos: true,
+          showVideoAnnotations: false,
+          enableCaption: false,
+          pointerEvents: PointerEvents.none,
+        ),
+      );
+      _youtubeController = ytController;
 
-      controller.addListener(_onVideoControllerTick);
+      _playerSubscription = ytController.listen((value) {
+        if (!mounted) return;
 
-      controller
-          .initialize()
-          .then((_) {
-            if (!mounted || _videoController != controller) return;
-            controller.setLooping(true);
-            final isMuted =
-                context.read<VideosCubit?>()?.state.isMuted ?? false;
-            controller.setVolume(isMuted ? 0.0 : 1.0);
-            setState(() {
-              _isPlayerInitialized = true;
-            });
-            if (widget.isActive && widget.video.isPlaying) {
-              controller.play();
-              _startPlayback();
-            }
-          })
-          .catchError((error) {
-            debugPrint('VideoPlayer error for ${widget.video.id}: $error');
-            if (mounted && widget.isActive && widget.video.isPlaying) {
-              _startPlayback();
-            }
+        // Auto-loop YouTube Shorts seamlessly when completed
+        if (value.playerState == PlayerState.ended) {
+          if (widget.isActive && widget.video.isPlaying) {
+            ytController.seekTo(seconds: 0.0, allowSeekAhead: true);
+            ytController.playVideo();
+          }
+        }
+
+        // Handle error state (e.g. copyright audio or embedding disabled)
+        if (value.hasError && !_hasPlaybackError) {
+          setState(() {
+            _hasPlaybackError = true;
           });
+        }
+      });
+
+      if (mounted) {
+        setState(() {
+          _isPlayerInitialized = true;
+        });
+      }
+
+      if (widget.isActive && widget.video.isPlaying) {
+        _startPlayback();
+      }
     } catch (e) {
-      debugPrint('Failed to parse video url for player: $e');
+      debugPrint('YouTube controller init error: $e');
     }
   }
 
-  void _onVideoControllerTick() {
-    if (!mounted ||
-        _videoController == null ||
-        !_videoController!.value.isInitialized) {
+  void _startPlayback() {
+    _progressPollTimer?.cancel();
+    if (_isTesting) {
+      _progressController.value = 0.35;
       return;
     }
-    final dur = _videoController!.value.duration.inMilliseconds;
-    if (dur > 0) {
-      final pos = _videoController!.value.position.inMilliseconds;
-      final progress = (pos / dur).clamp(0.0, 1.0);
-      if ((progress - _progressController.value).abs() > 0.005) {
-        _progressController.value = progress;
+
+    _progressPollTimer =
+        Timer.periodic(const Duration(milliseconds: 250), (timer) async {
+      if (!mounted ||
+          _youtubeController == null ||
+          !widget.isActive ||
+          !widget.video.isPlaying) {
+        return;
       }
-    }
+      try {
+        final pos = await _youtubeController?.currentTime;
+        final dur = await _youtubeController?.duration;
+        if (dur != null && dur > 0 && pos != null) {
+          final progress = (pos / dur).clamp(0.0, 1.0);
+          if (mounted &&
+              (progress - _progressController.value).abs() > 0.005) {
+            _progressController.value = progress;
+          }
+        }
+      } catch (_) {}
+    });
+  }
+
+  void _pausePlayback() {
+    _progressPollTimer?.cancel();
+    _progressPollTimer = null;
   }
 
   @override
@@ -670,25 +673,16 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
     if (widget.isMuted != oldWidget.isMuted) {
       if (widget.isMuted) {
-        _videoController?.setVolume(0.0);
         _youtubeController?.mute();
         _youtubeController?.setVolume(0);
       } else {
-        _videoController?.setVolume(1.0);
         _youtubeController?.unMute();
         _youtubeController?.setVolume(100);
       }
     }
 
-    if (widget.video.videoUrl != oldWidget.video.videoUrl ||
-        widget.video.youtubeVideoId != oldWidget.video.youtubeVideoId) {
-      _videoController?.removeListener(_onVideoControllerTick);
-      _videoController?.pause();
-      _videoController?.dispose();
-      _videoController = null;
-      _youtubeController?.close();
-      _youtubeController = null;
-      _isPlayerInitialized = false;
+    if (widget.video.youtubeVideoId != oldWidget.video.youtubeVideoId) {
+      _disposePlayer();
       _initVideoPlayer();
       return;
     }
@@ -696,27 +690,13 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     if (widget.isActive != oldWidget.isActive ||
         widget.video.isPlaying != oldWidget.video.isPlaying) {
       if (widget.isActive && widget.video.isPlaying) {
-        _videoController?.play();
         _youtubeController?.playVideo();
         _startPlayback();
       } else {
-        _videoController?.pause();
         _youtubeController?.pauseVideo();
         _pausePlayback();
       }
     }
-  }
-
-  void _startPlayback() {
-    if (_isTesting) {
-      _progressController.value = 0.35;
-    } else {
-      _progressController.repeat();
-    }
-  }
-
-  void _pausePlayback() {
-    _progressController.stop();
   }
 
   void _handleTap() {
@@ -725,11 +705,9 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     setState(() => _showPlayPauseOverlay = true);
 
     if (willPlay) {
-      _videoController?.play();
       _youtubeController?.playVideo();
       _startPlayback();
     } else {
-      _videoController?.pause();
       _youtubeController?.pauseVideo();
       _pausePlayback();
     }
@@ -761,6 +739,23 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     });
   }
 
+  Future<void> _openInYouTube() async {
+    HapticFeedback.mediumImpact();
+    final ytid = widget.video.youtubeVideoId;
+    if (ytid == null || ytid.isEmpty) return;
+
+    final uri = Uri.parse('https://www.youtube.com/shorts/$ytid');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      debugPrint('Error opening YouTube short: $e');
+    }
+  }
+
   Future<void> _onShare() async {
     HapticFeedback.mediumImpact();
     context.read<VideosCubit>().incrementShare(widget.video.id);
@@ -790,14 +785,20 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     }
   }
 
-  @override
-  void dispose() {
-    _videoController?.removeListener(_onVideoControllerTick);
-    _videoController?.pause();
-    _videoController?.dispose();
-    _videoController = null;
+  void _disposePlayer() {
+    _pausePlayback();
+    _playerSubscription?.cancel();
+    _playerSubscription = null;
+    _youtubeController?.pauseVideo();
     _youtubeController?.close();
     _youtubeController = null;
+    _isPlayerInitialized = false;
+    _hasPlaybackError = false;
+  }
+
+  @override
+  void dispose() {
+    _disposePlayer();
     _progressController.dispose();
     _heartAnimController.dispose();
     super.dispose();
@@ -837,7 +838,8 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
             ignoring: true,
             child: widget.video.isYouTubeVideo &&
                     _youtubeController != null &&
-                    !_isTesting
+                    !_isTesting &&
+                    !_hasPlaybackError
                 ? SizedBox.expand(
                     child: FittedBox(
                       fit: BoxFit.cover,
@@ -854,25 +856,12 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                       ),
                     ),
                   )
-                : _isPlayerInitialized &&
-                    _videoController != null &&
-                    _videoController!.value.isInitialized
-                ? SizedBox.expand(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _videoController!.value.size.width,
-                        height: _videoController!.value.size.height,
-                        child: VideoPlayer(_videoController!),
-                      ),
-                    ),
-                  )
                 : const SizedBox.shrink(),
           ),
         ),
 
         // Buffering / Loading Video Placeholder (Zero CircularProgressIndicator)
-        if (widget.isActive && !_isPlayerInitialized && !_isTesting)
+        if (widget.isActive && !_isPlayerInitialized && !_isTesting && !_hasPlaybackError)
           Positioned.fill(
             child: IgnorePointer(
               ignoring: true,
@@ -892,6 +881,55 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                       size: 28,
                     ),
                   ),
+                ),
+              ),
+            ),
+          ),
+
+        // 2b. Embedding Error Fallback Card
+        if (_hasPlaybackError)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.8),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.play_circle_fill_rounded,
+                      color: Colors.redAccent,
+                      size: 60,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Playback Restricted In-App',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'This YouTube Short has embedding restrictions. Tap below to watch directly on YouTube.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontSize: 12.5),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _openInYouTube,
+                      icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                      label: const Text('Watch on YouTube'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1056,6 +1094,16 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                   HapticFeedback.lightImpact();
                   context.read<VideosCubit>().toggleMute();
                 },
+              ),
+
+              const SizedBox(height: 20),
+
+              // YouTube Channel Action Button
+              _buildActionItem(
+                icon: Icons.play_circle_fill_rounded,
+                label: 'YouTube',
+                iconColor: Colors.redAccent,
+                onTap: _openInYouTube,
               ),
             ],
           ),

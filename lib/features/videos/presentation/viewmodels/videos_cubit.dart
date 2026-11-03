@@ -243,11 +243,29 @@ class VideosCubit extends Cubit<VideosState> {
       }
     }
 
+    // Auto-play when dominant in view (>= 75%) and it is the active index
+    if (visibleFraction >= 0.75) {
+      final index = updatedVideos.indexWhere((v) => v.id == videoId);
+      if (index != -1 && index == state.activeIndex && !updatedVideos[index].isPlaying) {
+        updatedVideos = updatedVideos.map((v) {
+          if (v.id == videoId) return v.copyWith(isPlaying: true);
+          return v;
+        }).toList();
+        hasChanges = true;
+      }
+    }
+
     if (hasChanges) {
       emit(state.copyWith(
         videos: updatedVideos,
         viewedVideoIds: updatedViewed,
       ));
     }
+  }
+
+  /// Pauses all video playback immediately (e.g. app sent to background, screen disposed).
+  void pauseAll() {
+    final updatedVideos = state.videos.map((v) => v.copyWith(isPlaying: false)).toList();
+    emit(state.copyWith(videos: updatedVideos));
   }
 }
