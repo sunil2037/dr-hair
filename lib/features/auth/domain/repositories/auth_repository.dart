@@ -7,6 +7,8 @@ class AuthVerification {
   final String login;
   final bool isRegistered;
   final bool isAdmin;
+  final String? refreshToken;
+  final String? sessionId;
   final UserModel? user;
   final bool hasCompletedAssessment;
   final String? nextStep;
@@ -17,6 +19,8 @@ class AuthVerification {
     required this.login,
     required this.isRegistered,
     required this.isAdmin,
+    this.refreshToken,
+    this.sessionId,
     this.user,
     this.hasCompletedAssessment = false,
     this.nextStep,

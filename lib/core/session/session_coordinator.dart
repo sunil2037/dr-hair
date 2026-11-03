@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -17,7 +18,7 @@ class SessionCoordinator {
   static final SessionCoordinator instance = SessionCoordinator._();
 
   SessionCoordinator._({AppLocalCache? cache})
-      : _cache = cache ?? AppLocalCache.instance;
+    : _cache = cache ?? AppLocalCache.instance;
 
   final AppLocalCache _cache;
   StreamSubscription<AuthState>? _authSubscription;
@@ -61,7 +62,9 @@ class SessionCoordinator {
   }) {
     if (state.status == AuthStatus.authenticated && state.user != null) {
       final patientId = state.user?.patientId ?? state.user?.id.toString();
-      if (patientId != null && patientId.isNotEmpty && patientId != _lastBoundPatientId) {
+      if (patientId != null &&
+          patientId.isNotEmpty &&
+          patientId != _lastBoundPatientId) {
         _lastBoundPatientId = patientId;
         final token = state.sessionToken;
         careCubit.bindPatient(patientId, sessionToken: token);
@@ -70,7 +73,8 @@ class SessionCoordinator {
           appointmentCubit.loadFromApi(token).catchError((_) {});
         }
       }
-    } else if (state.status == AuthStatus.unauthenticated && _lastBoundPatientId != null) {
+    } else if (state.status == AuthStatus.unauthenticated &&
+        _lastBoundPatientId != null) {
       final oldPatientId = _lastBoundPatientId!;
       _lastBoundPatientId = null;
       unawaited(
@@ -114,7 +118,8 @@ class SessionCoordinator {
     final careCubit = context.read<CareCubit?>();
     final cartCubit = context.read<CartCubit?>();
     final appointmentCubit = context.read<ClinicAppointmentCubit?>();
-    final patientId = authCubit?.state.user?.patientId ?? _lastBoundPatientId ?? 'GUEST';
+    final patientId =
+        authCubit?.state.user?.patientId ?? _lastBoundPatientId ?? 'GUEST';
 
     _lastBoundPatientId = null;
     await clearPatientSession(
@@ -124,7 +129,7 @@ class SessionCoordinator {
       appointmentCubit: appointmentCubit,
       hairTestCubit: hairCubit,
     );
-    authCubit?.signOut();
+    await authCubit?.signOut();
   }
 
   @visibleForTesting

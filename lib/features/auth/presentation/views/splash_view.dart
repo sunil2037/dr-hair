@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -24,7 +23,6 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
   late final AnimationController _motionController;
   bool _motionConfigured = false;
   bool _hasNavigated = false;
-  Timer? _navigationFallback;
 
   @override
   void initState() {
@@ -38,18 +36,6 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
           if (status == AnimationStatus.completed) _onSplashComplete();
         });
     _entranceController.forward();
-    // Keep navigation resilient: after 2.5 seconds, smoothly transition even if
-    // an initial network request is still resolving in the background.
-    _navigationFallback = Timer(const Duration(milliseconds: 2500), () {
-      if (!mounted || _hasNavigated) return;
-      final authState = context.read<AuthCubit>().state;
-      if (authState.status == AuthStatus.loading) {
-        _forceProceed();
-        return;
-      }
-      _onSplashComplete();
-    });
-
     // Continuous soothing motion loop (vitality ripples, levitation, sparkles)
     _motionController = AnimationController(
       vsync: this,
@@ -71,7 +57,6 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _navigationFallback?.cancel();
     _entranceController.dispose();
     _motionController.dispose();
     super.dispose();
@@ -88,7 +73,6 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
       return;
     }
     _hasNavigated = true;
-    _navigationFallback?.cancel();
     if (authState.requiresProfileCompletion ||
         authState.nextStep == 'COMPLETE_PROFILE') {
       context.go(RouteNames.completeProfile);
@@ -106,22 +90,9 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
     }
   }
 
-  void _forceProceed() {
-    if (!mounted || _hasNavigated) return;
-    _hasNavigated = true;
-    _navigationFallback?.cancel();
-    final authState = context.read<AuthCubit>().state;
-    if (authState.isAuthenticated) {
-      context.go(RouteNames.mainShell);
-    } else {
-      context.go(RouteNames.signin);
-    }
-  }
-
   void _continueToSignIn() {
     if (!mounted || _hasNavigated) return;
     _hasNavigated = true;
-    _navigationFallback?.cancel();
     context.go(RouteNames.signin);
   }
 

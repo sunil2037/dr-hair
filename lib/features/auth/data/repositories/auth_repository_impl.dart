@@ -10,11 +10,11 @@ import '../datasources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remote;
-  final SecureSessionStore _sessionStore;
+  final AuthSessionStore _sessionStore;
 
   AuthRepositoryImpl({
     AuthRemoteDataSource? remote,
-    SecureSessionStore? sessionStore,
+    AuthSessionStore? sessionStore,
   }) : _remote = remote ?? AuthRemoteDataSource(),
        _sessionStore = sessionStore ?? SecureSessionStore();
 
@@ -39,21 +39,36 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     try {
       final response = await _remote.verifyOtp(login: login, otp: otp);
-      final token = response['token']?.toString() ?? '';
+      final responseData = _mapValue(response['data']);
+      final token = _stringValue(response, responseData, 'token');
       if (token.isEmpty) {
         throw const AuthRepositoryException(
           'The server did not return a session.',
         );
       }
-      final isRegistered = response['is_registered'] == true;
-      final hasCompletedAssessment =
-          response['has_completed_assessment'] == true;
-      final nextStep = response['next_step']?.toString();
-      await _sessionStore.writeSession(token: token, login: login);
+      final isRegistered = _boolValue(response, responseData, 'is_registered');
+      final hasCompletedAssessment = _boolValue(
+        response,
+        responseData,
+        'has_completed_assessment',
+      );
+      final nextStep = _stringValue(response, responseData, 'next_step');
+      final refreshToken = _stringValue(
+        response,
+        responseData,
+        'refresh_token',
+      );
+      final sessionId = _stringValue(response, responseData, 'session_id');
+      await _sessionStore.writeSession(
+        token: token,
+        login: login,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+      );
       if (hasCompletedAssessment) {
         await AppLocalCache.instance.put('has_completed_hair_test', true);
       }
-      final profile = _mapValue(response['data']);
+      final profile = _profileFromResponse(responseData);
       var user = profile == null
           ? null
           : UserModel.fromJson(profile, fallbackLogin: login);
@@ -65,6 +80,8 @@ class AuthRepositoryImpl implements AuthRepository {
         login: login,
         isRegistered: isRegistered,
         isAdmin: response['is_admin'] == true,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
         user: user,
         hasCompletedAssessment: hasCompletedAssessment,
         nextStep: nextStep,
@@ -76,11 +93,39 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthVerification?> restoreSession() async {
-    final token = await _sessionStore.readToken();
-    if (token == null || token.isEmpty) return null;
+    var token = await _sessionStore.readToken();
+    final refreshToken = await _sessionStore.readRefreshToken();
+    final sessionId = await _sessionStore.readSessionId();
+    if (sessionId == null || sessionId.isEmpty) return null;
     final login = await _sessionStore.readLogin() ?? '';
     try {
-      final sessionResponse = await _remote.getSession(token);
+      if (token == null || token.isEmpty) {
+        token = await _rotateAccessToken(
+          refreshToken: refreshToken,
+          sessionId: sessionId,
+          login: login,
+        );
+        if (token == null || token.isEmpty) return null;
+      }
+      Map<String, dynamic> sessionResponse;
+      try {
+        sessionResponse = await _remote.getSession(token);
+      } on DioException catch (error) {
+        if (error.response?.statusCode != 401) {
+          rethrow;
+        }
+        if (refreshToken == null || refreshToken.isEmpty) {
+          await _sessionStore.clear();
+          return null;
+        }
+        token = await _rotateAccessToken(
+          refreshToken: refreshToken,
+          sessionId: sessionId,
+          login: login,
+        );
+        if (token == null || token.isEmpty) return null;
+        sessionResponse = await _remote.getSession(token);
+      }
       final sessionData = _mapValue(sessionResponse['data']);
       final isRegistered = sessionData?['is_registered'] == true;
       final hasCompletedAssessment =
@@ -107,6 +152,8 @@ class AuthRepositoryImpl implements AuthRepository {
           hasCompletedAssessment: hasCompletedAssessment,
           nextStep: nextStep,
           latestAssessment: latestAssessment,
+          refreshToken: await _sessionStore.readRefreshToken(),
+          sessionId: await _sessionStore.readSessionId(),
         );
       }
       final profile = _mapValue(sessionData?['user']);
@@ -122,6 +169,8 @@ class AuthRepositoryImpl implements AuthRepository {
         hasCompletedAssessment: hasCompletedAssessment,
         nextStep: nextStep,
         latestAssessment: latestAssessment,
+        refreshToken: await _sessionStore.readRefreshToken(),
+        sessionId: await _sessionStore.readSessionId(),
       );
     } on DioException catch (error) {
       if (error.response?.statusCode == 401) {
@@ -157,6 +206,16 @@ class AuthRepositoryImpl implements AuthRepository {
         await _sessionStore.writeSession(
           token: nextToken!,
           login: verifiedLogin,
+          refreshToken: _stringValue(
+            response,
+            _mapValue(response['data']),
+            'refresh_token',
+          ),
+          sessionId: _stringValue(
+            response,
+            _mapValue(response['data']),
+            'session_id',
+          ),
         );
       }
       final profile = _mapValue(response['data']);
@@ -291,6 +350,57 @@ class AuthRepositoryImpl implements AuthRepository {
     return token;
   }
 
+  Future<String?> _rotateAccessToken({
+    required String? refreshToken,
+    required String? sessionId,
+    required String login,
+  }) async {
+    if (refreshToken == null ||
+        refreshToken.isEmpty ||
+        sessionId == null ||
+        sessionId.isEmpty) {
+      await _sessionStore.clear();
+      return null;
+    }
+    try {
+      final refreshed = await _remote.refreshSession(
+        refreshToken: refreshToken,
+        sessionId: sessionId,
+      );
+      final refreshedData = _mapValue(refreshed['data']);
+      final refreshedToken = _stringValue(refreshed, refreshedData, 'token');
+      final rotatedRefresh = _stringValue(
+        refreshed,
+        refreshedData,
+        'refresh_token',
+      );
+      final rotatedSession = _stringValue(
+        refreshed,
+        refreshedData,
+        'session_id',
+      );
+      if (refreshedToken.isEmpty ||
+          rotatedRefresh.isEmpty ||
+          rotatedSession.isEmpty) {
+        await _sessionStore.clear();
+        return null;
+      }
+      await _sessionStore.writeSession(
+        token: refreshedToken,
+        login: login,
+        refreshToken: rotatedRefresh,
+        sessionId: rotatedSession,
+      );
+      return refreshedToken;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 401) {
+        await _sessionStore.clear();
+        return null;
+      }
+      rethrow;
+    }
+  }
+
   Map<String, dynamic>? _mapValue(Object? value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
@@ -307,5 +417,23 @@ class AuthRepositoryImpl implements AuthRepository {
       message?.isNotEmpty == true ? message! : fallback,
       statusCode: error.response?.statusCode,
     );
+  }
+
+  String _stringValue(
+    Map<String, dynamic> response,
+    Map<String, dynamic>? data,
+    String key,
+  ) => response[key]?.toString() ?? data?[key]?.toString() ?? '';
+
+  bool _boolValue(
+    Map<String, dynamic> response,
+    Map<String, dynamic>? data,
+    String key,
+  ) => response[key] == true || data?[key] == true;
+
+  Map<String, dynamic>? _profileFromResponse(Map<String, dynamic>? data) {
+    final nestedUser = _mapValue(data?['user']);
+    if (nestedUser != null) return nestedUser;
+    return data;
   }
 }

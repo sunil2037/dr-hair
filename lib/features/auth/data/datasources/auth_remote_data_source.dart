@@ -48,6 +48,18 @@ class AuthRemoteDataSource {
     return _asMap(response.data);
   }
 
+  Future<Map<String, dynamic>> refreshSession({
+    required String refreshToken,
+    required String sessionId,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/refresh',
+      data: {'refresh_token': refreshToken, 'session_id': sessionId},
+      options: Options(extra: const {'sensitive': true, 'silent': true}),
+    );
+    return _asMap(response.data);
+  }
+
   Future<Map<String, dynamic>> register({
     required String token,
     required String verifiedLogin,
@@ -137,7 +149,9 @@ class AuthRemoteDataSource {
     try {
       await _dio.post<Map<String, dynamic>>(
         '/api/v1/auth/logout',
-        data: fcmToken != null && fcmToken.isNotEmpty ? {'fcm_token': fcmToken} : null,
+        data: fcmToken != null && fcmToken.isNotEmpty
+            ? {'fcm_token': fcmToken}
+            : null,
         options: _authorized(token, silent: true),
       );
     } catch (_) {
@@ -147,10 +161,7 @@ class AuthRemoteDataSource {
 
   Options _authorized(String token, {bool silent = false}) => Options(
     headers: {'Authorization': 'Bearer $token'},
-    extra: {
-      'sensitive': true,
-      if (silent) 'silent': true,
-    },
+    extra: {'sensitive': true, if (silent) 'silent': true},
   );
 
   Map<String, dynamic> _asMap(Object? value) {

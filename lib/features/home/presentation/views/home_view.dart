@@ -21,6 +21,7 @@ import '../../../shop/domain/repositories/product_repository.dart';
 import '../../../videos/data/repositories/video_repository_impl.dart';
 import '../../../videos/domain/models/video_story_model.dart';
 import '../../../videos/domain/repositories/video_repository.dart';
+import '../../data/content_api.dart';
 import '../viewmodels/home_journey_selector.dart';
 import '../widgets/medicine_card.dart';
 
@@ -48,6 +49,7 @@ class _HomeViewState extends State<HomeView>
   late final List<Animation<Offset>> _sectionPosition;
   late final Future<List<VideoStoryModel>> _videoStoriesFuture;
   late final Future<List<ProductItem>> _productsFuture;
+  late final Future<List<ContentItem>> _tipsFuture;
   bool _motionConfigured = false;
 
   static const bool _isFlutterTest = bool.fromEnvironment(
@@ -72,6 +74,10 @@ class _HomeViewState extends State<HomeView>
         : (widget.productRepository ?? ProductRepositoryImpl())
               .getProducts(limit: 6)
               .then((res) => res.items);
+
+    _tipsFuture = _isTestExecution
+        ? Future.value(const <ContentItem>[])
+        : ContentApi().getPublishedContent(type: 'tip', placement: 'home');
 
     _entranceController = AnimationController(
       vsync: this,
@@ -1300,91 +1306,109 @@ class _HomeViewState extends State<HomeView>
 
   // --- SECTION 11: EXPERT TIPS ---
   Widget _buildExpertTips() {
-    final tips = [
-      {
-        'icon': '🔥',
-        'title': 'Avoid excessive heat styling',
-        'desc': 'High temperatures weaken hair shafts and damage follicles.',
-      },
-      {
-        'icon': '🥗',
-        'title': 'Protein-rich diet',
-        'desc': 'Hair is built of keratin, requiring healthy dietary protein.',
-      },
-      {
-        'icon': '🧘',
-        'title': 'Manage stress levels',
-        'desc': 'Chronic stress triggers telogen effluvium hair shedding.',
-      },
-      {
-        'icon': '🧴',
-        'title': 'Sulfate-free shampoos',
-        'desc': 'Preserve essential scalp lipids and moisture balance.',
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            'Expert Tips',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 156,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            itemCount: tips.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final t = tips[index];
-              return Container(
-                width: 250,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primary5,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primary100),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t['icon']!, style: const TextStyle(fontSize: 24)),
-                    const SizedBox(height: 8),
-                    Text(
-                      t['title']!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      t['desc']!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.secondaryDark,
-                      ),
-                    ),
-                  ],
-                ),
-              );
+    return FutureBuilder<List<ContentItem>>(
+      future: _tipsFuture,
+      builder: (context, snapshot) {
+        final List<Map<String, String>> tips;
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          tips = snapshot.data!
+              .map((item) => {
+                    'icon': '💡',
+                    'title': item.title,
+                    'desc': item.content,
+                  })
+              .toList();
+        } else {
+          tips = [
+            {
+              'icon': '🔥',
+              'title': 'Avoid excessive heat styling',
+              'desc': 'High temperatures weaken hair shafts and damage follicles.',
             },
-          ),
-        ),
-      ],
+            {
+              'icon': '🥗',
+              'title': 'Protein-rich diet',
+              'desc': 'Hair is built of keratin, requiring healthy dietary protein.',
+            },
+            {
+              'icon': '🧘',
+              'title': 'Manage stress levels',
+              'desc': 'Chronic stress triggers telogen effluvium hair shedding.',
+            },
+            {
+              'icon': '🧴',
+              'title': 'Sulfate-free shampoos',
+              'desc': 'Preserve essential scalp lipids and moisture balance.',
+            },
+          ];
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Expert Tips',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 156,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: tips.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 14),
+                itemBuilder: (context, index) {
+                  final t = tips[index];
+                  return Container(
+                    width: 250,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary5,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primary100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t['icon']!, style: const TextStyle(fontSize: 24)),
+                        const SizedBox(height: 8),
+                        Text(
+                          t['title']!,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          t['desc']!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.secondaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -45,7 +45,11 @@ class AuthCubit extends Cubit<AuthState> {
         ),
       );
       if (restored.token.isNotEmpty) {
-        unawaited(FirebasePushService.syncDeviceTokenWithBackend(accessToken: restored.token));
+        unawaited(
+          FirebasePushService.syncDeviceTokenWithBackend(
+            accessToken: restored.token,
+          ),
+        );
       }
     } catch (error) {
       emit(
@@ -165,6 +169,9 @@ class AuthCubit extends Cubit<AuthState> {
               : AuthStatus.profileRequired,
           user: result.user,
           sessionToken: result.token,
+          // Refresh credentials are persisted by the repository. Keeping only
+          // the access token in Bloc state avoids exposing long-lived secrets
+          // to widgets.
           isRegistered: result.isRegistered && result.user != null,
           isAdmin: result.isAdmin,
           phoneNumber: login,
@@ -174,7 +181,11 @@ class AuthCubit extends Cubit<AuthState> {
         ),
       );
       if (result.token.isNotEmpty) {
-        unawaited(FirebasePushService.syncDeviceTokenWithBackend(accessToken: result.token));
+        unawaited(
+          FirebasePushService.syncDeviceTokenWithBackend(
+            accessToken: result.token,
+          ),
+        );
       }
       return true;
     } catch (error) {
@@ -225,7 +236,11 @@ class AuthCubit extends Cubit<AuthState> {
         ),
       );
       if (state.sessionToken?.isNotEmpty == true) {
-        unawaited(FirebasePushService.syncDeviceTokenWithBackend(accessToken: state.sessionToken));
+        unawaited(
+          FirebasePushService.syncDeviceTokenWithBackend(
+            accessToken: state.sessionToken,
+          ),
+        );
       }
       return true;
     } catch (error) {
@@ -333,15 +348,21 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  void signOut() {
+  Future<void> signOut() async {
     _countdownTimer?.cancel();
     final currentToken = state.sessionToken;
-    if (currentToken != null && currentToken.isNotEmpty) {
-      unawaited(FirebasePushService.unregisterDeviceToken(accessToken: currentToken));
-    }
-    final clearFuture = repository?.clearSession();
-    if (clearFuture != null) unawaited(clearFuture.catchError((_) {}));
     emit(const AuthState(status: AuthStatus.unauthenticated));
+    if (currentToken != null && currentToken.isNotEmpty) {
+      unawaited(
+        FirebasePushService.unregisterDeviceToken(accessToken: currentToken),
+      );
+    }
+    try {
+      unawaited(repository?.clearSession().catchError((_) {}));
+    } catch (_) {
+      // Local session storage must still be cleared by the repository even if
+      // remote revocation is unavailable.
+    }
   }
 
   Future<bool> deleteAccount() async {
@@ -358,7 +379,10 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,
-          errorMessage: _message(error, 'Could not delete your account. Please try again.'),
+          errorMessage: _message(
+            error,
+            'Could not delete your account. Please try again.',
+          ),
         ),
       );
       return false;

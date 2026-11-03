@@ -224,7 +224,7 @@ class ProfileView extends StatelessWidget {
     await hairCubit?.clearSavedAssessment();
     await careCubit?.resetForDemo();
     cartCubit?.clear();
-    authCubit?.signOut();
+    await authCubit?.signOut();
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
 
@@ -834,7 +834,9 @@ class ProfileView extends StatelessWidget {
                           onTap: () {
                             Clipboard.setData(ClipboardData(text: patientId));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Patient ID copied')),
+                              const SnackBar(
+                                content: Text('Patient ID copied'),
+                              ),
                             );
                           },
                           borderRadius: BorderRadius.circular(10),
