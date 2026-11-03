@@ -19,7 +19,7 @@ void main() {
     setUp(() async {
       cache = AppLocalCache.inMemory();
       notificationService = CareNotificationService(cache);
-      careCubit = CareCubit(notificationService);
+      careCubit = CareCubit(notificationService)..loadSampleFixturesForTesting();
     });
 
     tearDown(() {

@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dr_hair/core/storage/app_local_cache.dart';
+import 'package:dr_hair/features/care/data/patient_progress_api.dart';
 import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
+import 'package:dr_hair/features/treatment/data/patient_clinical_api.dart';
 
 void main() {
   group('CareCubit Tests', () {
     late CareCubit cubit;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      await AppLocalCache.instance.clearAll();
       cubit = CareCubit();
     });
 
@@ -17,9 +23,9 @@ void main() {
     test('initial state starts with clean unpopulated patient checkIns and orders', () {
       expect(cubit.state.checkIns, isEmpty);
       expect(cubit.state.orders, isEmpty);
-      expect(cubit.state.routineTasks.isNotEmpty, isTrue);
-      expect(cubit.state.reminders.isNotEmpty, isTrue);
-      expect(cubit.state.dietPlans.isNotEmpty, isTrue);
+      expect(cubit.state.routineTasks, isEmpty);
+      expect(cubit.state.reminders, isEmpty);
+      expect(cubit.state.dietPlans, isEmpty);
     });
 
     test('addProgressCheckIn prepends new photo checkin to list', () {
@@ -76,6 +82,7 @@ void main() {
     });
 
     test('toggleRoutineTask updates isCompleted status', () {
+      cubit.loadSampleFixturesForTesting();
       final task = cubit.state.routineTasks.first;
       final wasCompleted = task.isCompleted;
 
@@ -100,12 +107,14 @@ void main() {
     });
 
     test('resetTodayRoutine marks all tasks incomplete', () {
+      cubit.loadSampleFixturesForTesting();
       cubit.resetTodayRoutine();
       expect(cubit.state.routineTasks.every((t) => !t.isCompleted), isTrue);
       expect(cubit.state.completedRoutineCount, equals(0));
     });
 
     test('toggleReminder and updateReminderTime update reminder state', () {
+      cubit.loadSampleFixturesForTesting();
       final reminder = cubit.state.reminders.first;
       final wasEnabled = reminder.isEnabled;
 
@@ -126,6 +135,7 @@ void main() {
     test(
       'toggleDietMeal and water intake functions update state correctly',
       () {
+        cubit.loadSampleFixturesForTesting();
         cubit.selectDietDay(1);
         expect(cubit.state.currentDietDay, equals(1));
 
@@ -141,5 +151,98 @@ void main() {
         expect(cubit.state.waterCups, equals(initialWater));
       },
     );
+
+    test('bindPatient with sessionToken fetches clinician care plan and progress checkins', () async {
+      final fakeClinical = _FakeClinicalApi({
+        'care_plans': [
+          {
+            'reference_no': 'HT-2026-9001',
+            'routine_steps': [
+              {
+                'title': 'Minoxidil 5% Application',
+                'subtitle': 'Apply 1ml at night',
+                'category': 'Clinical Topical',
+                'time_of_day': 'Night',
+              },
+            ],
+            'medications': [],
+          },
+        ],
+        'assessments': [],
+        'reports': [],
+        'appointments': [],
+      });
+
+      final fakeProgress = _FakeProgressApi(
+        checkIns: [
+          {
+            'id': 'ci_remote_1',
+            'date': DateTime.now().toIso8601String(),
+            'scalp_region': 'Crown',
+            'shedding_level': 'Normal',
+            'notes': 'Week 4 clinical checkin',
+            'density_rating': 4,
+            'photos': [
+              {
+                'angle': 'front',
+                'url': 'https://res.cloudinary.com/demo/image/authenticated/s--signed--/user-101/front.jpg',
+              },
+            ],
+          },
+        ],
+      );
+
+      final backendBoundCubit = CareCubit(
+        null,
+        fakeClinical,
+        fakeProgress,
+      );
+
+      await backendBoundCubit.bindPatient('patient_99', sessionToken: 'valid_jwt_token');
+
+      expect(backendBoundCubit.state.routineTasks.length, equals(1));
+      expect(backendBoundCubit.state.routineTasks.first.title, equals('Minoxidil 5% Application'));
+      expect(backendBoundCubit.state.checkIns.length, equals(1));
+      expect(backendBoundCubit.state.checkIns.first.id, equals('ci_remote_1'));
+      expect(backendBoundCubit.state.checkIns.first.imagePath, contains('user-101/front.jpg'));
+
+      // Deleting checkin delegates to progress api
+      await backendBoundCubit.deleteProgressCheckIn('ci_remote_1', sessionToken: 'valid_jwt_token');
+      expect(fakeProgress.deletedCheckInId, equals('ci_remote_1'));
+      expect(backendBoundCubit.state.checkIns, isEmpty);
+
+      // Unbinding patient clears state
+      await backendBoundCubit.bindPatient(null);
+      expect(backendBoundCubit.state.routineTasks, isEmpty);
+      expect(backendBoundCubit.state.checkIns, isEmpty);
+
+      backendBoundCubit.close();
+    });
   });
+}
+
+class _FakeClinicalApi extends PatientClinicalApi {
+  final Map<String, dynamic> record;
+  _FakeClinicalApi(this.record);
+
+  @override
+  Future<Map<String, dynamic>> getClinicalRecord(String accessToken) async {
+    return record;
+  }
+}
+
+class _FakeProgressApi extends PatientProgressApi {
+  final List<Map<String, dynamic>> checkIns;
+  String? deletedCheckInId;
+  _FakeProgressApi({this.checkIns = const []});
+
+  @override
+  Future<List<Map<String, dynamic>>> listCheckIns({required String token}) async {
+    return checkIns;
+  }
+
+  @override
+  Future<void> deleteCheckIn({required String token, required String checkInId}) async {
+    deletedCheckInId = checkInId;
+  }
 }

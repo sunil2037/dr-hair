@@ -69,4 +69,30 @@ class PatientProgressApi {
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
   }
+
+  Future<List<Map<String, dynamic>>> listCheckIns({
+    required String token,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/patient/progress-checkins',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+    final data = response.data?['data'];
+    final items = data is Map ? data['items'] : null;
+    if (items is! List) return [];
+    return items
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  Future<void> deleteCheckIn({
+    required String token,
+    required String checkInId,
+  }) async {
+    await _dio.delete<Map<String, dynamic>>(
+      '/api/v1/patient/progress-checkins/${Uri.encodeComponent(checkInId)}',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
 }

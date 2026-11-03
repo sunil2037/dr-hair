@@ -98,7 +98,9 @@ class _VideosContentState extends State<_VideosContent> {
               if (state.isLoading && filtered.isEmpty)
                 _buildSkeletonReel(context, state)
               else if (filtered.isEmpty)
-                _buildEmptyState(context)
+                state.errorMessage != null
+                    ? _buildErrorState(context, state.errorMessage!)
+                    : _buildEmptyState(context)
               else
                 Skeletonizer(
                   enabled: state.isLoading,
@@ -161,10 +163,7 @@ class _VideosContentState extends State<_VideosContent> {
                         ),
                         child: const Text(
                           'Loading more stories...',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 11),
                         ),
                       ),
                     ),
@@ -183,9 +182,7 @@ class _VideosContentState extends State<_VideosContent> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Container(
-            color: Colors.grey.shade900,
-          ),
+          Container(color: Colors.grey.shade900),
           Positioned(
             right: 14,
             bottom: 150,
@@ -201,11 +198,7 @@ class _VideosContentState extends State<_VideosContent> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Container(
-                  width: 28,
-                  height: 12,
-                  color: Colors.white24,
-                ),
+                Container(width: 28, height: 12, color: Colors.white24),
                 const SizedBox(height: 20),
                 Container(
                   width: 38,
@@ -216,11 +209,7 @@ class _VideosContentState extends State<_VideosContent> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Container(
-                  width: 28,
-                  height: 12,
-                  color: Colors.white24,
-                ),
+                Container(width: 28, height: 12, color: Colors.white24),
               ],
             ),
           ),
@@ -232,17 +221,9 @@ class _VideosContentState extends State<_VideosContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 140,
-                  height: 18,
-                  color: Colors.white30,
-                ),
+                Container(width: 140, height: 18, color: Colors.white30),
                 const SizedBox(height: 8),
-                Container(
-                  width: 200,
-                  height: 13,
-                  color: Colors.white24,
-                ),
+                Container(width: 200, height: 13, color: Colors.white24),
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
@@ -250,11 +231,7 @@ class _VideosContentState extends State<_VideosContent> {
                   color: Colors.white24,
                 ),
                 const SizedBox(height: 4),
-                Container(
-                  width: 180,
-                  height: 12,
-                  color: Colors.white24,
-                ),
+                Container(width: 180, height: 12, color: Colors.white24),
               ],
             ),
           ),
@@ -262,10 +239,7 @@ class _VideosContentState extends State<_VideosContent> {
             left: 0,
             right: 0,
             bottom: 92,
-            child: Container(
-              height: 2,
-              color: Colors.white24,
-            ),
+            child: Container(height: 2, color: Colors.white24),
           ),
         ],
       ),
@@ -308,16 +282,11 @@ class _VideosContentState extends State<_VideosContent> {
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                   letterSpacing: -0.3,
-                  shadows: [
-                    Shadow(color: Colors.black54, blurRadius: 6),
-                  ],
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(6),
@@ -462,6 +431,49 @@ class _VideosContentState extends State<_VideosContent> {
       ),
     );
   }
+
+  Widget _buildErrorState(BuildContext context, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 44,
+              color: Colors.white70,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to load video stories',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12.5, color: Colors.white60),
+            ),
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: () => context.read<VideosCubit>().refresh(),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _MinimalReelPlayer extends StatefulWidget {
@@ -533,31 +545,39 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
       controller.addListener(_onVideoControllerTick);
 
-      controller.initialize().then((_) {
-        if (!mounted || _videoController != controller) return;
-        controller.setLooping(true);
-        final isMuted = context.read<VideosCubit?>()?.state.isMuted ?? false;
-        controller.setVolume(isMuted ? 0.0 : 1.0);
-        setState(() {
-          _isPlayerInitialized = true;
-        });
-        if (widget.isActive && widget.video.isPlaying) {
-          controller.play();
-          _startPlayback();
-        }
-      }).catchError((error) {
-        debugPrint('VideoPlayer error for ${widget.video.id}: $error');
-        if (mounted && widget.isActive && widget.video.isPlaying) {
-          _startPlayback();
-        }
-      });
+      controller
+          .initialize()
+          .then((_) {
+            if (!mounted || _videoController != controller) return;
+            controller.setLooping(true);
+            final isMuted =
+                context.read<VideosCubit?>()?.state.isMuted ?? false;
+            controller.setVolume(isMuted ? 0.0 : 1.0);
+            setState(() {
+              _isPlayerInitialized = true;
+            });
+            if (widget.isActive && widget.video.isPlaying) {
+              controller.play();
+              _startPlayback();
+            }
+          })
+          .catchError((error) {
+            debugPrint('VideoPlayer error for ${widget.video.id}: $error');
+            if (mounted && widget.isActive && widget.video.isPlaying) {
+              _startPlayback();
+            }
+          });
     } catch (e) {
       debugPrint('Failed to parse video url for player: $e');
     }
   }
 
   void _onVideoControllerTick() {
-    if (!mounted || _videoController == null || !_videoController!.value.isInitialized) return;
+    if (!mounted ||
+        _videoController == null ||
+        !_videoController!.value.isInitialized) {
+      return;
+    }
     final dur = _videoController!.value.duration.inMilliseconds;
     if (dur > 0) {
       final pos = _videoController!.value.position.inMilliseconds;
@@ -693,7 +713,8 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
             onTap: _handleTap,
             onDoubleTapDown: _handleDoubleTap,
             behavior: HitTestBehavior.opaque,
-            child: _isPlayerInitialized &&
+            child:
+                _isPlayerInitialized &&
                     _videoController != null &&
                     _videoController!.value.isInitialized
                 ? SizedBox.expand(
@@ -715,7 +736,11 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                     errorWidget: Container(
                       color: Colors.black87,
                       child: const Center(
-                        child: Icon(LucideIcons.video, color: Colors.white24, size: 64),
+                        child: Icon(
+                          LucideIcons.video,
+                          color: Colors.white24,
+                          size: 64,
+                        ),
                       ),
                     ),
                   ),
@@ -745,244 +770,240 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
             ),
           ),
 
-          // 2. Subtle Cinema Vignette Gradients
-          // Top gradient for status bar and header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 160,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.8),
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.transparent,
-                  ],
+        // 2. Subtle Cinema Vignette Gradients
+        // Top gradient for status bar and header
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 160,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.8),
+                  Colors.black.withValues(alpha: 0.3),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Bottom gradient for details and action buttons
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 280,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.9),
+                  Colors.black.withValues(alpha: 0.5),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+        ),
+
+        // 3. Center Play/Pause Indicator Overlay
+        if (_showPlayPauseOverlay || !v.isPlaying)
+          Center(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: _showPlayPauseOverlay || !v.isPlaying ? 1.0 : 0.0,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  v.isPlaying ? LucideIcons.pause : LucideIcons.play,
+                  color: Colors.white,
+                  size: 36,
                 ),
               ),
             ),
           ),
 
-          // Bottom gradient for details and action buttons
+        // 4. Double Tap Heart Burst Animation
+        if (_showHeartAnimation)
           Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 280,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.9),
-                    Colors.black.withValues(alpha: 0.5),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
+            left: _heartPosition.dx - 45,
+            top: _heartPosition.dy - 45,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.4, end: 1.4).animate(
+                CurvedAnimation(
+                  parent: _heartAnimController,
+                  curve: Curves.elasticOut,
                 ),
               ),
-            ),
-          ),
-
-          // 3. Center Play/Pause Indicator Overlay
-          if (_showPlayPauseOverlay || !v.isPlaying)
-            Center(
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _showPlayPauseOverlay || !v.isPlaying ? 1.0 : 0.0,
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    v.isPlaying ? LucideIcons.pause : LucideIcons.play,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
-              ),
-            ),
-
-          // 4. Double Tap Heart Burst Animation
-          if (_showHeartAnimation)
-            Positioned(
-              left: _heartPosition.dx - 45,
-              top: _heartPosition.dy - 45,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.4, end: 1.4).animate(
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
                   CurvedAnimation(
                     parent: _heartAnimController,
-                    curve: Curves.elasticOut,
+                    curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
                   ),
                 ),
-                child: FadeTransition(
-                  opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
-                    CurvedAnimation(
-                      parent: _heartAnimController,
-                      curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.favorite,
-                    color: Colors.redAccent,
-                    size: 90,
-                    shadows: [Shadow(color: Colors.black54, blurRadius: 16)],
-                  ),
+                child: const Icon(
+                  Icons.favorite,
+                  color: Colors.redAccent,
+                  size: 90,
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 16)],
                 ),
               ),
             ),
-
-          // 5. Minimal Right Action Sidebar: ONLY Like and Share buttons
-          Positioned(
-            right: 14,
-            bottom: 150,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Minimal Like Button
-                _buildActionItem(
-                  icon: v.isLiked ? Icons.favorite : LucideIcons.heart,
-                  label: v.formattedLikes,
-                  iconColor: v.isLiked ? Colors.redAccent : Colors.white,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.read<VideosCubit>().toggleLike(v.id);
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Minimal Share Button
-                _buildActionItem(
-                  icon: LucideIcons.share2,
-                  label: v.formattedShares,
-                  iconColor: Colors.white,
-                  onTap: _onShare,
-                ),
-
-                const SizedBox(height: 20),
-
-                // Minimal Mute / Sound Button
-                BlocBuilder<VideosCubit, VideosState>(
-                  buildWhen: (p, c) => p.isMuted != c.isMuted,
-                  builder: (context, state) {
-                    return _buildActionItem(
-                      icon: state.isMuted
-                          ? LucideIcons.volumeX
-                          : LucideIcons.volume2,
-                      label: state.isMuted ? 'Muted' : 'Sound',
-                      iconColor: Colors.white,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        context.read<VideosCubit>().toggleMute();
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
           ),
 
-          // 6. Minimal Bottom Reel Info: Patient Name + Subtitle
-          Positioned(
-            left: 16,
-            right: 84,
-            bottom: 105,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Patient Name + Verified Badge
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        v.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.2,
-                          shadows: [
-                            Shadow(color: Colors.black87, blurRadius: 4),
-                          ],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+        // 5. Minimal Right Action Sidebar: ONLY Like and Share buttons
+        Positioned(
+          right: 14,
+          bottom: 150,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Minimal Like Button
+              _buildActionItem(
+                icon: v.isLiked ? Icons.favorite : LucideIcons.heart,
+                label: v.formattedLikes,
+                iconColor: v.isLiked ? Colors.redAccent : Colors.white,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.read<VideosCubit>().toggleLike(v.id);
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Minimal Share Button
+              _buildActionItem(
+                icon: LucideIcons.share2,
+                label: v.formattedShares,
+                iconColor: Colors.white,
+                onTap: _onShare,
+              ),
+
+              const SizedBox(height: 20),
+
+              // Minimal Mute / Sound Button
+              BlocBuilder<VideosCubit, VideosState>(
+                buildWhen: (p, c) => p.isMuted != c.isMuted,
+                builder: (context, state) {
+                  return _buildActionItem(
+                    icon: state.isMuted
+                        ? LucideIcons.volumeX
+                        : LucideIcons.volume2,
+                    label: state.isMuted ? 'Muted' : 'Sound',
+                    iconColor: Colors.white,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.read<VideosCubit>().toggleMute();
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+
+        // 6. Minimal Bottom Reel Info: Patient Name + Subtitle
+        Positioned(
+          left: 16,
+          right: 84,
+          bottom: 105,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Patient Name + Verified Badge
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      v.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.2,
+                        shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 6),
-                    const Icon(
-                      LucideIcons.badgeCheck,
-                      color: AppColors.starGold,
-                      size: 17,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 5),
-
-                // Treatment Category Tag
-                Text(
-                  '${v.category} • ${v.treatment}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const SizedBox(height: 4),
-
-                // Brief Caption
-                Text(
-                  v.caption,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 1.35,
-                    shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                  const SizedBox(width: 6),
+                  const Icon(
+                    LucideIcons.badgeCheck,
+                    color: AppColors.starGold,
+                    size: 17,
                   ),
+                ],
+              ),
+
+              const SizedBox(height: 5),
+
+              // Treatment Category Tag
+              Text(
+                '${v.category} • ${v.treatment}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
                 ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 4),
+
+              // Brief Caption
+              Text(
+                v.caption,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.35,
+                  shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                ),
+              ),
+            ],
           ),
+        ),
 
-          // 7. Minimal Bottom Continuous Video Progress Line
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 92,
-            child: AnimatedBuilder(
-              animation: _progressController,
-              builder: (context, child) {
-                return LinearProgressIndicator(
-                  value: _progressController.value,
-                  backgroundColor: Colors.white12,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Colors.white70,
-                  ),
-                  minHeight: 2.0,
-                );
-              },
-            ),
+        // 7. Minimal Bottom Continuous Video Progress Line
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 92,
+          child: AnimatedBuilder(
+            animation: _progressController,
+            builder: (context, child) {
+              return LinearProgressIndicator(
+                value: _progressController.value,
+                backgroundColor: Colors.white12,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white70),
+                minHeight: 2.0,
+              );
+            },
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
   Widget _buildActionItem({

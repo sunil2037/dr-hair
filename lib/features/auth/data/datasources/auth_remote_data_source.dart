@@ -133,6 +133,18 @@ class AuthRemoteDataSource {
     return _asMap(response.data);
   }
 
+  Future<void> logout(String token, {String? fcmToken}) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/api/v1/auth/logout',
+        data: fcmToken != null && fcmToken.isNotEmpty ? {'fcm_token': fcmToken} : null,
+        options: _authorized(token, silent: true),
+      );
+    } catch (_) {
+      // Best-effort remote revocation; local session must still be cleared.
+    }
+  }
+
   Options _authorized(String token, {bool silent = false}) => Options(
     headers: {'Authorization': 'Bearer $token'},
     extra: {

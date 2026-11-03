@@ -1,7 +1,10 @@
+import 'package:dr_hair/core/storage/app_local_cache.dart';
 import 'package:dr_hair/features/hair_test/domain/models/hair_photo_analysis.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
+import 'package:dr_hair/features/treatment/data/patient_clinical_api.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeImagePicker extends Fake implements ImagePicker {
   final XFile? fileToReturn;
@@ -179,5 +182,54 @@ void main() {
 
       cubit.close();
     });
+
+    test('bindPatient with server assessment restores submitted state and reference number', () async {
+      SharedPreferences.setMockInitialValues({});
+      await AppLocalCache.instance.clearAll();
+
+      final fakeClinical = _FakeClinicalApi({
+        'care_plans': [],
+        'assessments': [
+          {
+            'id': 105,
+            'reference_no': 'HT-2026-0099',
+            'status': 'submitted',
+            'full_name': 'Patient Sunil',
+            'age': '28',
+            'hair_loss_stage': 'Stage 2 - Receding hairline',
+            'dandruff': 'Mild',
+          },
+        ],
+        'reports': [],
+        'appointments': [],
+      });
+
+      final cubit = HairTestCubit(clinicalApi: fakeClinical);
+      await cubit.bindPatient('patient_sunil', sessionToken: 'mock_jwt_token');
+
+      expect(cubit.state.isCompleted, isTrue);
+      expect(cubit.state.isSubmitted, isTrue);
+      expect(cubit.state.referenceNo, equals('HT-2026-0099'));
+      expect(cubit.state.stage, equals('Stage 2 - Receding hairline'));
+      expect(cubit.state.name, equals('Patient Sunil'));
+
+      // Sign out / unbind clears state
+      await cubit.bindPatient(null);
+      expect(cubit.state.isCompleted, isFalse);
+      expect(cubit.state.isSubmitted, isFalse);
+      expect(cubit.state.referenceNo, isNull);
+
+      cubit.close();
+    });
   });
+}
+
+class _FakeClinicalApi extends PatientClinicalApi {
+  final Map<String, dynamic> record;
+  _FakeClinicalApi(this.record);
+
+  @override
+  Future<Map<String, dynamic>> getClinicalRecord(String accessToken) async {
+    return record;
+  }
 }

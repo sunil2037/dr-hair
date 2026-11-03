@@ -258,7 +258,13 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> clearSession() => _sessionStore.clear();
+  Future<void> clearSession() async {
+    final token = await _sessionStore.readToken();
+    if (token != null && token.isNotEmpty) {
+      await _remote.logout(token).catchError((_) {});
+    }
+    await _sessionStore.clear();
+  }
 
   Future<UserModel> _loadProfile(
     String token, {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,39 +9,177 @@ import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/media/data/media_upload_api.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/app_local_cache.dart';
+import '../../../treatment/data/patient_clinical_api.dart';
 import '../../data/hair_image_detector.dart';
 import '../../domain/models/hair_photo_analysis.dart';
 import 'hair_test_state.dart';
 
 class HairTestCubit extends Cubit<HairTestState> {
-  static const String _draftKey = 'hair_test_draft_v2';
-  static const String _legacyDraftKey = 'hair_test_draft_v1';
   final ImagePicker _imagePicker;
   final AppLocalCache _cache;
   final MediaUploadApi? _mediaUploadApi;
   final Dio? _dio;
+  final PatientClinicalApi _clinicalApi;
+  String? _patientId;
+  String? _sessionToken;
+
+  String get _draftKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'hair_test_draft_${_patientId}_v2'
+      : 'hair_test_draft_v2';
+  String get _legacyDraftKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'hair_test_draft_${_patientId}_v1'
+      : 'hair_test_draft_v1';
+  String get _completedKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'has_completed_hair_test_$_patientId'
+      : 'has_completed_hair_test';
+  String get _stageKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'hair_test_stage_$_patientId'
+      : 'hair_test_stage';
+  String get _dandruffKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'hair_test_dandruff_$_patientId'
+      : 'hair_test_dandruff';
+  String get _nameKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'hair_test_name_$_patientId'
+      : 'hair_test_name';
+  String get _ageKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'hair_test_age_$_patientId'
+      : 'hair_test_age';
 
   HairTestCubit({
     ImagePicker? imagePicker,
     AppLocalCache? cache,
     MediaUploadApi? mediaUploadApi,
     Dio? dio,
+    PatientClinicalApi? clinicalApi,
   })  : _imagePicker = imagePicker ?? ImagePicker(),
         _cache = cache ?? AppLocalCache.instance,
         // ignore: prefer_initializing_formals
         _mediaUploadApi = mediaUploadApi,
         // ignore: prefer_initializing_formals
         _dio = dio,
+        _clinicalApi = clinicalApi ??
+            PatientClinicalApi(
+              client: dio != null
+                  ? DioClient(baseUrl: ApiEndpoints.backendBaseUrl, customDio: dio)
+                  : null,
+            ),
         super(const HairTestState());
+
+  Future<void> bindPatient(String? patientId, {String? sessionToken}) async {
+    if (patientId == null || patientId.isEmpty) {
+      _patientId = null;
+      _sessionToken = null;
+      if (!isClosed) emit(const HairTestState());
+      return;
+    }
+    _patientId = patientId;
+    _sessionToken = sessionToken;
+    await loadSavedState();
+    if (sessionToken != null && sessionToken.isNotEmpty) {
+      await _syncWithBackend(sessionToken);
+    }
+  }
+
+  Future<void> _syncWithBackend(String token) async {
+    try {
+      final record = await _clinicalApi.getClinicalRecord(token);
+      final assessments = record['assessments'] as List? ?? [];
+      final submitted = assessments
+          .whereType<Map>()
+          .where((a) => a['status'] != 'draft')
+          .toList();
+      if (submitted.isNotEmpty) {
+        final latest = submitted.first;
+        final refNo = latest['reference_no']?.toString();
+        final stage = latest['hair_loss_stage']?.toString();
+        if (!isClosed) {
+          emit(
+            state.copyWith(
+              isCompleted: true,
+              isSubmitted: true,
+              referenceNo: refNo,
+              stage: stage,
+              name: latest['full_name']?.toString() ?? state.name,
+              age: latest['age']?.toString() ?? state.age,
+              dandruff: latest['dandruff']?.toString() ?? state.dandruff,
+            ),
+          );
+        }
+        await _cache.put(_completedKey, true);
+        if (stage != null) await _cache.put(_stageKey, stage);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      final dioToUse = _dio ??
+          DioClient(
+            baseUrl: ApiEndpoints.backendBaseUrl,
+            enableDebugLogging: false,
+          ).dio;
+      final response = await dioToUse.get<Map<String, dynamic>>(
+        '/api/v1/patient/assessment/draft',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final draft = response.data?['data']?['draft'];
+      if (draft is Map && draft['formData'] is Map && !isClosed) {
+        final formData = Map<String, dynamic>.from(draft['formData'] as Map);
+        final step = (draft['step'] as num?)?.toInt() ?? 0;
+        emit(
+          state.copyWith(
+            currentStep: step.clamp(0, state.totalSteps - 1),
+            name: formData['full_name']?.toString() ??
+                formData['name']?.toString() ??
+                state.name,
+            age: formData['age']?.toString() ?? state.age,
+            selectedGender: formData['gender']?.toString() ??
+                formData['selectedGender']?.toString() ??
+                state.selectedGender,
+            stage: formData['stage']?.toString() ?? state.stage,
+            primaryConcern: formData['primary_concern']?.toString() ??
+                formData['primaryConcern']?.toString() ??
+                formData['main_concern']?.toString() ??
+                state.primaryConcern,
+            duration: formData['duration']?.toString() ?? state.duration,
+            dandruff: formData['dandruff']?.toString() ?? state.dandruff,
+            gutHealth: formData['gut_health']?.toString() ??
+                formData['gutHealth']?.toString() ??
+                state.gutHealth,
+            stressLevel: formData['stress_level']?.toString() ??
+                formData['stressLevel']?.toString() ??
+                state.stressLevel,
+            familyHistory: formData['family_history']?.toString() ??
+                formData['familyHistory']?.toString() ??
+                state.familyHistory,
+            allergyStatus: formData['allergy_status']?.toString() ??
+                formData['allergyStatus']?.toString() ??
+                state.allergyStatus,
+            allergyDetails: formData['allergy_details']?.toString() ??
+                formData['allergyDetails']?.toString() ??
+                state.allergyDetails,
+            currentMedicationsStatus:
+                formData['current_medications_status']?.toString() ??
+                    formData['currentMedicationsStatus']?.toString() ??
+                    state.currentMedicationsStatus,
+            currentMedications: formData['current_medications']?.toString() ??
+                formData['currentMedications']?.toString() ??
+                state.currentMedications,
+          ),
+        );
+        _cache.put(_draftKey, jsonEncode(_draftJson()));
+      }
+    } catch (_) {}
+  }
 
   Future<void> loadSavedState() async {
     try {
-      // The previous draft stored duration and scalp answers in the same
-      // field. Discard it so the corrected questionnaire starts uncorrupted.
       await _cache.remove(_legacyDraftKey);
-      final hasCompleted = _cache.getBool('has_completed_hair_test') ?? false;
+      final hasCompleted = _cache.getBool(_completedKey) ??
+          _cache.getBool('has_completed_hair_test') ??
+          false;
       var restored = state;
-      final rawDraft = _cache.getString(_draftKey);
+      final rawDraft = _cache.getString(_draftKey) ??
+          _cache.getString('hair_test_draft_v2');
       if (rawDraft != null) {
         try {
           final draft = jsonDecode(rawDraft) as Map<String, dynamic>;
@@ -83,10 +222,16 @@ class HairTestCubit extends Cubit<HairTestState> {
           await _cache.remove(_draftKey);
         }
       }
-      final savedStage = _cache.getString('hair_test_stage');
-      final savedDandruff = _cache.getString('hair_test_dandruff');
-      final savedName = _cache.getString('hair_test_name') ?? '';
-      final savedAge = _cache.getString('hair_test_age') ?? '';
+      final savedStage = _cache.getString(_stageKey) ??
+          _cache.getString('hair_test_stage');
+      final savedDandruff = _cache.getString(_dandruffKey) ??
+          _cache.getString('hair_test_dandruff');
+      final savedName = _cache.getString(_nameKey) ??
+          _cache.getString('hair_test_name') ??
+          '';
+      final savedAge = _cache.getString(_ageKey) ??
+          _cache.getString('hair_test_age') ??
+          '';
 
       if (hasCompleted) {
         final hasObservedPattern = restored.primaryConcern != null;
@@ -346,18 +491,38 @@ class HairTestCubit extends Cubit<HairTestState> {
     }
 
     try {
+      await _cache.put(_completedKey, true);
       await _cache.put('has_completed_hair_test', true);
       if (state.stage != null) {
+        await _cache.put(_stageKey, state.stage!);
         await _cache.put('hair_test_stage', state.stage!);
       } else {
+        await _cache.remove(_stageKey);
         await _cache.remove('hair_test_stage');
       }
       if (state.dandruff != null) {
+        await _cache.put(_dandruffKey, state.dandruff!);
         await _cache.put('hair_test_dandruff', state.dandruff!);
       }
-      await _cache.put('hair_test_name', state.name);
-      await _cache.put('hair_test_age', state.age);
-      await _cache.put(_draftKey, jsonEncode(_draftJson()));
+      await _cache.put(_nameKey, state.name);
+      await _cache.put(_ageKey, state.age);
+      await _cache.remove(_draftKey);
+      if (sessionToken != null && sessionToken.isNotEmpty) {
+        final dioToUse = _dio ??
+            DioClient(
+              baseUrl: ApiEndpoints.backendBaseUrl,
+              enableDebugLogging: false,
+            ).dio;
+        unawaited(() async {
+          try {
+            await dioToUse.delete<Map<String, dynamic>>(
+              '/api/v1/patient/assessment/draft',
+              options:
+                  Options(headers: {'Authorization': 'Bearer $sessionToken'}),
+            );
+          } catch (_) {}
+        }());
+      }
     } catch (_) {}
   }
 
@@ -659,6 +824,26 @@ class HairTestCubit extends Cubit<HairTestState> {
 
   void _saveDraft() {
     _cache.put(_draftKey, jsonEncode(_draftJson()));
+    final token = _sessionToken;
+    if (token != null && token.isNotEmpty) {
+      final dioToUse = _dio ??
+          DioClient(
+            baseUrl: ApiEndpoints.backendBaseUrl,
+            enableDebugLogging: false,
+          ).dio;
+      unawaited(() async {
+        try {
+          await dioToUse.put<Map<String, dynamic>>(
+            '/api/v1/patient/assessment/draft',
+            data: {
+              'step': state.currentStep,
+              'formData': _draftJson(),
+            },
+            options: Options(headers: {'Authorization': 'Bearer $token'}),
+          );
+        } catch (_) {}
+      }());
+    }
   }
 
   void reset() {
@@ -670,6 +855,13 @@ class HairTestCubit extends Cubit<HairTestState> {
     for (final key in [
       _draftKey,
       _legacyDraftKey,
+      _completedKey,
+      _stageKey,
+      _dandruffKey,
+      _nameKey,
+      _ageKey,
+      'hair_test_draft_v2',
+      'hair_test_draft_v1',
       'has_completed_hair_test',
       'hair_test_stage',
       'hair_test_dandruff',
@@ -677,6 +869,20 @@ class HairTestCubit extends Cubit<HairTestState> {
       'hair_test_age',
     ]) {
       await _cache.remove(key);
+    }
+    final token = _sessionToken;
+    if (token != null && token.isNotEmpty) {
+      try {
+        final dioToUse = _dio ??
+            DioClient(
+              baseUrl: ApiEndpoints.backendBaseUrl,
+              enableDebugLogging: false,
+            ).dio;
+        await dioToUse.delete<Map<String, dynamic>>(
+          '/api/v1/patient/assessment/draft',
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+      } catch (_) {}
     }
     emit(const HairTestState());
   }

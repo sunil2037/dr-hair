@@ -314,7 +314,7 @@ class _AppointmentPaymentSheetState extends State<AppointmentPaymentSheet> {
                       : const Icon(LucideIcons.checkCircle2, size: 18),
                   label: Text(
                     _isProcessing
-                        ? 'Confirming Payment…'
+                        ? 'Confirming Booking…'
                         : _selectedMethod == 'Cash at Clinic'
                             ? 'Confirm Booking (Pay ₹${widget.fee} at Clinic)'
                             : 'Pay ₹${widget.fee} & Confirm Visit',
@@ -425,8 +425,7 @@ class _AppointmentPaymentSheetState extends State<AppointmentPaymentSheet> {
   Future<void> _handlePayment() async {
     setState(() => _isProcessing = true);
 
-    // Simulated short payment verification delay (e.g. UPI/Card handshake)
-    await Future.delayed(const Duration(milliseconds: 350));
+    await Future.delayed(const Duration(milliseconds: 250));
     if (!mounted) return;
 
     final isCash = _selectedMethod == 'Cash at Clinic';

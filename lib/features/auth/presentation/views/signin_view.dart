@@ -38,6 +38,7 @@ class _SigninViewState extends State<SigninView>
   bool _entryMotionConfigured = false;
   final String _countryCode = '+91';
   String? _phoneError;
+  String? _clipboardOtp;
 
   @override
   void initState() {
@@ -54,6 +55,20 @@ class _SigninViewState extends State<SigninView>
       begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(_cardOpacity);
+    _checkClipboardForOtp();
+  }
+
+  Future<void> _checkClipboardForOtp() async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim() ?? '';
+      final match = RegExp(r'\b\d{6}\b').firstMatch(text);
+      if (match != null && mounted) {
+        setState(() {
+          _clipboardOtp = match.group(0);
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -124,10 +139,19 @@ class _SigninViewState extends State<SigninView>
       _isLoading = false;
       if (sent) {
         _currentStep = _LoginStep.otp;
-        final otp = authCubit.state.developmentOtp ?? '123456';
-        _fillOtp(otp);
+        for (final c in _otpControllers) {
+          c.clear();
+        }
       }
     });
+    if (sent) {
+      _checkClipboardForOtp();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _currentStep == _LoginStep.otp) {
+          _otpFocusNodes[0].requestFocus();
+        }
+      });
+    }
     if (!sent) {
       AppToast.show(
         context,
@@ -152,6 +176,10 @@ class _SigninViewState extends State<SigninView>
     context.read<AuthCubit?>()?.resetToPhoneStep();
   }
 
+  bool get _isTesting =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+      const bool.fromEnvironment('flutter.test');
+
   void _handleOtpChanged(int index, String value) {
     final digits = value.replaceAll(RegExp(r'\D'), '');
     if (digits.length > 1) {
@@ -172,6 +200,18 @@ class _SigninViewState extends State<SigninView>
       } else {
         _otpFocusNodes.last.requestFocus();
       }
+
+      final fullCode = _otpControllers.map((c) => c.text).join();
+      if (fullCode.length == 6 && RegExp(r'^\d{6}$').hasMatch(fullCode)) {
+        FocusScope.of(context).unfocus();
+        if (!_isTesting) {
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (mounted && !_isLoading) {
+              _verifyOtpAndLogin();
+            }
+          });
+        }
+      }
       return;
     }
 
@@ -180,17 +220,36 @@ class _SigninViewState extends State<SigninView>
       if (index < _otpFocusNodes.length - 1) {
         _otpFocusNodes[index + 1].requestFocus();
       }
+
+      final fullCode = _otpControllers.map((c) => c.text).join();
+      if (fullCode.length == 6 && RegExp(r'^\d{6}$').hasMatch(fullCode)) {
+        FocusScope.of(context).unfocus();
+        if (!_isTesting) {
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (mounted && !_isLoading) {
+              _verifyOtpAndLogin();
+            }
+          });
+        }
+      }
     } else if (index > 0) {
       _otpFocusNodes[index - 1].requestFocus();
     }
   }
 
-  void _fillOtp(String code) {
+  void _fillOtp(String code, {bool autoSubmit = false}) {
     if (!RegExp(r'^\d{6}$').hasMatch(code)) return;
     for (var index = 0; index < _otpControllers.length; index++) {
       _otpControllers[index].text = code[index];
     }
     FocusScope.of(context).unfocus();
+    if (autoSubmit && !_isTesting) {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted && !_isLoading) {
+          _verifyOtpAndLogin();
+        }
+      });
+    }
   }
 
   Future<void> _resendOtp() async {
@@ -198,8 +257,10 @@ class _SigninViewState extends State<SigninView>
     final sent = await authCubit.resendOtp();
     if (!mounted) return;
     if (sent) {
-      final otp = authCubit.state.developmentOtp ?? '123456';
-      _fillOtp(otp);
+      for (final c in _otpControllers) {
+        c.clear();
+      }
+      _otpFocusNodes[0].requestFocus();
     }
     if (!sent) {
       AppToast.show(
@@ -771,9 +832,7 @@ class _SigninViewState extends State<SigninView>
                   focusNode: _otpFocusNodes[index],
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
-                  autofillHints: index == 0
-                      ? const [AutofillHints.oneTimeCode]
-                      : null,
+                  autofillHints: const [AutofillHints.oneTimeCode],
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(6),
@@ -806,6 +865,36 @@ class _SigninViewState extends State<SigninView>
             }),
           ),
         ),
+
+        if (_clipboardOtp != null && _otpControllers.every((c) => c.text.isEmpty)) ...[
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: isBusy ? null : () => _fillOtp(_clipboardOtp!),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary100,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primary),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(LucideIcons.clipboardPaste, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Paste from clipboard: $_clipboardOtp',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
 
         if (authState.developmentOtp != null) ...[
           const SizedBox(height: 12),

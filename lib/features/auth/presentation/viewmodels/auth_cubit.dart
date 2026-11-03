@@ -372,6 +372,9 @@ class AuthCubit extends Cubit<AuthState> {
     return fallback;
   }
 
+  @visibleForTesting
+  void emitForTesting(AuthState nextState) => emit(nextState);
+
   @override
   Future<void> close() {
     _countdownTimer?.cancel();

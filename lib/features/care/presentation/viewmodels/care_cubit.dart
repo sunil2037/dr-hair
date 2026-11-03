@@ -1,18 +1,24 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/services/care_notification_service.dart';
+import '../../data/patient_progress_api.dart';
 import '../../domain/models/care_models.dart';
 import '../../../../core/storage/app_local_cache.dart';
+import '../../../treatment/data/patient_clinical_api.dart';
 import 'care_state.dart';
 
 class CareCubit extends Cubit<CareState> {
   static const _routineHistoryKey = 'care_routine_completion_days_v1';
   static const _careDataClearedKey = 'care_personal_data_cleared_v1';
   final CareNotificationService? _notificationService;
+  final PatientClinicalApi _clinicalApi;
+  final PatientProgressApi _progressApi;
   String? _patientId;
+  String? _sessionToken;
 
   String get _checkInsKey => _patientId != null && _patientId!.isNotEmpty
       ? 'care_checkins_${_patientId}_v1'
@@ -22,19 +28,38 @@ class CareCubit extends Cubit<CareState> {
       ? 'care_orders_${_patientId}_v1'
       : 'care_orders_v1';
 
-  CareCubit([this._notificationService]) : super(const CareState()) {
-    _initializeDefaultData();
+  String get _routineTasksKey => _patientId != null && _patientId!.isNotEmpty
+      ? 'care_routine_tasks_${_patientId}_v1'
+      : 'care_routine_tasks_v1';
+
+  CareCubit([
+    this._notificationService,
+    PatientClinicalApi? clinicalApi,
+    PatientProgressApi? progressApi,
+  ])  : _clinicalApi = clinicalApi ?? PatientClinicalApi(),
+        _progressApi = progressApi ?? PatientProgressApi(),
+        super(const CareState()) {
     _initPersistence();
   }
 
-  Future<void> bindPatient(String? patientId) async {
-    if (_patientId == patientId) return;
+  Future<void> bindPatient(String? patientId, {String? sessionToken}) async {
+    if (patientId == null || patientId.isEmpty) {
+      _patientId = null;
+      _sessionToken = null;
+      if (!isClosed) emit(const CareState());
+      return;
+    }
     _patientId = patientId;
+    _sessionToken = sessionToken;
     await _initPersistence();
+    if (sessionToken != null && sessionToken.isNotEmpty) {
+      await _syncWithBackend(sessionToken);
+    }
   }
 
   void loadSampleFixturesForTesting() {
     if (isClosed) return;
+    _initializeDefaultData();
     emit(
       state.copyWith(
         checkIns: ProgressCheckIn.sampleFixtures,
@@ -47,7 +72,12 @@ class CareCubit extends Cubit<CareState> {
         _notificationService ?? await CareNotificationService.create();
     final status = service.getPermissionStatus();
     final persistedReminders = service.loadReminders();
-    final persistedTasks = service.loadRoutineTasks();
+    final cache = AppLocalCache.instance;
+    final cachedTasks = _readList(
+      cache.getString(_routineTasksKey),
+      RoutineTask.fromJson,
+    );
+    final persistedTasks = cachedTasks ?? service.loadRoutineTasks();
     final today = _localDayKey(DateTime.now());
     final storedRoutineDay = service.loadRoutineDay();
     final routineTasks = (persistedTasks ?? state.routineTasks)
@@ -59,7 +89,6 @@ class CareCubit extends Cubit<CareState> {
         .toList();
     await service.saveRoutineTasks(routineTasks);
     await service.saveRoutineDay(today);
-    final cache = AppLocalCache.instance;
     final checkIns = _readList(
       cache.getString(_checkInsKey),
       ProgressCheckIn.fromJson,
@@ -81,6 +110,86 @@ class CareCubit extends Cubit<CareState> {
         routineCompletionDays: routineDays ?? state.routineCompletionDays,
       ),
     );
+  }
+
+  Future<void> _syncWithBackend(String token) async {
+    try {
+      final record = await _clinicalApi.getClinicalRecord(token);
+      final carePlans = record['care_plans'] as List? ?? [];
+      List<RoutineTask>? serverTasks;
+      if (carePlans.isNotEmpty) {
+        final activePlan = carePlans.first;
+        if (activePlan is Map) {
+          final steps = activePlan['routine_steps'] as List? ?? [];
+          serverTasks = steps.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final step = entry.value;
+            if (step is! Map) return null;
+            return RoutineTask(
+              id: 'rt_${idx + 1}',
+              title: step['title']?.toString() ?? '',
+              subtitle: step['subtitle']?.toString() ?? '',
+              category: step['category']?.toString() ?? 'Treatment',
+              timeOfDay: step['time_of_day']?.toString() ?? 'Daily',
+              isCompleted: false,
+            );
+          }).whereType<RoutineTask>().where((t) => t.title.isNotEmpty).toList();
+        }
+      }
+
+      List<ProgressCheckIn>? serverCheckIns;
+      try {
+        final rawCheckIns = await _progressApi.listCheckIns(token: token);
+        serverCheckIns = rawCheckIns.map((item) {
+          final photos = (item['photos'] as List? ?? []);
+          String? front;
+          String? top;
+          String? back;
+          for (final p in photos) {
+            if (p is Map) {
+              final angle = p['angle']?.toString().toLowerCase();
+              final url = p['url']?.toString();
+              if (angle == 'front') front = url;
+              if (angle == 'top') top = url;
+              if (angle == 'back') back = url;
+            }
+          }
+          final primaryPhoto = front ?? top ?? back ?? '';
+          final dateStr = item['date']?.toString();
+          final date = dateStr != null
+              ? DateTime.tryParse(dateStr) ?? DateTime.now()
+              : DateTime.now();
+          return ProgressCheckIn(
+            id: item['id']?.toString() ?? '',
+            date: date,
+            imagePath: primaryPhoto,
+            frontImagePath: front,
+            topImagePath: top,
+            backImagePath: back,
+            scalpRegion: item['scalp_region']?.toString() ?? 'Scalp',
+            sheddingLevel: item['shedding_level']?.toString() ?? 'Normal',
+            notes: item['notes']?.toString() ?? '',
+            densityRating: (item['density_rating'] as num?)?.toInt() ?? 3,
+            isDoctorReviewed: item['doctor_note'] != null &&
+                item['doctor_note'].toString().trim().isNotEmpty,
+            doctorNote: item['doctor_note']?.toString(),
+          );
+        }).where((ci) => ci.id.isNotEmpty).toList();
+      } catch (_) {}
+
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          routineTasks: serverTasks ??
+              (carePlans.isEmpty ? const [] : state.routineTasks),
+          checkIns: serverCheckIns ?? state.checkIns,
+        ),
+      );
+      _persistCheckIns();
+      if (serverTasks != null) {
+        _persistRoutineTasks();
+      }
+    } catch (_) {}
   }
 
   void _initializeDefaultData() {
@@ -305,8 +414,14 @@ class CareCubit extends Cubit<CareState> {
     _persistCheckIns();
   }
 
-  void deleteProgressCheckIn(String id) {
+  Future<void> deleteProgressCheckIn(String id, {String? sessionToken}) async {
     if (isClosed) return;
+    final token = sessionToken ?? _sessionToken;
+    if (token != null && token.isNotEmpty) {
+      try {
+        await _progressApi.deleteCheckIn(token: token, checkInId: id);
+      } catch (_) {}
+    }
     emit(
       state.copyWith(
         checkIns: state.checkIns.where((ci) => ci.id != id).toList(),
@@ -325,6 +440,7 @@ class CareCubit extends Cubit<CareState> {
     }).toList();
 
     emit(state.copyWith(routineTasks: updated));
+    _persistRoutineTasks();
     _notificationService?.saveRoutineTasks(updated);
     _saveRoutineDay();
     _recordRoutineCompletionIfDone(updated);
@@ -347,6 +463,7 @@ class CareCubit extends Cubit<CareState> {
 
     final updated = [...state.routineTasks, newTask];
     emit(state.copyWith(routineTasks: updated));
+    _persistRoutineTasks();
     _notificationService?.saveRoutineTasks(updated);
     _saveRoutineDay();
     _recordRoutineCompletionIfDone(updated);
@@ -357,6 +474,7 @@ class CareCubit extends Cubit<CareState> {
         .map((task) => task.copyWith(isCompleted: false))
         .toList();
     emit(state.copyWith(routineTasks: reset));
+    _persistRoutineTasks();
     _notificationService?.saveRoutineTasks(reset);
     _saveRoutineDay();
     _recordRoutineCompletionIfDone(reset);
@@ -554,6 +672,13 @@ class CareCubit extends Cubit<CareState> {
     );
   }
 
+  void _persistRoutineTasks() {
+    AppLocalCache.instance.put(
+      _routineTasksKey,
+      jsonEncode(state.routineTasks.map((item) => item.toJson()).toList()),
+    );
+  }
+
   Future<void> clearPersonalCareData() async {
     final service =
         _notificationService ?? await CareNotificationService.create();
@@ -576,6 +701,8 @@ class CareCubit extends Cubit<CareState> {
       'care_checkins_v1',
       _ordersKey,
       'care_orders_v1',
+      _routineTasksKey,
+      'care_routine_tasks_v1',
       'care_bookings_v1',
       _routineHistoryKey,
       'care_persisted_routine_v1',
@@ -586,6 +713,7 @@ class CareCubit extends Cubit<CareState> {
       await cache.remove(key);
     }
     _patientId = null;
+    _sessionToken = null;
     await cache.put(_careDataClearedKey, true);
   }
 
@@ -612,7 +740,7 @@ class CareCubit extends Cubit<CareState> {
       await cache.remove(key);
     }
 
-    _initializeDefaultData();
+    emit(const CareState());
     await _initPersistence();
   }
 

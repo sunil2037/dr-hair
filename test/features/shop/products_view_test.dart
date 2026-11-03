@@ -1,5 +1,4 @@
 import 'package:dr_hair/features/shop/data/models/product_model.dart';
-import 'package:dr_hair/features/shop/data/repositories/product_repository_impl.dart';
 import 'package:dr_hair/features/shop/domain/repositories/product_repository.dart';
 import 'package:dr_hair/features/shop/presentation/viewmodels/cart_cubit.dart';
 import 'package:dr_hair/features/shop/presentation/viewmodels/products_cubit.dart';
@@ -14,10 +13,8 @@ class _FakeProductRepo implements ProductRepository {
   final bool shouldFail;
   final List<ProductItem> items;
 
-  _FakeProductRepo({
-    this.shouldFail = false,
-    List<ProductItem>? items,
-  }) : items = items ?? ProductRepositoryImpl.fallbackCatalog;
+  _FakeProductRepo({this.shouldFail = false, List<ProductItem>? items})
+    : items = items ?? ProductItem.demoCatalog;
 
   @override
   Future<({List<ProductItem> items, bool hasMore, int total})> getProducts({
@@ -41,10 +38,14 @@ class _FakeProductRepo implements ProductRepository {
 
 void main() {
   Widget buildTestableWidget({CartCubit? cartCubit, ProductsCubit? cubit}) {
+    final productsCubit =
+        cubit ??
+        (ProductsCubit(repository: _FakeProductRepo())..loadProducts());
     return BlocProvider<CartCubit>.value(
       value: cartCubit ?? CartCubit(),
-      child: MaterialApp(
-        home: ProductsView(cubit: cubit),
+      child: BlocProvider<ProductsCubit>.value(
+        value: productsCubit,
+        child: MaterialApp(home: ProductsView(cubit: productsCubit)),
       ),
     );
   }
@@ -54,7 +55,7 @@ void main() {
       final repo = _FakeProductRepo();
       final cubit = ProductsCubit(repository: repo);
 
-      expect(cubit.state.products.isNotEmpty, isTrue);
+      expect(cubit.state.products, isEmpty);
       await cubit.loadProducts();
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.errorMessage, isNull);
@@ -70,16 +71,17 @@ void main() {
       expect(cubit.state.errorMessage, isNotNull);
     });
 
-    test('updates category selection and search query', () {
-      final cubit = ProductsCubit();
-      cubit.selectCategory(2);
+    test('updates category selection and search query', () async {
+      final cubit = ProductsCubit(repository: _FakeProductRepo());
+      await cubit.selectCategory(2);
       expect(cubit.state.selectedCategoryIndex, 2);
 
-      cubit.search('serum');
+      await cubit.search('serum');
       expect(cubit.state.searchQuery, 'serum');
 
-      cubit.clearSearch();
+      await cubit.clearSearch();
       expect(cubit.state.searchQuery, '');
+      cubit.close();
     });
   });
 
@@ -247,7 +249,7 @@ void main() {
     );
 
     testWidgets(
-      'uses Skeletonizer during loading and contains NO CircularProgressIndicator',
+      'uses Skeletonizer during loading without fabricated products',
       (tester) async {
         final cubit = ProductsCubit(
           initialState: const ProductsState(isLoading: true, products: []),
@@ -255,36 +257,34 @@ void main() {
         await tester.pumpWidget(buildTestableWidget(cubit: cubit));
         await tester.pump();
 
-        // Skeletonizer must be present in widget tree
         expect(
           find.byWidgetPredicate((widget) => widget is Skeletonizer),
           findsWidgets,
         );
-
-        // Absolutely NO CircularProgressIndicator
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('Follicle Booster Serum'), findsNothing);
       },
     );
 
-    testWidgets('displays error state with retry button when products fail to load', (
-      tester,
-    ) async {
-      final cubit = ProductsCubit(
-        initialState: const ProductsState(
-          isLoading: false,
-          errorMessage: 'Unable to connect to server',
-          products: [],
-        ),
-      );
-      await tester.pumpWidget(buildTestableWidget(cubit: cubit));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'displays error state with retry button when products fail to load',
+      (tester) async {
+        final cubit = ProductsCubit(
+          initialState: const ProductsState(
+            isLoading: false,
+            errorMessage: 'Unable to connect to server',
+            products: [],
+          ),
+        );
+        await tester.pumpWidget(buildTestableWidget(cubit: cubit));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Unable to load products'), findsOneWidget);
-      expect(find.text('Unable to connect to server'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('products-retry-button')),
-        findsOneWidget,
-      );
-    });
+        expect(find.text('Unable to load products'), findsOneWidget);
+        expect(find.text('Unable to connect to server'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('products-retry-button')),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

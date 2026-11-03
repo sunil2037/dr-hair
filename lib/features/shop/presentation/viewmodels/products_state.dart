@@ -1,5 +1,4 @@
 import '../../data/models/product_model.dart';
-import '../../data/repositories/product_repository_impl.dart';
 
 class ProductsState {
   final List<ProductItem> products;
@@ -16,12 +15,12 @@ class ProductsState {
     this.searchQuery = '',
   });
 
-  factory ProductsState.initial() => ProductsState(
-        products: ProductRepositoryImpl.fallbackCatalog,
-        isLoading: false,
-        selectedCategoryIndex: 0,
-        searchQuery: '',
-      );
+  factory ProductsState.initial() => const ProductsState(
+    products: [],
+    isLoading: true,
+    selectedCategoryIndex: 0,
+    searchQuery: '',
+  );
 
   List<ProductItem> get filteredProducts {
     var list = products;
@@ -129,7 +128,8 @@ class ProductsState {
       products: products ?? this.products,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
-      selectedCategoryIndex: selectedCategoryIndex ?? this.selectedCategoryIndex,
+      selectedCategoryIndex:
+          selectedCategoryIndex ?? this.selectedCategoryIndex,
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }

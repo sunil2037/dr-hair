@@ -10,6 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/constants/app_strings.dart';
 import 'core/notifications/firebase_push_service.dart';
 import 'core/routes/app_router.dart';
+import 'core/session/session_coordinator.dart';
 import 'core/storage/app_local_cache.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
@@ -142,7 +143,18 @@ class _MyAppState extends State<MyApp> {
           create: (_) => HairTestCubit()..loadSavedState(),
         ),
       ],
-      child: app,
+      child: Builder(
+        builder: (context) {
+          SessionCoordinator.instance.attach(
+            authCubit: context.read<AuthCubit>(),
+            careCubit: context.read<CareCubit>(),
+            cartCubit: context.read<CartCubit>(),
+            appointmentCubit: context.read<ClinicAppointmentCubit>(),
+            hairTestCubit: context.read<HairTestCubit>(),
+          );
+          return app;
+        },
+      ),
     );
   }
 }

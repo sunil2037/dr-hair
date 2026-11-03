@@ -9,7 +9,6 @@ import '../../../../core/routes/app_destination.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
 import '../../data/models/product_model.dart';
-import '../../data/repositories/product_repository_impl.dart';
 import '../viewmodels/cart_cubit.dart';
 import '../viewmodels/products_cubit.dart';
 import '../viewmodels/products_state.dart';
@@ -309,11 +308,7 @@ class _ProductsContentState extends State<_ProductsContent>
           }
         },
         builder: (context, state) {
-          final catalog = state.products.isNotEmpty
-              ? state.products
-              : (state.errorMessage == null
-                    ? ProductRepositoryImpl.fallbackCatalog
-                    : const <ProductItem>[]);
+          final catalog = state.products;
 
           return NestedScrollView(
             headerSliverBuilder:
@@ -384,13 +379,7 @@ class _ProductsContentState extends State<_ProductsContent>
                         category.id,
                         catalog,
                       );
-                      final isActuallyLoading =
-                          state.isLoading && state.products.isEmpty;
-                      final displayList = isActuallyLoading
-                          ? ProductRepositoryImpl.fallbackCatalog
-                                .take(4)
-                                .toList()
-                          : products;
+                      final displayList = products;
 
                       return CustomScrollView(
                         key: PageStorageKey<String>(category.id),
@@ -465,30 +454,32 @@ class _ProductsContentState extends State<_ProductsContent>
                                 ),
                               ),
                             ),
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
-                            sliver: SliverToBoxAdapter(
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary5,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: AppColors.primary100,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Demo catalog: product details and outcome figures are sample content for presentation.',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    height: 1.35,
-                                    color: AppColors.secondaryDark,
+                          if (state.isLoading && displayList.isEmpty)
+                            SliverPadding(
+                              padding: const EdgeInsets.all(16),
+                              sliver: SliverToBoxAdapter(
+                                child: Skeletonizer(
+                                  enabled: true,
+                                  child: Column(
+                                    children: List.generate(
+                                      3,
+                                      (index) => Container(
+                                        height: 120,
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: const Center(
+                                          child: Text('Loading clinical item details...'),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          if (displayList.isEmpty && !state.isLoading)
+                            )
+                          else if (displayList.isEmpty)
                             SliverFillRemaining(
                               hasScrollBody: false,
                               child: state.errorMessage != null

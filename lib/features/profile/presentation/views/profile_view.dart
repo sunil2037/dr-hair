@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/session/session_coordinator.dart';
 import '../../../../core/storage/app_local_cache.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
@@ -398,11 +399,12 @@ class ProfileView extends StatelessWidget {
                     variant: AppButtonVariant.filled,
                     backgroundColor: AppColors.danger,
                     foregroundColor: Colors.white,
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(modalContext);
-                      final authCubit = context.read<AuthCubit?>();
-                      authCubit?.signOut();
-                      context.go(RouteNames.signin);
+                      await SessionCoordinator.instance.signOut(context);
+                      if (context.mounted) {
+                        context.go(RouteNames.signin);
+                      }
                     },
                   ),
                 ),

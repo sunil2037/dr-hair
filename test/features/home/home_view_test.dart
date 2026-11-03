@@ -5,6 +5,46 @@ import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:dr_hair/features/home/presentation/views/home_view.dart';
 import 'package:dr_hair/core/theme/app_theme.dart';
+import 'package:dr_hair/features/shop/data/models/product_model.dart';
+import 'package:dr_hair/features/shop/domain/repositories/product_repository.dart';
+import 'package:dr_hair/features/videos/domain/models/video_story_model.dart';
+import 'package:dr_hair/features/videos/domain/repositories/video_repository.dart';
+
+class _FakeHomeProductRepository implements ProductRepository {
+  @override
+  Future<({List<ProductItem> items, bool hasMore, int total})> getProducts({
+    String? category,
+    String? rootCause,
+    String? query,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final items = ProductItem.demoCatalog.take(limit).toList();
+    return (items: items, hasMore: false, total: items.length);
+  }
+
+  @override
+  Future<ProductItem?> getProductById(String id) async {
+    for (final product in ProductItem.demoCatalog) {
+      if (product.id == id) return product;
+    }
+    return null;
+  }
+}
+
+class _FakeHomeVideoRepository implements VideoRepository {
+  @override
+  Future<({List<VideoStoryModel> items, bool hasMore, int total, int page})>
+  getVideos({
+    int page = 1,
+    int limit = 10,
+    String? category,
+    String? placement = 'reels',
+  }) async {
+    final items = VideoStoryModel.initialStories.take(limit).toList();
+    return (items: items, hasMore: false, total: items.length, page: 1);
+  }
+}
 
 void main() {
   Widget buildHomeView({VoidCallback? onStartHairTest}) {
@@ -16,7 +56,11 @@ void main() {
       child: MaterialApp(
         theme: AppTheme.lightTheme,
         home: Scaffold(
-          body: HomeView(onStartHairTest: onStartHairTest ?? () {}),
+          body: HomeView(
+            onStartHairTest: onStartHairTest ?? () {},
+            productRepository: _FakeHomeProductRepository(),
+            videoRepository: _FakeHomeVideoRepository(),
+          ),
         ),
       ),
     );

@@ -19,11 +19,13 @@ class AppLocalCache {
     'care_persisted_routine_v1',
   ];
   static Box<dynamic>? _sharedBox;
+  static final Map<String, Object?> _fallbackMemoryStore = <String, Object?>{};
 
   final Box<dynamic>? _box;
   final Map<String, Object?>? _memoryStore;
 
-  static AppLocalCache get instance => AppLocalCache._(box: _sharedBox);
+  static AppLocalCache get instance =>
+      AppLocalCache._(box: _sharedBox, memoryStore: _sharedBox == null ? _fallbackMemoryStore : null);
 
   @visibleForTesting
   factory AppLocalCache.inMemory([Map<String, Object?>? values]) =>
@@ -72,6 +74,34 @@ class AppLocalCache {
       await _box.delete(key);
     } else {
       _memoryStore?.remove(key);
+    }
+  }
+
+  /// Generates a namespaced key for patient-specific state.
+  static String patientKey(String patientId, String key) {
+    final cleanId = patientId.trim();
+    return cleanId.isNotEmpty ? 'patient_${cleanId}_$key' : key;
+  }
+
+  /// Removes all persisted keys belonging specifically to the given patient.
+  Future<void> clearPatientScopedData(String patientId) async {
+    final cleanId = patientId.trim();
+    if (cleanId.isEmpty) return;
+    final prefix = 'patient_${cleanId}_';
+
+    final box = _box;
+    if (box != null) {
+      final keysToRemove = box.keys
+          .map((k) => k.toString())
+          .where((k) => k.startsWith(prefix) || k.contains(cleanId))
+          .toList();
+      for (final key in keysToRemove) {
+        await box.delete(key);
+      }
+    }
+    final memoryStore = _memoryStore;
+    if (memoryStore != null) {
+      memoryStore.removeWhere((k, _) => k.startsWith(prefix) || k.contains(cleanId));
     }
   }
 

@@ -16,6 +16,8 @@ import '../../../care/presentation/viewmodels/care_state.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import '../../../hair_test/presentation/viewmodels/hair_test_state.dart';
 import '../../../shop/data/models/product_model.dart';
+import '../../../shop/data/repositories/product_repository_impl.dart';
+import '../../../shop/domain/repositories/product_repository.dart';
 import '../../../videos/data/repositories/video_repository_impl.dart';
 import '../../../videos/domain/models/video_story_model.dart';
 import '../../../videos/domain/repositories/video_repository.dart';
@@ -25,11 +27,13 @@ import '../widgets/medicine_card.dart';
 class HomeView extends StatefulWidget {
   final VoidCallback onStartHairTest;
   final VideoRepository? videoRepository;
+  final ProductRepository? productRepository;
 
   const HomeView({
     super.key,
     required this.onStartHairTest,
     this.videoRepository,
+    this.productRepository,
   });
 
   @override
@@ -43,23 +47,31 @@ class _HomeViewState extends State<HomeView>
   late final List<Animation<double>> _sectionOpacity;
   late final List<Animation<Offset>> _sectionPosition;
   late final Future<List<VideoStoryModel>> _videoStoriesFuture;
+  late final Future<List<ProductItem>> _productsFuture;
   bool _motionConfigured = false;
 
-  bool get _isTesting =>
-      WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
-      const bool.fromEnvironment('flutter.test');
+  static const bool _isFlutterTest = bool.fromEnvironment(
+    'flutter.test',
+    defaultValue: false,
+  );
+
+  bool get _isTestExecution =>
+      _isFlutterTest ||
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
   @override
   void initState() {
     super.initState();
-    if (_isTesting && widget.videoRepository == null) {
-      _videoStoriesFuture = Future.value(VideoStoryModel.initialStories);
-    } else {
-      _videoStoriesFuture = (widget.videoRepository ?? VideoRepositoryImpl())
-          .getVideos(limit: 6, placement: 'home')
-          .then((res) => res.items)
-          .catchError((_) => VideoStoryModel.initialStories);
-    }
+    _videoStoriesFuture = widget.videoRepository == null && _isTestExecution
+        ? Future.value(const <VideoStoryModel>[])
+        : (widget.videoRepository ?? VideoRepositoryImpl())
+              .getVideos(limit: 6, placement: 'home')
+              .then((res) => res.items);
+    _productsFuture = widget.productRepository == null && _isTestExecution
+        ? Future.value(const <ProductItem>[])
+        : (widget.productRepository ?? ProductRepositoryImpl())
+              .getProducts(limit: 6)
+              .then((res) => res.items);
 
     _entranceController = AnimationController(
       vsync: this,
@@ -671,7 +683,7 @@ class _HomeViewState extends State<HomeView>
 
   // --- SECTION 4: ESSENTIAL PRODUCTS ---
   Widget _buildEssentialProducts(BuildContext context) {
-    return const _EssentialProductsSection();
+    return _EssentialProductsSection(productsFuture: _productsFuture);
   }
 
   Widget _buildTodayCard(BuildContext context) {
@@ -974,9 +986,18 @@ class _HomeViewState extends State<HomeView>
                 );
               }
 
-              final stories = (snapshot.data != null && snapshot.data!.isNotEmpty)
-                  ? snapshot.data!
-                  : VideoStoryModel.initialStories;
+              if (snapshot.hasError) {
+                return _buildHomeDataMessage(
+                  'Video stories are temporarily unavailable.',
+                );
+              }
+
+              final stories = snapshot.data ?? const <VideoStoryModel>[];
+              if (stories.isEmpty) {
+                return _buildHomeDataMessage(
+                  'No video stories are published yet.',
+                );
+              }
 
               return ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1071,6 +1092,19 @@ class _HomeViewState extends State<HomeView>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHomeDataMessage(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
       ),
     );
   }
@@ -1490,12 +1524,12 @@ class _HomeViewState extends State<HomeView>
 }
 
 class _EssentialProductsSection extends StatelessWidget {
-  const _EssentialProductsSection();
+  final Future<List<ProductItem>> productsFuture;
+
+  const _EssentialProductsSection({required this.productsFuture});
 
   @override
   Widget build(BuildContext context) {
-    final products = ProductItem.demoCatalog;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1550,29 +1584,60 @@ class _EssentialProductsSection extends StatelessWidget {
         // Medicines Horizontal List
         SizedBox(
           height: 275,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            itemCount: products.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final item = products[index];
-              return MedicineCard(
-                title: item.name,
-                desc: item.subtitle,
-                price: item.supplyPlans.isEmpty
-                    ? 'Price unavailable'
-                    : '₹${item.supplyPlans.first.price}',
-                imageUrl: item.images.isEmpty ? '' : item.images.first,
-                category: item.category.toLowerCase().contains('ayurveda')
-                    ? MedicineCategory.ayurveda
-                    : MedicineCategory.dermatologist,
-                rating: item.rating,
-                showAddToCart: false,
-                onTap: () => context.push(
-                  AppDestination.product(item.id).location ??
-                      RouteNames.products,
-                ),
+          child: FutureBuilder<List<ProductItem>>(
+            future: productsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return const Center(
+                  child: Text(
+                    'Products are temporarily unavailable.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              }
+              final products = snapshot.data ?? const <ProductItem>[];
+              if (products.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No products are available yet.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              }
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: products.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 14),
+                itemBuilder: (context, index) {
+                  final item = products[index];
+                  return MedicineCard(
+                    title: item.name,
+                    desc: item.subtitle,
+                    price: item.supplyPlans.isEmpty
+                        ? 'Price unavailable'
+                        : '₹${item.supplyPlans.first.price}',
+                    imageUrl: item.images.isEmpty ? '' : item.images.first,
+                    category: item.category.toLowerCase().contains('ayurveda')
+                        ? MedicineCategory.ayurveda
+                        : MedicineCategory.dermatologist,
+                    rating: item.rating,
+                    showAddToCart: false,
+                    onTap: () => context.push(
+                      AppDestination.product(item.id).location ??
+                          RouteNames.products,
+                    ),
+                  );
+                },
               );
             },
           ),

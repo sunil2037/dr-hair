@@ -6,11 +6,11 @@ class VideoRepositoryImpl implements VideoRepository {
   final VideoRemoteDataSource _remoteDataSource;
 
   VideoRepositoryImpl({VideoRemoteDataSource? remoteDataSource})
-      : _remoteDataSource = remoteDataSource ?? VideoRemoteDataSource();
+    : _remoteDataSource = remoteDataSource ?? VideoRemoteDataSource();
 
   @override
   Future<({List<VideoStoryModel> items, bool hasMore, int total, int page})>
-      getVideos({
+  getVideos({
     int page = 1,
     int limit = 10,
     String? category,
@@ -23,28 +23,10 @@ class VideoRepositoryImpl implements VideoRepository {
         category: category,
         placement: placement,
       );
-      if (result.items.isNotEmpty) {
-        return result;
-      }
+      return result;
     } catch (_) {
-      // Gracefully fall back to local seed stories if backend is unreachable
+      // Never hide an API outage with local stories.
+      rethrow;
     }
-
-    final all = VideoStoryModel.initialStories;
-    final filtered = (category == null || category == 'All')
-        ? all
-        : all.where((v) {
-            final tag = v.tag.toLowerCase();
-            final cat = v.category.toLowerCase();
-            final query = category.toLowerCase();
-            return tag.contains(query) || cat.contains(query);
-          }).toList();
-
-    return (
-      items: filtered,
-      hasMore: false,
-      total: filtered.length,
-      page: 1,
-    );
   }
 }

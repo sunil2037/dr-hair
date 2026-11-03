@@ -236,8 +236,62 @@ class RoutineTrackerView extends StatelessWidget {
                 subtitle: 'Tap an item when you complete that step today',
               ),
 
-              // Interactive Routine Steps List
-              ...state.routineTasks.map((task) {
+              if (state.routineTasks.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                  margin: const EdgeInsets.only(top: 10, bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary5,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(LucideIcons.clipboardList, size: 36, color: AppColors.primary),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No Active Care Plan Assigned',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Complete a clinical hair assessment or consult with Dr. Hair doctors to receive your personalized treatment routine.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: () => context.push(RouteNames.hairTest),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        icon: const Icon(LucideIcons.sparkles, size: 16),
+                        label: const Text('Take Free Hair Assessment', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...state.routineTasks.map((task) {
                 final isDone = task.isCompleted;
 
                 Color tagBg;

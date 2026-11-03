@@ -77,8 +77,8 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     required String reason,
     String? replacingId,
     int consultationFee = 500,
-    String paymentMethod = 'UPI',
-    String paymentStatus = 'Paid',
+    String paymentMethod = 'Pay at clinic',
+    String paymentStatus = 'Pending',
     String? paymentTransactionId,
   }) async {
     if (patientId.isEmpty || patientId == 'GUEST') {
@@ -118,7 +118,7 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
             reason: reason.trim(),
             consultationFee: consultationFee,
             paymentMethod: paymentMethod,
-            paymentStatus: paymentStatus,
+            paymentStatus: paymentStatus == 'Paid' ? 'Pending' : paymentStatus,
             paymentTransactionId: paymentTransactionId,
           );
           final createdApt = ClinicAppointment.fromJson(res);

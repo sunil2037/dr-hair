@@ -29,8 +29,8 @@ class PatientAppointmentApi {
     required DateTime startsAt,
     required String reason,
     int consultationFee = 500,
-    String paymentMethod = 'UPI',
-    String paymentStatus = 'Paid',
+    String paymentMethod = 'Pay at clinic',
+    String paymentStatus = 'Pending',
     String? paymentTransactionId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
