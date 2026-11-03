@@ -358,7 +358,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
     }
     try {
-      unawaited(repository?.clearSession().catchError((_) {}));
+      await repository?.clearSession();
     } catch (_) {
       // Local session storage must still be cleared by the repository even if
       // remote revocation is unavailable.

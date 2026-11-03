@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/storage/secure_session_store.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_dropdown_form_field.dart';
 import '../../../../core/widgets/app_error_banner.dart';
@@ -142,8 +143,24 @@ class _CompleteProfileSheetContentState
 
     final auth = context.read<AuthCubit>();
     final currentUser = auth.state.user;
-    final login =
-        auth.state.phoneNumber?.trim() ?? currentUser?.phone?.trim() ?? '';
+    final isExistingUser =
+        auth.state.isRegistered &&
+        currentUser != null &&
+        currentUser.id.trim().isNotEmpty;
+
+    var login = auth.state.phoneNumber?.trim() ?? '';
+    if (login.isEmpty && currentUser != null) {
+      login = currentUser.phone?.trim() ?? '';
+      if (login.isEmpty) {
+        login = currentUser.emailOrPhone.trim();
+      }
+    }
+    if (login.isEmpty) {
+      final storedLogin = await SecureSessionStore().readLogin();
+      if (storedLogin != null && storedLogin.trim().isNotEmpty) {
+        login = storedLogin.trim();
+      }
+    }
 
     setState(() {
       _submitting = true;
@@ -161,7 +178,7 @@ class _CompleteProfileSheetContentState
         : _occupationController.text.trim();
 
     bool success = false;
-    if (currentUser != null) {
+    if (isExistingUser) {
       success = await auth.updateProfile(
         name: name,
         age: age,

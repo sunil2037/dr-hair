@@ -68,7 +68,7 @@ class AuthRepositoryImpl implements AuthRepository {
       if (hasCompletedAssessment) {
         await AppLocalCache.instance.put('has_completed_hair_test', true);
       }
-      final profile = _profileFromResponse(responseData);
+      final profile = isRegistered ? _profileFromResponse(responseData) : null;
       var user = profile == null
           ? null
           : UserModel.fromJson(profile, fallbackLogin: login);
@@ -438,8 +438,14 @@ class AuthRepositoryImpl implements AuthRepository {
   ) => response[key] == true || data?[key] == true;
 
   Map<String, dynamic>? _profileFromResponse(Map<String, dynamic>? data) {
-    final nestedUser = _mapValue(data?['user']);
+    if (data == null) return null;
+    final nestedUser = _mapValue(data['user']);
     if (nestedUser != null) return nestedUser;
-    return data;
+    if (data['id'] != null ||
+        data['user_id'] != null ||
+        (data['name'] != null && data['name'].toString().trim().isNotEmpty)) {
+      return data;
+    }
+    return null;
   }
 }
