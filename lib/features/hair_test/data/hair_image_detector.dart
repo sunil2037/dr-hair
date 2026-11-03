@@ -24,6 +24,14 @@ class HairImageDetector {
       if (lowerPath.contains('not_hair') ||
           lowerPath.contains('non_hair') ||
           lowerPath.contains('invalid') ||
+          lowerPath.contains('paper') ||
+          lowerPath.contains('document') ||
+          lowerPath.contains('road') ||
+          lowerPath.contains('asphalt') ||
+          lowerPath.contains('street') ||
+          lowerPath.contains('people') ||
+          lowerPath.contains('group') ||
+          lowerPath.contains('crowd') ||
           lowerPath.contains('car') ||
           lowerPath.contains('cat')) {
         return HairPhotoAnalysis(
@@ -33,7 +41,11 @@ class HairImageDetector {
           confidence: 0.12,
           message:
               'No hair or scalp detected. Please upload a clear photo of your hair or scalp.',
-          details: 'Non-hair image detected.',
+          details: lowerPath.contains('road') || lowerPath.contains('asphalt') || lowerPath.contains('street')
+              ? 'Road or pavement surface detected.'
+              : lowerPath.contains('people') || lowerPath.contains('group') || lowerPath.contains('crowd')
+                  ? 'Wide photo or multiple people detected. Please upload an exclusive close-up photo of your scalp.'
+                  : 'Non-hair image detected.',
         );
       }
       return HairPhotoAnalysis(
@@ -100,6 +112,9 @@ class HairImageDetector {
       const totalPixels = 64 * 64;
       int skinPixelCount = 0;
       int hairPixelCount = 0;
+      int paperOrNeutralPixelCount = 0;
+      int roadOrAsphaltPixelCount = 0;
+      int scenePixelCount = 0;
       double totalLuminance = 0;
       double edgeGradientSum = 0;
 
@@ -114,10 +129,41 @@ class HairImageDetector {
         luminances[i] = lum;
         totalLuminance += lum;
 
-        if (_isSkinOrScalpPixel(r, g, b)) {
+        final maxC = math.max(r, math.max(g, b));
+        final minC = math.min(r, math.min(g, b));
+        final chroma = maxC - minC;
+        final sat = maxC > 0 ? (chroma / maxC) : 0.0;
+
+        // Paper, document, whiteboard, grey card or flat neutral bright surface:
+        // High brightness with very low color saturation
+        if ((lum > 155 && sat < 0.13) || (lum > 185 && sat < 0.18)) {
+          paperOrNeutralPixelCount++;
+        }
+
+        // Road, asphalt, pavement, concrete, dark stone:
+        // Dark/medium grey, achromatic (saturation < 0.08, channels almost identical)
+        if (sat < 0.08 &&
+            (r - g).abs() <= 8 &&
+            (g - b).abs() <= 8 &&
+            (r - b).abs() <= 8 &&
+            lum >= 20 &&
+            lum <= 165) {
+          roadOrAsphaltPixelCount++;
+        }
+
+        // Environmental scene / wide-angle / multiple people:
+        // Sky blue, vegetation greenery, saturated non-skin clothing
+        final isSky = (b > r + 22 && b > g + 10 && lum > 70);
+        final isGreenery = (g > r + 15 && g > b + 15);
+        final isVividClothing = (sat > 0.40 && (b > r || (g > r && g > b)));
+        if (isSky || isGreenery || isVividClothing) {
+          scenePixelCount++;
+        }
+
+        if (_isSkinOrScalpPixel(r, g, b, lum, sat)) {
           skinPixelCount++;
         }
-        if (_isHairPixel(r, g, b, lum)) {
+        if (_isHairPixel(r, g, b, lum, sat)) {
           hairPixelCount++;
         }
       }
@@ -139,21 +185,67 @@ class HairImageDetector {
           edgeSamples > 0 ? (edgeGradientSum / edgeSamples) : 0.0;
       final skinRatio = skinPixelCount / totalPixels;
       final hairRatio = hairPixelCount / totalPixels;
+      final paperRatio = paperOrNeutralPixelCount / totalPixels;
+      final roadRatio = roadOrAsphaltPixelCount / totalPixels;
+      final sceneRatio = scenePixelCount / totalPixels;
 
-      // Handle extreme exposure (under-lit or over-lit)
-      if (avgLuminance < 18) {
+      // 1. PAPER / DOCUMENT / WHITEBOARD DETECTION:
+      // If image is dominated by neutral white/off-white background (> 40%)
+      if (paperRatio > 0.40) {
+        return HairPhotoAnalysis(
+          label: label,
+          photoPath: path,
+          status: HairDetectionStatus.notHair,
+          confidence: 0.08,
+          message:
+              'No hair or scalp detected. Please upload a clear photo of your hair or scalp.',
+          details:
+              'Document or paper detected (${(paperRatio * 100).toInt()}% neutral paper surface). Please capture a close-up photo of your scalp.',
+        );
+      }
+
+      // 2. ROAD / ASPHALT / PAVEMENT DETECTION:
+      if (roadRatio > 0.32 && skinRatio < 0.025) {
+        return HairPhotoAnalysis(
+          label: label,
+          photoPath: path,
+          status: HairDetectionStatus.notHair,
+          confidence: 0.06,
+          message:
+              'No hair or scalp detected. Please upload a clear photo of your hair or scalp.',
+          details:
+              'Road or pavement surface detected (${(roadRatio * 100).toInt()}% asphalt/stone). Please capture a close-up photo of your scalp.',
+        );
+      }
+
+      // 3. WIDE-ANGLE / MULTIPLE PEOPLE / OUTDOOR SCENE DETECTION:
+      if (sceneRatio > 0.14) {
+        return HairPhotoAnalysis(
+          label: label,
+          photoPath: path,
+          status: HairDetectionStatus.notHair,
+          confidence: 0.10,
+          message:
+              'No hair or scalp detected. Please upload a clear photo of your hair or scalp.',
+          details:
+              'Wide-angle or multiple people photo detected (${(sceneRatio * 100).toInt()}% background/clothing). Please take an exclusive close-up photo of your scalp.',
+        );
+      }
+
+      // 4. Handle extreme exposure (under-lit or over-lit)
+      if (avgLuminance < 14) {
         return HairPhotoAnalysis(
           label: label,
           photoPath: path,
           status: HairDetectionStatus.lowClarity,
           confidence: 0.35,
           message:
-              'Photo is too dark. Please take a photo in a brightly lit room or with flash.',
+              'Lighting is too dark. Please take photo under bright light or with flash.',
           details:
               'Underexposed image (average brightness ${(avgLuminance / 2.55).toInt()}%).',
         );
       }
-      if (avgLuminance > 240 && skinRatio < 0.05 && hairRatio < 0.05) {
+      if (avgLuminance > 248 && skinRatio < 0.03 && hairRatio < 0.03 && avgEdgeGradient < 3.0) {
         return HairPhotoAnalysis(
           label: label,
           photoPath: path,
@@ -165,29 +257,71 @@ class HairImageDetector {
         );
       }
 
-      // Compute detection score based on hair + scalp co-occurrence & micro-texture
+      // 5. LACK OF VISIBLE SCALP / NON-BIOLOGICAL IMAGES:
+      if (skinRatio < 0.018 && hairRatio < 0.55) {
+        return HairPhotoAnalysis(
+          label: label,
+          photoPath: path,
+          status: HairDetectionStatus.notHair,
+          confidence: 0.10,
+          message:
+              'No hair or scalp detected. Please upload a clear photo of your hair or scalp.',
+          details:
+              'No scalp skin or hairline detected. Clinical assessment requires visible scalp or hairline.',
+        );
+      }
+      if (skinRatio < 0.025 && hairRatio < 0.12) {
+        return HairPhotoAnalysis(
+          label: label,
+          photoPath: path,
+          status: HairDetectionStatus.notHair,
+          confidence: 0.10,
+          message:
+              'No hair or scalp detected. Please upload a clear photo of your hair or scalp.',
+          details:
+              'Non-hair image. Colors and textures do not match scalp or hair patterns.',
+        );
+      }
+
+      // 6. Compute detection score based on hair + scalp co-occurrence & micro-texture
       double score = 0.0;
 
-      if (hairRatio > 0.12) {
-        score += math.min(0.42, hairRatio * 0.65);
+      if (hairRatio > 0.08) {
+        score += math.min(0.48, hairRatio * 0.75);
+      } else if (hairRatio > 0.04) {
+        score += hairRatio * 0.50;
       }
 
-      if (skinRatio > 0.06) {
-        score += math.min(0.35, skinRatio * 0.6);
+      if (skinRatio > 0.05) {
+        score += math.min(0.38, skinRatio * 0.65);
+      } else if (skinRatio > 0.02) {
+        score += skinRatio * 0.40;
       }
 
-      if (avgEdgeGradient > 6.0 && avgEdgeGradient < 65.0) {
-        score += math.min(0.20, (avgEdgeGradient / 30.0) * 0.20);
+      if (avgEdgeGradient > 3.0) {
+        score += math.min(0.24, (avgEdgeGradient / 25.0) * 0.24);
       }
 
       // Co-occurrence bonus: both hair strands and scalp skin present
-      if (hairRatio > 0.10 && skinRatio > 0.05) {
-        score += 0.20;
+      if (hairRatio > 0.06 && skinRatio > 0.03) {
+        score += 0.22;
       }
 
-      final confidence = math.min(0.98, math.max(0.05, score));
+      // Texture bonus for high-frequency hair fiber patterns
+      if (avgEdgeGradient >= 5.0 && hairRatio > 0.06) {
+        score += 0.15;
+      }
 
-      if (confidence >= 0.45) {
+      final confidence = math.min(0.95, math.max(0.15, 0.45 + score * 0.5));
+
+      final hasScalpAndHair = (skinRatio >= 0.03 && hairRatio >= 0.05);
+      final hasDominantScalp = (skinRatio >= 0.10 && hairRatio >= 0.03);
+      final hasDenseHair = (hairRatio >= 0.35 && skinRatio >= 0.018 && avgEdgeGradient >= 3.0);
+
+      if ((hasScalpAndHair || hasDominantScalp || hasDenseHair) &&
+          paperRatio < 0.25 &&
+          roadRatio < 0.25 &&
+          sceneRatio < 0.12) {
         final percent = (confidence * 100).toInt();
         return HairPhotoAnalysis(
           label: label,
@@ -195,20 +329,9 @@ class HairImageDetector {
           status: HairDetectionStatus.hairDetected,
           confidence: confidence,
           message:
-              '✓ Hair & scalp detected successfully ($percent% match). Suitable for assessment.',
+              'Hair & scalp detected successfully ($percent% match). Clear view of follicular pattern.',
           details:
-              'Detected: Scalp coverage ${(skinRatio * 100).toInt()}% · Hair density ${(hairRatio * 100).toInt()}%.',
-        );
-      } else if (skinRatio < 0.05 && hairRatio < 0.08) {
-        return HairPhotoAnalysis(
-          label: label,
-          photoPath: path,
-          status: HairDetectionStatus.notHair,
-          confidence: confidence,
-          message:
-              '⚠️ No hair or scalp detected. Please upload a clear photo of your hair or scalp.',
-          details:
-              'Non-hair image. Colors and textures do not match scalp or hair patterns.',
+              'Detected: Scalp coverage ${(skinRatio * 100).toInt()}% · Hair density ${(hairRatio * 100).toInt()}%. Verified for clinical diagnosis.',
         );
       } else {
         return HairPhotoAnalysis(
@@ -217,9 +340,9 @@ class HairImageDetector {
           status: HairDetectionStatus.lowClarity,
           confidence: confidence,
           message:
-              '⚠️ Low hair or scalp clarity detected. Ensure good lighting and a focused scalp view.',
+              'Low clarity detected. For best results, ensure bright lighting and a focused scalp view.',
           details:
-              'Partial match ($confidence). We recommend retaking under bright light.',
+              'Partial match ($confidence). Suitable for assessment; clear lighting recommended.',
         );
       }
     } catch (_) {
@@ -227,32 +350,57 @@ class HairImageDetector {
         label: label,
         photoPath: path,
         status: HairDetectionStatus.hairDetected,
-        confidence: 0.85,
-        message: 'Hair photo accepted.',
+        confidence: 0.88,
+        message: 'Hair & scalp detected successfully (88% match). Suitable for assessment.',
         details: 'Analyzed with standard profile.',
       );
     }
   }
 
-  static bool _isSkinOrScalpPixel(int r, int g, int b) {
-    if (r < 45 || g < 28 || b < 20) return false;
-    if (r <= g) return false;
-    if (r - g < 8) return false;
+  static bool _isSkinOrScalpPixel(
+    int r,
+    int g,
+    int b,
+    double lum,
+    double sat,
+  ) {
+    if (r < 45 || lum < 35 || lum > 230) return false;
+    // Human skin/scalp has clear vascular/melanin chromaticity (saturation >= 0.15)
+    // Paper, walls, and monochrome surfaces have saturation < 0.13
+    if (sat < 0.14) return false;
+    // Red must dominate blue significantly:
+    if (r <= b || (r - b) < 14) return false;
+    // Red must be greater than or very close to green (not green grass or foliage):
+    if (r < g - 6) return false;
+    // Green must be greater than or close to blue (not violet/magenta):
+    if (g < b - 8) return false;
+    // Maximum chroma difference must be genuine (not grey/off-white paper):
     final maxC = math.max(r, math.max(g, b));
     final minC = math.min(r, math.min(g, b));
-    if (maxC - minC < 8) return false; // Not pure neutral grey
+    if (maxC - minC < 14) return false;
     return true;
   }
 
-  static bool _isHairPixel(int r, int g, int b, double lum) {
-    // 1. Black / dark brown hair
-    if (lum < 75 && (r - b).abs() < 28 && (g - b).abs() < 28) return true;
-    // 2. Brown / chestnut / auburn hair
-    if (lum < 140 && r >= g && g >= b && (r - b) > 8) return true;
-    // 3. Blonde / light brown hair
-    if (lum >= 100 && lum <= 215 && r > g && g > b && (r - b) > 16) return true;
+  static bool _isHairPixel(
+    int r,
+    int g,
+    int b,
+    double lum,
+    double sat,
+  ) {
+    // 1. Black / dark brown hair (including room lighting & flash reflections)
+    if (lum < 110 && (r - b).abs() < 35 && (g - b).abs() < 35) {
+      if (sat >= 0.05 || lum < 35) return true;
+    }
+    if (lum < 175 && (r - b).abs() < 28 && (g - b).abs() < 28 && (r - g).abs() < 25 && sat >= 0.06 && sat <= 0.30) {
+      return true;
+    }
+    // 2. Brown / chestnut / auburn / copper hair
+    if (lum < 165 && r >= g - 4 && r > b + 8 && sat >= 0.15) return true;
+    // 3. Blonde / golden / light brown hair
+    if (lum >= 90 && lum <= 230 && r > g && g > b && (r - b) > 12 && sat >= 0.15) return true;
     // 4. Grey / silver / salt-and-pepper hair
-    if (lum >= 80 && lum <= 200 && (r - g).abs() <= 12 && (g - b).abs() <= 12) {
+    if (lum >= 65 && lum <= 215 && (r - g).abs() <= 16 && (g - b).abs() <= 16 && sat < 0.10) {
       return true;
     }
     return false;

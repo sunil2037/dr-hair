@@ -32,10 +32,32 @@ class CustomCachedImage extends StatelessWidget {
     final effectiveBorderRadius =
         customBorderRadius ?? BorderRadius.circular(borderRadius);
 
+    final cleanUrl = imageUrl.trim();
+    final isValidUrl = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://');
+
+    if (!isValidUrl) {
+      return ClipRRect(
+        borderRadius: effectiveBorderRadius,
+        child: errorWidget ??
+            Container(
+              width: width,
+              height: height,
+              color: AppColors.border.withValues(alpha: 0.5),
+              child: const Center(
+                child: Icon(
+                  LucideIcons.imageOff,
+                  color: AppColors.textSecondary,
+                  size: 28,
+                ),
+              ),
+            ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: effectiveBorderRadius,
       child: CachedNetworkImage(
-        imageUrl: imageUrl,
+        imageUrl: cleanUrl,
         width: width,
         height: height,
         fit: fit,

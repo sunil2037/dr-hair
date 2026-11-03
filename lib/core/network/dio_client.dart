@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../constants/api_endpoints.dart';
+import '../session/session_coordinator.dart';
 import 'failure.dart';
 
 /// DioClient with:
@@ -10,6 +11,9 @@ import 'failure.dart';
 /// 2. Yellow ANSI color console logger for Request, Response, and Errors
 class DioClient {
   late final Dio dio;
+
+  /// Optional mock adapter for hermetic test execution (preventing live network calls)
+  static HttpClientAdapter? mockAdapter;
 
   /// Global loading notifier for all active network requests
   static final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
@@ -47,6 +51,10 @@ class DioClient {
             },
           ),
         );
+
+    if (mockAdapter != null) {
+      dio.httpClientAdapter = mockAdapter!;
+    }
 
     // Yellow Color Console Logging & Loader Interceptor
     dio.interceptors.add(
@@ -104,6 +112,40 @@ class DioClient {
           if (err.requestOptions.extra['silent'] != true) {
             _stopLoading();
           }
+
+          final statusCode = err.response?.statusCode;
+          final dynamic errorData = err.response?.data;
+          final errorCode =
+              errorData is Map ? errorData['code']?.toString() : null;
+          final errorMsg =
+              errorData is Map ? errorData['message']?.toString() : null;
+
+          if (statusCode == 401 &&
+              (errorCode == 'ACCOUNT_DELETED' ||
+                  (errorMsg != null &&
+                      errorMsg.toLowerCase().contains(
+                        'deleted by clinic administration',
+                      )))) {
+            SessionCoordinator.instance.handleAccountDeleted(message: errorMsg);
+          } else if (statusCode == 403 &&
+              (errorCode == 'ACCOUNT_BLOCKED' ||
+                  (errorMsg != null &&
+                      errorMsg.toLowerCase().contains(
+                        'suspended by clinic administration',
+                      )))) {
+            final details =
+                errorData is Map && errorData['details'] is Map
+                    ? errorData['details'] as Map
+                    : null;
+            final supportPhone = details?['support_phone']?.toString();
+            final supportEmail = details?['support_email']?.toString();
+            SessionCoordinator.instance.showAccountBlockedDialog(
+              message: errorMsg,
+              supportPhone: supportPhone,
+              supportEmail: supportEmail,
+            );
+          }
+
           final sensitive = err.requestOptions.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(

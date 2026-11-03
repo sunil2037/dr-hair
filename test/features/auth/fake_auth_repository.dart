@@ -26,10 +26,9 @@ class FakeAuthRepository implements AuthRepository {
   );
 
   @override
-  Future<String?> requestOtp(String login) async {
+  Future<void> requestOtp(String login) async {
     requestCount++;
     lastRequestedLogin = login;
-    return testOtp;
   }
 
   @override

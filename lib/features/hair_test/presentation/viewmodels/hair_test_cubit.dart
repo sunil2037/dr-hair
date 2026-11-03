@@ -493,6 +493,7 @@ class HairTestCubit extends Cubit<HairTestState> {
     try {
       await _cache.put(_completedKey, true);
       await _cache.put('has_completed_hair_test', true);
+      await _cache.put('has_skipped_hair_test', false);
       if (state.stage != null) {
         await _cache.put(_stageKey, state.stage!);
         await _cache.put('hair_test_stage', state.stage!);
@@ -588,6 +589,10 @@ class HairTestCubit extends Cubit<HairTestState> {
       ),
     );
     _saveDraft();
+  }
+
+  Future<void> markAssessmentSkipped() async {
+    await _cache.put('has_skipped_hair_test', true);
   }
 
   void dismissReport() {
@@ -863,6 +868,7 @@ class HairTestCubit extends Cubit<HairTestState> {
       'hair_test_draft_v2',
       'hair_test_draft_v1',
       'has_completed_hair_test',
+      'has_skipped_hair_test',
       'hair_test_stage',
       'hair_test_dandruff',
       'hair_test_name',

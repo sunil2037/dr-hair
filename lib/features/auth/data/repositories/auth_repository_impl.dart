@@ -19,14 +19,9 @@ class AuthRepositoryImpl implements AuthRepository {
        _sessionStore = sessionStore ?? SecureSessionStore();
 
   @override
-  Future<String?> requestOtp(String login) async {
+  Future<void> requestOtp(String login) async {
     try {
-      final response = await _remote.requestOtp(login);
-      final testOtp =
-          response['test_otp']?.toString() ?? response['otp']?.toString();
-      return testOtp != null && RegExp(r'^\d{6}$').hasMatch(testOtp)
-          ? testOtp
-          : null;
+      await _remote.requestOtp(login);
     } on DioException catch (error) {
       throw _mapError(error, fallback: 'Could not send the verification code.');
     }

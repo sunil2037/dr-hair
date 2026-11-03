@@ -231,13 +231,10 @@ class VideosCubit extends Cubit<VideosState> {
       hasChanges = true;
     }
 
-    // Auto-pause if video scrolls far out of view
-    if (visibleFraction < 0.2) {
-      final video = updatedVideos.firstWhere(
-        (v) => v.id == videoId,
-        orElse: () => updatedVideos.first,
-      );
-      if (video.isPlaying) {
+    // Auto-pause if video scrolls out of dominant view (< 45%)
+    if (visibleFraction < 0.45) {
+      final index = updatedVideos.indexWhere((v) => v.id == videoId);
+      if (index != -1 && updatedVideos[index].isPlaying) {
         updatedVideos = updatedVideos.map((v) {
           if (v.id == videoId) return v.copyWith(isPlaying: false);
           return v;

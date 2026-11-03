@@ -53,6 +53,40 @@ class DeliveryAddress {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'phone': phone,
+        'house_number': houseNumber,
+        'street': street,
+        'city': city,
+        'state': state,
+        'pincode': pinCode,
+        'tag': tag,
+        'is_default': isDefault,
+      };
+
+  factory DeliveryAddress.fromJson(Map<String, dynamic> json) {
+    return DeliveryAddress(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      houseNumber: json['house_number'] as String? ??
+          json['houseNumber'] as String? ??
+          '',
+      street: json['street'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      state: json['state'] as String? ?? '',
+      pinCode: json['pincode'] as String? ??
+          json['pinCode'] as String? ??
+          '',
+      tag: json['tag'] as String? ?? 'Home',
+      isDefault: json['is_default'] as bool? ??
+          json['isDefault'] as bool? ??
+          false,
+    );
+  }
+
   static List<DeliveryAddress> defaultAddresses() => [
         const DeliveryAddress(
           id: 'addr_home',

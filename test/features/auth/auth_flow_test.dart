@@ -78,8 +78,7 @@ void main() {
         // Ensure card animated to OTP step
         expect(find.text('Enter Verification Code'), findsOneWidget);
         expect(find.text('Verify & Proceed'), findsOneWidget);
-        expect(find.text('Local test code: 123456'), findsOneWidget);
-        expect(find.text('Fill'), findsOneWidget);
+        expect(find.textContaining('Local test code:'), findsNothing);
         expect(repository.lastRequestedLogin, '9876543210');
 
         // Top back button should be visible when OTP field is active
@@ -94,50 +93,48 @@ void main() {
       },
     );
 
-    testWidgets(
-      'SigninView fills only API-provided local test code and verifies it',
-      (tester) async {
-        final repository = FakeAuthRepository();
-        final authCubit = AuthCubit(repository: repository);
+    testWidgets('SigninView accepts the six-digit SMS code and verifies it', (
+      tester,
+    ) async {
+      final repository = FakeAuthRepository();
+      final authCubit = AuthCubit(repository: repository);
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: BlocProvider<AuthCubit>.value(
-              value: authCubit,
-              child: const SigninView(),
-            ),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<AuthCubit>.value(
+            value: authCubit,
+            child: const SigninView(),
           ),
-        );
+        ),
+      );
 
-        // Enter valid phone number and proceed to OTP step
-        await tester.enterText(find.byType(TextField).first, '9876543210');
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Send Verification OTP'));
-        await tester.pumpAndSettle();
+      // Enter valid phone number and proceed to OTP step
+      await tester.enterText(find.byType(TextField).first, '9876543210');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Send Verification OTP'));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Enter Verification Code'), findsOneWidget);
-        expect(find.text('Local test code: 123456'), findsOneWidget);
-        expect(find.text('Fill'), findsOneWidget);
-        expect(find.text('Verify & Proceed'), findsOneWidget);
+      expect(find.text('Enter Verification Code'), findsOneWidget);
+      expect(find.textContaining('Local test code:'), findsNothing);
+      expect(find.text('Verify & Proceed'), findsOneWidget);
 
-        await tester.tap(find.text('Fill'));
-        await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '123456');
+      await tester.pumpAndSettle();
 
-        // Ensure digits are auto-filled
-        expect(find.byType(TextField), findsNWidgets(6));
+      // Ensure digits are auto-filled
+      expect(find.byType(TextField), findsNWidgets(6));
 
-        // Tap Verify & Proceed
-        await tester.tap(find.text('Verify & Proceed'));
-        await tester.pump(const Duration(milliseconds: 350));
-        await tester.pumpAndSettle();
+      // Tap Verify & Proceed
+      await tester.tap(find.text('Verify & Proceed'));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
 
-        // Ensure authenticated in cubit
-        expect(authCubit.state.isAuthenticated, isTrue);
-        expect(repository.requestCount, 1);
-        expect(repository.verifyCount, 1);
-        expect(repository.lastVerifiedLogin, '9876543210');
-      },
-    );
+      // Ensure authenticated in cubit
+      expect(authCubit.state.isAuthenticated, isTrue);
+      expect(repository.requestCount, 1);
+      expect(repository.verifyCount, 1);
+      expect(repository.lastVerifiedLogin, '9876543210');
+    });
 
     testWidgets('End-to-end Splash -> Login -> Home routing flow works', (
       tester,
@@ -175,7 +172,7 @@ void main() {
       await tester.enterText(find.byType(TextField).first, '9876543210');
       await tester.tap(find.text('Send Verification OTP'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Fill'));
+      await tester.enterText(find.byType(TextField).first, '123456');
       await tester.tap(find.text('Verify & Proceed'));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
@@ -219,7 +216,7 @@ void main() {
         await tester.enterText(find.byType(TextField).first, '9876543210');
         await tester.tap(find.text('Send Verification OTP'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Fill'));
+        await tester.enterText(find.byType(TextField).first, '123456');
         await tester.tap(find.text('Verify & Proceed'));
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
@@ -253,13 +250,16 @@ void main() {
       },
     );
 
-    test('AuthCubit deleteAccount calls repository and resets to unauthenticated', () async {
-      final repository = FakeAuthRepository();
-      final authCubit = AuthCubit(repository: repository);
-      final success = await authCubit.deleteAccount();
-      expect(success, true);
-      expect(authCubit.state.status, AuthStatus.unauthenticated);
-      expect(repository.sessionCleared, true);
-    });
+    test(
+      'AuthCubit deleteAccount calls repository and resets to unauthenticated',
+      () async {
+        final repository = FakeAuthRepository();
+        final authCubit = AuthCubit(repository: repository);
+        final success = await authCubit.deleteAccount();
+        expect(success, true);
+        expect(authCubit.state.status, AuthStatus.unauthenticated);
+        expect(repository.sessionCleared, true);
+      },
+    );
   });
 }

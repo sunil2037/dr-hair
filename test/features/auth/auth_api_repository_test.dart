@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('Auth API request contract', () {
     test(
-      'requests OTP through the API and reads the optional local test code',
+      'requests OTP through the API without reading an OTP from the response',
       () async {
         RequestOptions? capturedRequest;
         final dio = Dio(BaseOptions(baseUrl: 'https://backend.test'));
@@ -21,7 +21,6 @@ void main() {
                   data: const {
                     'status': 'success',
                     'message': 'Verification code accepted.',
-                    'test_otp': '123456',
                   },
                 ),
               );
@@ -32,39 +31,35 @@ void main() {
           remote: AuthRemoteDataSource(dio: dio),
         );
 
-        final code = await repository.requestOtp('9876543210');
+        await repository.requestOtp('9876543210');
 
-        expect(code, '123456');
         expect(capturedRequest?.path, '/api/v1/auth/send_login_otp');
         expect(capturedRequest?.data, {'login': '9876543210'});
         expect(capturedRequest?.extra['sensitive'], isTrue);
       },
     );
 
-    test(
-      'production API response does not provide a local test code',
-      () async {
-        final dio = Dio(BaseOptions(baseUrl: 'https://backend.test'));
-        dio.interceptors.add(
-          InterceptorsWrapper(
-            onRequest: (options, handler) => handler.resolve(
-              Response<Map<String, dynamic>>(
-                requestOptions: options,
-                statusCode: 200,
-                data: const {
-                  'status': 'success',
-                  'message': 'If this destination can receive a code, a verification code has been sent.',
-                },
-              ),
+    test('API response does not provide a local test code', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://backend.test'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) => handler.resolve(
+            Response<Map<String, dynamic>>(
+              requestOptions: options,
+              statusCode: 200,
+              data: const {
+                'status': 'success',
+                'message': 'If this destination can receive a code, a verification code has been sent.',
+              },
             ),
           ),
-        );
-        final repository = AuthRepositoryImpl(
-          remote: AuthRemoteDataSource(dio: dio),
-        );
+        ),
+      );
+      final repository = AuthRepositoryImpl(
+        remote: AuthRemoteDataSource(dio: dio),
+      );
 
-        expect(await repository.requestOtp('9876543210'), isNull);
-      },
-    );
+      await repository.requestOtp('9876543210');
+    });
   });
 }

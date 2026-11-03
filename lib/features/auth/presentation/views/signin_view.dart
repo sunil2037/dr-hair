@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/session/session_coordinator.dart';
 import '../../../../core/storage/app_local_cache.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../viewmodels/auth_cubit.dart';
@@ -327,7 +328,9 @@ class _SigninViewState extends State<SigninView>
           !authCubit.state.hasCompletedAssessment) {
         final cachedCompleted =
             AppLocalCache.instance.getBool('has_completed_hair_test') ?? false;
-        if (!cachedCompleted) {
+        final cachedSkipped =
+            AppLocalCache.instance.getBool('has_skipped_hair_test') ?? false;
+        if (!cachedCompleted && !cachedSkipped) {
           context.go(RouteNames.hairTest);
         } else {
           _navigateToHome();
@@ -336,15 +339,23 @@ class _SigninViewState extends State<SigninView>
         _navigateToHome();
       }
     } else {
-      AppToast.show(
-        context,
-        SnackBar(
-          backgroundColor: AppColors.danger,
-          content: Text(
-            authCubit.state.errorMessage ?? 'Code verification failed.',
+      final errorMsg =
+          authCubit.state.errorMessage ?? 'Code verification failed.';
+      if (errorMsg.toLowerCase().contains('suspended by clinic administration') ||
+          errorMsg.toLowerCase().contains('account has been suspended')) {
+        SessionCoordinator.instance.showAccountBlockedDialog(
+          context: context,
+          message: errorMsg,
+        );
+      } else {
+        AppToast.show(
+          context,
+          SnackBar(
+            backgroundColor: AppColors.danger,
+            content: Text(errorMsg),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -866,7 +877,8 @@ class _SigninViewState extends State<SigninView>
           ),
         ),
 
-        if (_clipboardOtp != null && _otpControllers.every((c) => c.text.isEmpty)) ...[
+        if (_clipboardOtp != null &&
+            _otpControllers.every((c) => c.text.isEmpty)) ...[
           const SizedBox(height: 12),
           GestureDetector(
             onTap: isBusy ? null : () => _fillOtp(_clipboardOtp!),
@@ -880,7 +892,11 @@ class _SigninViewState extends State<SigninView>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.clipboardPaste, size: 14, color: AppColors.primary),
+                  const Icon(
+                    LucideIcons.clipboardPaste,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Paste from clipboard: $_clipboardOtp',
@@ -892,45 +908,6 @@ class _SigninViewState extends State<SigninView>
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-
-        if (authState.developmentOtp != null) ...[
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              color: AppColors.primary5.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  LucideIcons.flaskConical,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Local test code: ${authState.developmentOtp}',
-                    style: const TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: isBusy
-                      ? null
-                      : () => _fillOtp(authState.developmentOtp!),
-                  child: const Text('Fill'),
-                ),
-              ],
             ),
           ),
         ],

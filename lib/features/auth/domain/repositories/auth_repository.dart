@@ -39,8 +39,8 @@ class AuthRepositoryException implements Exception {
 }
 
 abstract interface class AuthRepository {
-  /// Returns a local development OTP only when the backend explicitly opts in.
-  Future<String?> requestOtp(String login);
+  /// Requests a real SMS OTP. The code is never returned to the client.
+  Future<void> requestOtp(String login);
 
   Future<AuthVerification> verifyOtp({
     required String login,

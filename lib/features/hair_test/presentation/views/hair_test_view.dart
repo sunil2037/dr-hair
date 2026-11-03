@@ -10,6 +10,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/custom_cached_image.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../../../auth/presentation/viewmodels/auth_cubit.dart';
 import '../../domain/models/hair_photo_analysis.dart';
@@ -91,8 +92,17 @@ class _HairTestContent extends StatelessWidget {
                 : null,
             actions: [
               InkWell(
-                onTap: () {
-                  context.go(RouteNames.mainShell);
+                onTap: () async {
+                  await context.read<HairTestCubit>().markAssessmentSkipped();
+                  if (context.mounted) {
+                    try {
+                      context.go(RouteNames.mainShell);
+                    } catch (_) {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                    }
+                  }
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: const Text(
@@ -688,13 +698,20 @@ class _HairTestContent extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     if (hasPhoto) ...[
-                      Image.file(
-                        File(photoPath),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                          child: Icon(icon, color: Colors.white70, size: 36),
+                      if (photoPath.startsWith('http://') ||
+                          photoPath.startsWith('https://'))
+                        CustomCachedImage(
+                          imageUrl: photoPath,
+                          fit: BoxFit.cover,
+                        )
+                      else
+                        Image.file(
+                          File(photoPath),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Icon(icon, color: Colors.white70, size: 36),
+                          ),
                         ),
-                      ),
                       Positioned(
                         left: 0,
                         right: 0,

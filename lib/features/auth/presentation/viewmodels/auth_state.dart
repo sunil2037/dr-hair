@@ -17,7 +17,6 @@ class AuthState {
   final bool isOtpSent;
   final String? phoneNumber;
   final String? sessionToken;
-  final String? developmentOtp;
   final bool isRegistered;
   final bool isAdmin;
   final bool hasCompletedAssessment;
@@ -32,7 +31,6 @@ class AuthState {
     this.isOtpSent = false,
     this.phoneNumber,
     this.sessionToken,
-    this.developmentOtp,
     this.isRegistered = false,
     this.isAdmin = false,
     this.hasCompletedAssessment = false,
@@ -55,6 +53,7 @@ class AuthState {
     }
     return false;
   }
+
   bool get requiresProfileCompletion => status == AuthStatus.profileRequired;
   bool get isGuest => false;
   bool get canResendOtp => resendCountdown <= 0;
@@ -67,7 +66,6 @@ class AuthState {
     bool? isOtpSent,
     String? phoneNumber,
     String? sessionToken,
-    String? developmentOtp,
     bool? isRegistered,
     bool? isAdmin,
     bool? hasCompletedAssessment,
@@ -76,7 +74,6 @@ class AuthState {
     bool clearUser = false,
     bool clearError = false,
     bool clearSession = false,
-    bool clearDevelopmentOtp = false,
     bool clearLatestAssessment = false,
   }) {
     return AuthState(
@@ -87,9 +84,6 @@ class AuthState {
       isOtpSent: isOtpSent ?? this.isOtpSent,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       sessionToken: clearSession ? null : (sessionToken ?? this.sessionToken),
-      developmentOtp: clearDevelopmentOtp
-          ? null
-          : (developmentOtp ?? this.developmentOtp),
       isRegistered: isRegistered ?? this.isRegistered,
       isAdmin: isAdmin ?? this.isAdmin,
       hasCompletedAssessment:

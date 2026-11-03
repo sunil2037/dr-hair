@@ -41,7 +41,7 @@ class _FakeHomeVideoRepository implements VideoRepository {
     String? category,
     String? placement = 'reels',
   }) async {
-    final items = VideoStoryModel.initialStories.take(limit).toList();
+    final items = VideoStoryModel.testStories.take(limit).toList();
     return (items: items, hasMore: false, total: items.length, page: 1);
   }
 }
@@ -120,5 +120,44 @@ void main() {
     final reviewsTop = tester.getTopLeft(find.text('Voices of Success')).dy;
     final videosTop = tester.getTopLeft(find.text('Real Patient Stories')).dy;
     expect(reviewsTop, lessThan(videosTop));
+  });
+
+  testWidgets('HomeView displays Pending Assessment Stepper and triggers onStartHairTest', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    bool started = false;
+    await tester.pumpWidget(
+      buildHomeView(
+        onStartHairTest: () {
+          started = true;
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify Stepper Header and Milestone labels
+    expect(find.text('Hair & Scalp Assessment'), findsOneWidget);
+    expect(find.text('PENDING'), findsOneWidget);
+    expect(find.text('Pattern'), findsOneWidget);
+    expect(find.text('Scalp'), findsOneWidget);
+    expect(find.text('Habits'), findsOneWidget);
+    expect(find.text('Photos'), findsOneWidget);
+
+    // Verify Stepper CTA button and interaction
+    final ctaButton = find.text('Start Free Hair Assessment');
+    expect(ctaButton, findsOneWidget);
+
+    await tester.ensureVisible(ctaButton);
+    await tester.tap(ctaButton);
+    await tester.pumpAndSettle();
+
+    expect(started, isTrue);
   });
 }

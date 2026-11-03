@@ -1,7 +1,9 @@
+import 'package:dr_hair/core/storage/app_local_cache.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:dr_hair/features/hair_test/presentation/views/hair_test_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets(
@@ -228,6 +230,31 @@ void main() {
       expect(
         find.text('Retake Photo'),
         findsOneWidget,
+      );
+
+      cubit.close();
+    },
+  );
+
+  testWidgets(
+    'HairTestView skip button marks assessment as skipped in local cache',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await AppLocalCache.instance.clearAll();
+
+      final cubit = HairTestCubit();
+      await tester.pumpWidget(MaterialApp(home: HairTestView(cubit: cubit)));
+      await tester.pumpAndSettle();
+
+      final skipFinder = find.text('Skip');
+      expect(skipFinder, findsOneWidget);
+
+      await tester.tap(skipFinder);
+      await tester.pumpAndSettle();
+
+      expect(
+        AppLocalCache.instance.getBool('has_skipped_hair_test'),
+        isTrue,
       );
 
       cubit.close();

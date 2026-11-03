@@ -1,9 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/storage/secure_session_store.dart';
+import '../../../auth/presentation/viewmodels/auth_cubit.dart';
+import '../../../care/domain/models/care_models.dart';
+import '../../data/datasources/commerce_remote_data_source.dart';
 import '../../data/models/delivery_address_model.dart';
 import '../widgets/delivery_address_bottom_sheet.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,11 +27,28 @@ class CheckoutView extends StatefulWidget {
 class _CheckoutViewState extends State<CheckoutView> {
   List<DeliveryAddress> _addresses = DeliveryAddress.defaultAddresses();
   DeliveryAddress? _selectedAddress;
+  bool _isSubmitting = false;
+  late final CommerceRemoteDataSource _commerceDataSource = CommerceRemoteDataSource();
 
-  int get _checkoutAmount {
-    final cart = context.read<CartCubit?>()?.state;
-    if (cart != null && cart.items.isNotEmpty) return cart.subtotal;
-    return 0;
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  Future<void> _loadAddresses() async {
+    try {
+      final remoteAddresses = await _commerceDataSource.fetchAddresses();
+      if (remoteAddresses.isNotEmpty && mounted) {
+        setState(() {
+          _addresses = remoteAddresses;
+          _selectedAddress = remoteAddresses.firstWhere(
+            (a) => a.isDefault,
+            orElse: () => remoteAddresses.first,
+          );
+        });
+      }
+    } catch (_) {}
   }
 
   void _openAddressSheet() {
@@ -39,18 +61,23 @@ class _CheckoutViewState extends State<CheckoutView> {
           _selectedAddress = address;
         });
       },
-      onAddressesUpdated: (updatedList, activeAddress) {
+      onAddressesUpdated: (updatedList, activeAddress) async {
         setState(() {
           _addresses = updatedList;
           _selectedAddress = activeAddress;
         });
+        try {
+          await _commerceDataSource.createAddress(address: activeAddress);
+        } catch (_) {}
       },
     );
   }
 
-  void _handlePlaceOrder() {
+  Future<void> _handlePlaceOrder() async {
+    if (_isSubmitting) return;
     final address = _selectedAddress;
-    final items = context.read<CartCubit?>()?.state.items ?? [];
+    final cartState = context.read<CartCubit?>()?.state;
+    final items = cartState?.items ?? [];
     if (address == null) {
       AppToast.show(context, const SnackBar(content: Text('Select a delivery address first.')));
       return;
@@ -59,13 +86,81 @@ class _CheckoutViewState extends State<CheckoutView> {
       AppToast.show(context, const SnackBar(content: Text('Your cart is empty. Add a product before checkout.')));
       return;
     }
-    context.read<CareCubit>().saveLocalOrderPreview(
-      deliveryAddress: '${address.name}, ${address.formattedAddress}, ${address.phone}',
-      items: items.map((item) => '${item['title']} × ${item['quantity']}').toList(),
-      totalAmount: _checkoutAmount,
-    );
-    AppToast.show(context, const SnackBar(content: Text('Local preview saved. No payment was taken and nothing was sent for delivery.')));
-    context.push(RouteNames.orders);
+
+    final authState = context.read<AuthCubit?>()?.state;
+    var token = authState?.sessionToken;
+    if (token == null || token.isEmpty) {
+      token = await SecureSessionStore().readToken();
+    }
+
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      AppToast.show(context, const SnackBar(content: Text('Please sign in to place your order.')));
+      context.push(RouteNames.signin);
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final checkoutItems = items.map((item) {
+        final rawId = (item['productId'] ?? item['product_id'] ?? item['id'] ?? '').toString();
+        final productId = rawId.contains('::') ? rawId.split('::').first : rawId;
+        final plan = item['plan']?.toString() ?? 'Standard';
+        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+        return {
+          'productId': productId,
+          'plan': plan,
+          'quantity': qty,
+        };
+      }).toList();
+
+      final idempotencyKey = 'idem_${DateTime.now().millisecondsSinceEpoch}_${address.id}';
+
+      final result = await _commerceDataSource.checkout(
+        token: token,
+        idempotencyKey: idempotencyKey,
+        addressId: address.id.startsWith('addr_') ? null : address.id,
+        shippingAddress: address,
+        items: checkoutItems,
+      );
+
+      final rawOrder = result['order'] is Map<String, dynamic>
+          ? result['order'] as Map<String, dynamic>
+          : <String, dynamic>{};
+      final placedOrder = CareOrder.fromJson(rawOrder);
+
+      if (mounted) {
+        context.read<CareCubit>().addOrder(placedOrder);
+        context.read<CartCubit?>()?.clear();
+        AppToast.show(
+          context,
+          SnackBar(content: Text('Order #${placedOrder.orderId} placed successfully!')),
+        );
+        context.push(RouteNames.orders);
+      }
+    } catch (e) {
+      String errorMessage = 'Failed to place order. Please try again.';
+      if (e is DioException) {
+        final serverMsg = e.response?.data?['message'];
+        if (serverMsg is String && serverMsg.isNotEmpty) {
+          errorMessage = serverMsg;
+        } else if (e.response?.statusCode == 409) {
+          errorMessage = 'Item is out of stock. Please adjust your cart.';
+        }
+      }
+      if (mounted) {
+        AppToast.show(context, SnackBar(content: Text(errorMessage)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -354,7 +449,7 @@ class _CheckoutViewState extends State<CheckoutView> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _handlePlaceOrder,
+                onPressed: _isSubmitting ? null : _handlePlaceOrder,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -363,25 +458,34 @@ class _CheckoutViewState extends State<CheckoutView> {
                     borderRadius: BorderRadius.circular(28),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Save local order preview • ₹$amount',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Place Order • ₹$amount',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Icon(LucideIcons.arrowRight, size: 20),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(LucideIcons.arrowRight, size: 20),
-                  ],
-                ),
               ),
             ),
             const SizedBox(height: 20),
 
-            // Demonstration Mode Note
+            // Verified Clinical Order Note
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -391,11 +495,11 @@ class _CheckoutViewState extends State<CheckoutView> {
               ),
               child: const Row(
                 children: [
-                  Icon(LucideIcons.info, size: 16, color: AppColors.primary),
+                  Icon(LucideIcons.shieldCheck, size: 16, color: AppColors.primary),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Preview only: this records the cart and address on this device. Payment and delivery are not submitted or confirmed.',
+                      'Orders are verified with server-determined pricing and inventory is reserved atomically upon placement.',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.secondaryDark,

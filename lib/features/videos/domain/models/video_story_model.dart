@@ -99,12 +99,29 @@ class VideoStoryModel {
         : int.tryParse(json['shares']?.toString() ?? '0') ?? 0;
     final caption = json['description']?.toString() ?? json['caption']?.toString() ?? '';
     final treatment = json['treatment']?.toString() ?? 'Clinical Hair Care Protocol';
-    final thumbnail = json['thumbnail_url']?.toString() ?? json['thumbnail']?.toString() ?? '';
+    final rawThumbnail = json['thumbnail_url']?.toString() ?? json['thumbnail']?.toString() ?? '';
     final avatar = json['avatar_url']?.toString() ?? json['avatar']?.toString() ?? '';
     final videoUrl = json['secure_url']?.toString() ??
         json['video_url']?.toString() ??
         json['videoUrl']?.toString() ??
         '';
+
+    final explicitYtId = json['youtube_video_id']?.toString();
+    String? resolvedYtId = explicitYtId;
+    if (resolvedYtId == null || resolvedYtId.isEmpty) {
+      if (publicId != null && publicId.startsWith('youtube-')) {
+        resolvedYtId = publicId.substring(8);
+      } else if (videoUrl.isNotEmpty) {
+        final match = RegExp(r'(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})').firstMatch(videoUrl);
+        if (match != null) resolvedYtId = match.group(1);
+      }
+    }
+
+    final thumbnail = rawThumbnail.isNotEmpty
+        ? rawThumbnail
+        : (resolvedYtId != null && resolvedYtId.isNotEmpty)
+            ? 'https://i.ytimg.com/vi/$resolvedYtId/hqdefault.jpg'
+            : '';
 
     return VideoStoryModel(
       id: id,
@@ -220,27 +237,53 @@ class VideoStoryModel {
     return shares.toString();
   }
 
-  static List<VideoStoryModel> get initialStories => [
+  String? get youtubeVideoId {
+    if (publicId != null && publicId!.startsWith('youtube-')) {
+      final candidate = publicId!.substring(8);
+      if (RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(candidate)) {
+        return candidate;
+      }
+    }
+    if (videoUrl.isNotEmpty) {
+      final match = RegExp(r'(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})').firstMatch(videoUrl);
+      if (match != null) return match.group(1);
+    }
+    if (RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(id)) return id;
+    return null;
+  }
+
+  bool get isYouTubeVideo => youtubeVideoId != null;
+
+  String get effectiveThumbnail {
+    if (thumbnail.isNotEmpty) return thumbnail;
+    final ytid = youtubeVideoId;
+    if (ytid != null) return 'https://i.ytimg.com/vi/$ytid/hqdefault.jpg';
+    return '';
+  }
+
+  static List<VideoStoryModel> get initialStories => const [];
+
+  /// Explicit test fixture for automated widget/unit test mocking.
+  static List<VideoStoryModel> get testStories => [
         const VideoStoryModel(
-          id: 'vid-1',
-          name: 'Yashveer Soni',
-          handle: '@yashveer.soni',
+          id: 'vid-yt-1',
+          publicId: 'youtube-7uC1_O7kZ8I',
+          name: 'Dr. Jai Bansal',
+          handle: '@dr.jai.bansal',
           category: 'Hair Fall',
           tag: 'Hair Fall',
-          duration: '0:52',
+          duration: '1:00',
           views: 52400,
           likes: 3120,
           commentsCount: 248,
           shares: 120,
           caption:
-              'Dr. Hair protocol helped me regain crown density naturally. Noticeable reduction in shedding within 6 weeks, and density improved dramatically in 4 months.',
+              'Dr. Hair protocol helped regain crown density naturally. Noticeable reduction in shedding within 6 weeks, and density improved dramatically in 4 months.',
           treatment: 'Scalp Serum + Minoxidil 5%',
-          videoUrl:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/elephants.mp4',
-          thumbnail:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/elephants.jpg',
+          videoUrl: 'https://www.youtube.com/watch?v=7uC1_O7kZ8I',
+          thumbnail: 'https://i.ytimg.com/vi/7uC1_O7kZ8I/hqdefault.jpg',
           avatar:
-              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200',
+              'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=200',
           comments: [
             VideoComment(
               id: 'c1',
@@ -258,22 +301,16 @@ class VideoStoryModel {
                   'Great adherence! Follicular miniaturization has clearly halted.',
               likes: 68,
             ),
-            VideoComment(
-              id: 'c3',
-              user: 'Pooja Sharma',
-              time: '35m ago',
-              text: 'Truly inspiring results. Just booked my hair test!',
-              likes: 12,
-            ),
           ],
         ),
         const VideoStoryModel(
-          id: 'vid-2',
+          id: 'vid-yt-2',
+          publicId: 'youtube-kJQP7kiw5Fk',
           name: 'Rahul Sharma',
           handle: '@rahul.sharma',
           category: 'Regrowth',
           tag: 'Regrowth',
-          duration: '0:14',
+          duration: '0:45',
           views: 41200,
           likes: 2890,
           commentsCount: 312,
@@ -281,10 +318,8 @@ class VideoStoryModel {
           caption:
               'My follicle density noticeably improved in just 3 months! Genetic hair fall completely halted without surgery.',
           treatment: 'DHT Blocker Kit + Redensyl',
-          videoUrl:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/dog.mp4',
-          thumbnail:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/dog.jpg',
+          videoUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk',
+          thumbnail: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/hqdefault.jpg',
           avatar:
               'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=200',
           comments: [
@@ -295,22 +330,16 @@ class VideoStoryModel {
               text: 'How long until you saw baby hairs around the temples?',
               likes: 19,
             ),
-            VideoComment(
-              id: 'c5',
-              user: 'Kunal Verma',
-              time: '2h ago',
-              text: 'Consistency is truly key. Awesome density recovery!',
-              likes: 31,
-            ),
           ],
         ),
         const VideoStoryModel(
-          id: 'vid-3',
+          id: 'vid-yt-3',
+          publicId: 'youtube-L_LUpnjgPso',
           name: 'Ananya Mehra',
           handle: '@ananya.mehra',
           category: 'Dandruff',
           tag: 'Dandruff',
-          duration: '0:15',
+          duration: '0:55',
           views: 35400,
           likes: 3420,
           commentsCount: 420,
@@ -318,10 +347,8 @@ class VideoStoryModel {
           caption:
               'Severe flakes and itching cleared within 3 weeks of the kit. Scalp feels clean and refreshed every single day.',
           treatment: 'Ketoconazole 2% + Salicylic Wash',
-          videoUrl:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/finish_line.mp4',
-          thumbnail:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/finish_line.jpg',
+          videoUrl: 'https://www.youtube.com/watch?v=L_LUpnjgPso',
+          thumbnail: 'https://i.ytimg.com/vi/L_LUpnjgPso/hqdefault.jpg',
           avatar:
               'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200',
           comments: [
@@ -332,23 +359,16 @@ class VideoStoryModel {
               text: 'Does it dry out the hair shaft after washing?',
               likes: 45,
             ),
-            VideoComment(
-              id: 'c8',
-              user: 'Sneha Jain',
-              time: '3h ago',
-              text:
-                  'No, paired with the hydrating conditioner it leaves hair super soft!',
-              likes: 28,
-            ),
           ],
         ),
         const VideoStoryModel(
-          id: 'vid-4',
+          id: 'vid-yt-4',
+          publicId: 'youtube-fJ9rUzIMcZQ',
           name: 'Aarav Patel',
           handle: '@aarav.patel',
           category: 'Regrowth',
           tag: 'Regrowth',
-          duration: '0:12',
+          duration: '0:50',
           views: 18900,
           likes: 980,
           commentsCount: 86,
@@ -356,10 +376,8 @@ class VideoStoryModel {
           caption:
               'Doctor consultation was transparent and totally tailored. Hairline has started filling in with thick baby hairs.',
           treatment: 'Scalp Peptide + Biotin Booster',
-          videoUrl:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/ski_jump.mp4',
-          thumbnail:
-              'https://res.cloudinary.com/demo/video/upload/w_720,ar_9:16,c_fill/ski_jump.jpg',
+          videoUrl: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ',
+          thumbnail: 'https://i.ytimg.com/vi/fJ9rUzIMcZQ/hqdefault.jpg',
           avatar:
               'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200',
           comments: [

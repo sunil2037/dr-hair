@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
@@ -46,13 +47,15 @@ class _VideosContent extends StatefulWidget {
   State<_VideosContent> createState() => _VideosContentState();
 }
 
-class _VideosContentState extends State<_VideosContent> {
+class _VideosContentState extends State<_VideosContent>
+    with WidgetsBindingObserver {
   late final PageController _pageController;
   late VideosCubit _cubit;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     _pageController = PageController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -63,6 +66,13 @@ class _VideosContentState extends State<_VideosContent> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted && !widget.isCustomCubit) {
+      _cubit.refresh();
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _cubit = context.read<VideosCubit>();
@@ -70,6 +80,7 @@ class _VideosContentState extends State<_VideosContent> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
   }
@@ -107,6 +118,9 @@ class _VideosContentState extends State<_VideosContent> {
                   child: PageView.builder(
                     controller: _pageController,
                     scrollDirection: Axis.vertical,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
                     itemCount: filtered.length,
                     onPageChanged: (index) {
                       _cubit.onPageChanged(index);
@@ -129,6 +143,7 @@ class _VideosContentState extends State<_VideosContent> {
                           key: ValueKey(video.id),
                           video: video,
                           isActive: isActive,
+                          isMuted: state.isMuted,
                         ),
                       );
                     },
@@ -285,34 +300,59 @@ class _VideosContentState extends State<_VideosContent> {
                   shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LucideIcons.badgeCheck,
-                      color: AppColors.success,
-                      size: 12,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'Educational & Stories',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: AppColors.success.withValues(alpha: 0.4),
                       ),
                     ),
-                  ],
-                ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LucideIcons.badgeCheck,
+                          color: AppColors.success,
+                          size: 12,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Educational & Stories',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _cubit.refresh();
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.refreshCw,
+                        color: Colors.white,
+                        size: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -479,11 +519,13 @@ class _VideosContentState extends State<_VideosContent> {
 class _MinimalReelPlayer extends StatefulWidget {
   final VideoStoryModel video;
   final bool isActive;
+  final bool isMuted;
 
   const _MinimalReelPlayer({
     super.key,
     required this.video,
     required this.isActive,
+    required this.isMuted,
   });
 
   @override
@@ -493,6 +535,7 @@ class _MinimalReelPlayer extends StatefulWidget {
 class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     with TickerProviderStateMixin {
   VideoPlayerController? _videoController;
+  YoutubePlayerController? _youtubeController;
   bool _isPlayerInitialized = false;
   bool _showPlayPauseOverlay = false;
   bool _showHeartAnimation = false;
@@ -528,6 +571,39 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
         _startPlayback();
       }
       return;
+    }
+
+    if (widget.video.isYouTubeVideo) {
+      final ytid = widget.video.youtubeVideoId!;
+      final isMuted = widget.isMuted;
+      try {
+        final ytController = YoutubePlayerController.fromVideoId(
+          videoId: ytid,
+          autoPlay: widget.isActive && widget.video.isPlaying,
+          params: YoutubePlayerParams(
+            showControls: false,
+            showFullscreenButton: false,
+            loop: true,
+            mute: isMuted,
+            strictRelatedVideos: true,
+            showVideoAnnotations: false,
+            enableCaption: false,
+            pointerEvents: PointerEvents.none,
+          ),
+        );
+        _youtubeController = ytController;
+        if (mounted) {
+          setState(() {
+            _isPlayerInitialized = true;
+          });
+        }
+        if (widget.isActive && widget.video.isPlaying) {
+          _startPlayback();
+        }
+        return;
+      } catch (e) {
+        debugPrint('YouTube controller init error: $e');
+      }
     }
 
     final rawUrl = widget.video.videoUrl.trim();
@@ -592,14 +668,26 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
   void didUpdateWidget(covariant _MinimalReelPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final isMuted = context.read<VideosCubit?>()?.state.isMuted ?? false;
-    _videoController?.setVolume(isMuted ? 0.0 : 1.0);
+    if (widget.isMuted != oldWidget.isMuted) {
+      if (widget.isMuted) {
+        _videoController?.setVolume(0.0);
+        _youtubeController?.mute();
+        _youtubeController?.setVolume(0);
+      } else {
+        _videoController?.setVolume(1.0);
+        _youtubeController?.unMute();
+        _youtubeController?.setVolume(100);
+      }
+    }
 
-    if (widget.video.videoUrl != oldWidget.video.videoUrl) {
+    if (widget.video.videoUrl != oldWidget.video.videoUrl ||
+        widget.video.youtubeVideoId != oldWidget.video.youtubeVideoId) {
       _videoController?.removeListener(_onVideoControllerTick);
       _videoController?.pause();
       _videoController?.dispose();
       _videoController = null;
+      _youtubeController?.close();
+      _youtubeController = null;
       _isPlayerInitialized = false;
       _initVideoPlayer();
       return;
@@ -609,9 +697,11 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
         widget.video.isPlaying != oldWidget.video.isPlaying) {
       if (widget.isActive && widget.video.isPlaying) {
         _videoController?.play();
+        _youtubeController?.playVideo();
         _startPlayback();
       } else {
         _videoController?.pause();
+        _youtubeController?.pauseVideo();
         _pausePlayback();
       }
     }
@@ -631,11 +721,22 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
   void _handleTap() {
     HapticFeedback.lightImpact();
+    final willPlay = !widget.video.isPlaying;
     setState(() => _showPlayPauseOverlay = true);
+
+    if (willPlay) {
+      _videoController?.play();
+      _youtubeController?.playVideo();
+      _startPlayback();
+    } else {
+      _videoController?.pause();
+      _youtubeController?.pauseVideo();
+      _pausePlayback();
+    }
 
     context.read<VideosCubit>().togglePlayPause(widget.video.id);
 
-    Future.delayed(const Duration(milliseconds: 600), () {
+    Future.delayed(const Duration(milliseconds: 650), () {
       if (mounted) {
         setState(() => _showPlayPauseOverlay = false);
       }
@@ -695,6 +796,8 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     _videoController?.pause();
     _videoController?.dispose();
     _videoController = null;
+    _youtubeController?.close();
+    _youtubeController = null;
     _progressController.dispose();
     _heartAnimController.dispose();
     super.dispose();
@@ -707,14 +810,51 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. Live Video Player or Thumbnail Poster via CustomCachedImage with tap/double-tap detection
+        // 1. Background Cover Thumbnail (visible instantly, zero flash)
         Positioned.fill(
-          child: GestureDetector(
-            onTap: _handleTap,
-            onDoubleTapDown: _handleDoubleTap,
-            behavior: HitTestBehavior.opaque,
-            child:
-                _isPlayerInitialized &&
+          child: CustomCachedImage(
+            imageUrl: v.effectiveThumbnail,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            borderRadius: 0,
+            errorWidget: Container(
+              color: Colors.black87,
+              child: const Center(
+                child: Icon(
+                  LucideIcons.video,
+                  color: Colors.white24,
+                  size: 64,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // 2. Video Player Layer (Wrapped in IgnorePointer so it never consumes touches or gestures!)
+        Positioned.fill(
+          child: IgnorePointer(
+            ignoring: true,
+            child: widget.video.isYouTubeVideo &&
+                    _youtubeController != null &&
+                    !_isTesting
+                ? SizedBox.expand(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: 360,
+                        height: 640,
+                        child: YoutubePlayer(
+                          controller: _youtubeController!,
+                          aspectRatio: 9 / 16,
+                          enableFullScreenOnVerticalDrag: false,
+                          autoFullScreen: false,
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
+                    ),
+                  )
+                : _isPlayerInitialized &&
                     _videoController != null &&
                     _videoController!.value.isInitialized
                 ? SizedBox.expand(
@@ -727,66 +867,56 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                       ),
                     ),
                   )
-                : CustomCachedImage(
-                    imageUrl: v.thumbnail,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    borderRadius: 0,
-                    errorWidget: Container(
-                      color: Colors.black87,
-                      child: const Center(
-                        child: Icon(
-                          LucideIcons.video,
-                          color: Colors.white24,
-                          size: 64,
-                        ),
-                      ),
-                    ),
-                  ),
+                : const SizedBox.shrink(),
           ),
         ),
 
         // Buffering / Loading Video Placeholder (Zero CircularProgressIndicator)
         if (widget.isActive && !_isPlayerInitialized && !_isTesting)
           Positioned.fill(
-            child: Center(
-              child: Skeletonizer(
-                enabled: true,
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    LucideIcons.play,
-                    color: Colors.white70,
-                    size: 28,
+            child: IgnorePointer(
+              ignoring: true,
+              child: Center(
+                child: Skeletonizer(
+                  enabled: true,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                      color: Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.play,
+                      color: Colors.white70,
+                      size: 28,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
 
-        // 2. Subtle Cinema Vignette Gradients
+        // 2. Subtle Cinema Vignette Gradients (Wrapped in IgnorePointer so they never intercept gestures)
         // Top gradient for status bar and header
         Positioned(
           top: 0,
           left: 0,
           right: 0,
           height: 160,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.8),
-                  Colors.black.withValues(alpha: 0.3),
-                  Colors.transparent,
-                ],
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
@@ -798,39 +928,56 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
           left: 0,
           right: 0,
           height: 280,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.9),
-                  Colors.black.withValues(alpha: 0.5),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.5, 1.0],
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.9),
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
               ),
             ),
           ),
         ),
 
-        // 3. Center Play/Pause Indicator Overlay
+        // 3. Full-screen Transparent Gesture Layer for Tap (Play/Pause) & Double Tap (Like)
+        Positioned.fill(
+          child: GestureDetector(
+            key: const Key('reel_gesture_detector'),
+            onTap: _handleTap,
+            onDoubleTapDown: _handleDoubleTap,
+            behavior: HitTestBehavior.opaque,
+            child: const SizedBox.expand(),
+          ),
+        ),
+
+        // 4. Center Play/Pause Indicator Overlay (Wrapped in IgnorePointer so it doesn't block taps)
         if (_showPlayPauseOverlay || !v.isPlaying)
-          Center(
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: _showPlayPauseOverlay || !v.isPlaying ? 1.0 : 0.0,
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  v.isPlaying ? LucideIcons.pause : LucideIcons.play,
-                  color: Colors.white,
-                  size: 36,
+          IgnorePointer(
+            ignoring: true,
+            child: Center(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _showPlayPauseOverlay || !v.isPlaying ? 1.0 : 0.0,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    v.isPlaying ? LucideIcons.pause : LucideIcons.play,
+                    color: Colors.white,
+                    size: 36,
+                  ),
                 ),
               ),
             ),
@@ -841,25 +988,28 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
           Positioned(
             left: _heartPosition.dx - 45,
             top: _heartPosition.dy - 45,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.4, end: 1.4).animate(
-                CurvedAnimation(
-                  parent: _heartAnimController,
-                  curve: Curves.elasticOut,
-                ),
-              ),
-              child: FadeTransition(
-                opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+            child: IgnorePointer(
+              ignoring: true,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.4, end: 1.4).animate(
                   CurvedAnimation(
                     parent: _heartAnimController,
-                    curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
+                    curve: Curves.elasticOut,
                   ),
                 ),
-                child: const Icon(
-                  Icons.favorite,
-                  color: Colors.redAccent,
-                  size: 90,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 16)],
+                child: FadeTransition(
+                  opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                    CurvedAnimation(
+                      parent: _heartAnimController,
+                      curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.favorite,
+                    color: Colors.redAccent,
+                    size: 90,
+                    shadows: [Shadow(color: Colors.black54, blurRadius: 16)],
+                  ),
                 ),
               ),
             ),
@@ -896,92 +1046,90 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
               const SizedBox(height: 20),
 
               // Minimal Mute / Sound Button
-              BlocBuilder<VideosCubit, VideosState>(
-                buildWhen: (p, c) => p.isMuted != c.isMuted,
-                builder: (context, state) {
-                  return _buildActionItem(
-                    icon: state.isMuted
-                        ? LucideIcons.volumeX
-                        : LucideIcons.volume2,
-                    label: state.isMuted ? 'Muted' : 'Sound',
-                    iconColor: Colors.white,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      context.read<VideosCubit>().toggleMute();
-                    },
-                  );
+              _buildActionItem(
+                icon: widget.isMuted
+                    ? LucideIcons.volumeX
+                    : LucideIcons.volume2,
+                label: widget.isMuted ? 'Muted' : 'Sound',
+                iconColor: Colors.white,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.read<VideosCubit>().toggleMute();
                 },
               ),
             ],
           ),
         ),
 
-        // 6. Minimal Bottom Reel Info: Patient Name + Subtitle
+        // 6. Minimal Bottom Reel Info: Patient Name + Subtitle (Wrapped in IgnorePointer so drags/swipes flow freely)
         Positioned(
           left: 16,
           right: 84,
           bottom: 105,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Patient Name + Verified Badge
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      v.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.2,
-                        shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+          child: IgnorePointer(
+            ignoring: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Patient Name + Verified Badge
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        v.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
+                          shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(
-                    LucideIcons.badgeCheck,
-                    color: AppColors.starGold,
-                    size: 17,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 5),
-
-              // Treatment Category Tag
-              Text(
-                '${v.category} • ${v.treatment}',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                    const SizedBox(width: 6),
+                    const Icon(
+                      LucideIcons.badgeCheck,
+                      color: AppColors.starGold,
+                      size: 17,
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
 
-              const SizedBox(height: 4),
+                const SizedBox(height: 5),
 
-              // Brief Caption
-              Text(
-                v.caption,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 1.35,
-                  shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                // Treatment Category Tag
+                Text(
+                  '${v.category} • ${v.treatment}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 4),
+
+                // Brief Caption
+                Text(
+                  v.caption,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.35,
+                    shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -990,16 +1138,19 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
           left: 0,
           right: 0,
           bottom: 92,
-          child: AnimatedBuilder(
-            animation: _progressController,
-            builder: (context, child) {
-              return LinearProgressIndicator(
-                value: _progressController.value,
-                backgroundColor: Colors.white12,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white70),
-                minHeight: 2.0,
-              );
-            },
+          child: IgnorePointer(
+            ignoring: true,
+            child: AnimatedBuilder(
+              animation: _progressController,
+              builder: (context, child) {
+                return LinearProgressIndicator(
+                  value: _progressController.value,
+                  backgroundColor: Colors.white12,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white70),
+                  minHeight: 2.0,
+                );
+              },
+            ),
           ),
         ),
       ],

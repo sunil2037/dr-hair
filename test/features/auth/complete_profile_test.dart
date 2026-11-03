@@ -104,11 +104,13 @@ void main() {
           phone: '9876543210',
           patientId: 'DHP0099',
         );
-        cubit.emit(AuthState(
-          status: AuthStatus.authenticated,
-          user: initialUser,
-          phoneNumber: '9876543210',
-        ));
+        cubit.emit(
+          AuthState(
+            status: AuthStatus.authenticated,
+            user: initialUser,
+            phoneNumber: '9876543210',
+          ),
+        );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -188,11 +190,13 @@ void main() {
           phone: '9876543210',
           patientId: 'DHP0055',
         );
-        cubit.emit(AuthState(
-          status: AuthStatus.authenticated,
-          user: userWithoutAgeGender,
-          phoneNumber: '9876543210',
-        ));
+        cubit.emit(
+          AuthState(
+            status: AuthStatus.authenticated,
+            user: userWithoutAgeGender,
+            phoneNumber: '9876543210',
+          ),
+        );
 
         final cache = AppLocalCache.inMemory();
         final appointmentCubit = ClinicAppointmentCubit(cache: cache);
@@ -205,9 +209,7 @@ void main() {
                 value: appointmentCubit,
               ),
             ],
-            child: const MaterialApp(
-              home: ClinicAppointmentView(),
-            ),
+            child: const MaterialApp(home: ClinicAppointmentView()),
           ),
         );
 

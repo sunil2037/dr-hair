@@ -9,6 +9,7 @@ import '../../data/patient_progress_api.dart';
 import '../../domain/models/care_models.dart';
 import '../../../../core/storage/app_local_cache.dart';
 import '../../../treatment/data/patient_clinical_api.dart';
+import '../../../shop/data/datasources/commerce_remote_data_source.dart';
 import 'care_state.dart';
 
 class CareCubit extends Cubit<CareState> {
@@ -17,6 +18,7 @@ class CareCubit extends Cubit<CareState> {
   final CareNotificationService? _notificationService;
   final PatientClinicalApi _clinicalApi;
   final PatientProgressApi _progressApi;
+  final CommerceRemoteDataSource _commerceDataSource;
   String? _patientId;
   String? _sessionToken;
 
@@ -36,8 +38,10 @@ class CareCubit extends Cubit<CareState> {
     this._notificationService,
     PatientClinicalApi? clinicalApi,
     PatientProgressApi? progressApi,
+    CommerceRemoteDataSource? commerceDataSource,
   ])  : _clinicalApi = clinicalApi ?? PatientClinicalApi(),
         _progressApi = progressApi ?? PatientProgressApi(),
+        _commerceDataSource = commerceDataSource ?? CommerceRemoteDataSource(),
         super(const CareState()) {
     _initPersistence();
   }
@@ -177,15 +181,27 @@ class CareCubit extends Cubit<CareState> {
         }).where((ci) => ci.id.isNotEmpty).toList();
       } catch (_) {}
 
+      List<CareOrder>? serverOrders;
+      try {
+        final rawOrders = await _commerceDataSource.fetchPatientOrders(token: token);
+        if (rawOrders.isNotEmpty) {
+          serverOrders = rawOrders;
+        }
+      } catch (_) {}
+
       if (isClosed) return;
       emit(
         state.copyWith(
           routineTasks: serverTasks ??
               (carePlans.isEmpty ? const [] : state.routineTasks),
           checkIns: serverCheckIns ?? state.checkIns,
+          orders: serverOrders ?? state.orders,
         ),
       );
       _persistCheckIns();
+      if (serverOrders != null) {
+        _persistOrders();
+      }
       if (serverTasks != null) {
         _persistRoutineTasks();
       }
@@ -645,6 +661,48 @@ class CareCubit extends Cubit<CareState> {
       totalAmount: totalAmount,
     );
     emit(state.copyWith(orders: [preview, ...state.orders]));
+    _persistOrders();
+  }
+
+  void addOrder(CareOrder order) {
+    emit(state.copyWith(orders: [order, ...state.orders]));
+    _persistOrders();
+  }
+
+  Future<void> fetchPatientOrders({String? sessionToken}) async {
+    final token = sessionToken ?? _sessionToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      final serverOrders = await _commerceDataSource.fetchPatientOrders(token: token);
+      if (serverOrders.isNotEmpty) {
+        emit(state.copyWith(orders: serverOrders));
+        _persistOrders();
+      }
+    } catch (_) {}
+  }
+
+  Future<bool> cancelOrder(String orderId, {String? reason, String? sessionToken}) async {
+    final token = sessionToken ?? _sessionToken;
+    if (token == null || token.isEmpty) return false;
+    try {
+      final updatedOrder = await _commerceDataSource.cancelOrder(
+        token: token,
+        orderId: orderId,
+        reason: reason,
+      );
+      if (updatedOrder != null) {
+        final updatedList = state.orders.map((o) {
+          return o.orderId == orderId ? updatedOrder : o;
+        }).toList();
+        emit(state.copyWith(orders: updatedList));
+        _persistOrders();
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  void _persistOrders() {
     AppLocalCache.instance.put(
       _ordersKey,
       jsonEncode(state.orders.map((item) => item.toJson()).toList()),

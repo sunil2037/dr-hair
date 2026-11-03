@@ -93,5 +93,21 @@ void main() {
         isNull,
       );
     });
+
+    test('handleAccountDeleted flushes patient data and local cache', () async {
+      await AppLocalCache.instance.put('has_completed_hair_test', true);
+      await AppLocalCache.instance.put('has_skipped_hair_test', true);
+      await AppLocalCache.instance.put(
+        AppLocalCache.patientKey('42', 'record_key'),
+        'clinical_record',
+      );
+
+      await coordinator.handleAccountDeleted(
+        message: 'Your account has been deleted by clinic administration.',
+      );
+
+      expect(AppLocalCache.instance.get('has_completed_hair_test'), isNull);
+      expect(AppLocalCache.instance.get('has_skipped_hair_test'), isNull);
+    });
   });
 }

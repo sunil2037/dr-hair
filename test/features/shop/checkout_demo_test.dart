@@ -29,15 +29,15 @@ void main() {
       expect(find.text('₹0'), findsWidgets);
     });
 
-    testWidgets('displays demo checkout transparency note and never claims payment success', (tester) async {
+    testWidgets('displays checkout verification note and validates delivery address before order placement', (tester) async {
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Preview only: this records the cart'), findsOneWidget);
-      expect(find.textContaining('Save local order preview'), findsOneWidget);
+      expect(find.textContaining('Orders are verified with server-determined pricing'), findsOneWidget);
+      expect(find.textContaining('Place Order'), findsOneWidget);
 
       // Tap Place Order button
-      await tester.tap(find.textContaining('Save local order preview'));
+      await tester.tap(find.textContaining('Place Order'));
       await tester.pumpAndSettle();
 
       expect(

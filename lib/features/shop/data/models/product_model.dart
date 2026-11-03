@@ -181,19 +181,46 @@ class ProductItem {
     required this.clinicalMetrics,
   });
 
+  static const String fallbackProductImageUrl =
+      'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=800';
+
   factory ProductItem.fromJson(Map<String, dynamic> json) {
+    final List<String> images = [];
     final rawImages = json['images'] as List<dynamic>? ?? [];
-    final images = rawImages.map((e) => e.toString()).toList();
-    if (images.isEmpty && json['image_url'] != null) {
-      images.add(json['image_url'].toString());
+    for (final e in rawImages) {
+      final s = e?.toString().trim() ?? '';
+      if ((s.startsWith('http://') || s.startsWith('https://')) &&
+          !images.contains(s)) {
+        images.add(s);
+      }
     }
-    if (images.isEmpty && json['media'] is List) {
+
+    for (final key in ['image_url', 'secure_url', 'thumbnail', 'image']) {
+      final val = json[key]?.toString().trim() ?? '';
+      if ((val.startsWith('http://') || val.startsWith('https://')) &&
+          !images.contains(val)) {
+        images.add(val);
+      }
+    }
+
+    if (json['media'] is List) {
       final mediaList = json['media'] as List<dynamic>;
       for (final item in mediaList) {
-        if (item is Map && item['name'] != null) {
-          images.add(item['name'].toString());
+        if (item is Map) {
+          final url = (item['url'] ?? item['secure_url'] ?? item['name'])
+                  ?.toString()
+                  .trim() ??
+              '';
+          if ((url.startsWith('http://') || url.startsWith('https://')) &&
+              !images.contains(url)) {
+            images.add(url);
+          }
         }
       }
+    }
+
+    if (images.isEmpty) {
+      images.add(fallbackProductImageUrl);
     }
 
     final rawPlans = json['supply_plans'] as List<dynamic>? ??

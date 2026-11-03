@@ -47,10 +47,19 @@ class _HomeViewState extends State<HomeView>
   late final AnimationController _entranceController;
   late final List<Animation<double>> _sectionOpacity;
   late final List<Animation<Offset>> _sectionPosition;
-  late final Future<List<VideoStoryModel>> _videoStoriesFuture;
+  Future<List<VideoStoryModel>>? _videoStoriesFuture;
   late final Future<List<ProductItem>> _productsFuture;
   late final Future<List<ContentItem>> _tipsFuture;
   bool _motionConfigured = false;
+
+  void _fetchVideoStories() {
+    _videoStoriesFuture = widget.videoRepository == null && _isTestExecution
+        ? Future.value(const <VideoStoryModel>[])
+        : (widget.videoRepository ?? VideoRepositoryImpl())
+            .getVideos(limit: 6, placement: 'home')
+            .then((res) => res.items)
+            .catchError((_) => const <VideoStoryModel>[]);
+  }
 
   static const bool _isFlutterTest = bool.fromEnvironment(
     'flutter.test',
@@ -64,11 +73,7 @@ class _HomeViewState extends State<HomeView>
   @override
   void initState() {
     super.initState();
-    _videoStoriesFuture = widget.videoRepository == null && _isTestExecution
-        ? Future.value(const <VideoStoryModel>[])
-        : (widget.videoRepository ?? VideoRepositoryImpl())
-              .getVideos(limit: 6, placement: 'home')
-              .then((res) => res.items);
+    _fetchVideoStories();
     _productsFuture = widget.productRepository == null && _isTestExecution
         ? Future.value(const <ProductItem>[])
         : (widget.productRepository ?? ProductRepositoryImpl())
@@ -162,51 +167,61 @@ class _HomeViewState extends State<HomeView>
     return BlocBuilder<HairTestCubit, HairTestState>(
       builder: (context, hairState) {
         final completed = hairState.isCompleted && !hairState.isRetesting;
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _revealSection(0, _buildHeroSection(context)),
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            _fetchVideoStories();
+            if (mounted) setState(() {});
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _revealSection(0, _buildHeroSection(context)),
 
-              if (completed) ...[
-                const SizedBox(height: 16),
-                _revealSection(1, _buildTodayCard(context)),
+                if (completed) ...[
+                  const SizedBox(height: 16),
+                  _revealSection(1, _buildTodayCard(context)),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  _revealSection(1, _buildPendingAssessmentStepper(context, hairState)),
+                ],
+
+                const SizedBox(height: 20),
+                _revealSection(2, _buildEssentialProducts(context)),
+
+                const SizedBox(height: 20),
+                _revealSection(3, _buildClinicAppointmentCard(context)),
+
+                const SizedBox(height: 20),
+                _revealSection(4, _buildUrgentCareCard()),
+
+                const SizedBox(height: 20),
+                _revealSection(5, _buildReviewsSection(context)),
+
+                const SizedBox(height: 20),
+                _revealSection(6, _buildVideoStories(context)),
+
+                const SizedBox(height: 20),
+                _revealSection(7, _buildExpertTips()),
+
+                const SizedBox(height: 20),
+                _revealSection(8, _buildWhyTrustDrHair()),
+
+                const SizedBox(height: 20),
+                _revealSection(9, _buildAnalyticsSection()),
+
+                const SizedBox(height: 20),
+                _revealSection(10, _buildFaqSection()),
+
+                const SizedBox(height: 20),
+                _revealSection(11, _buildCertifications()),
+
+                const SizedBox(height: 24),
               ],
-
-              const SizedBox(height: 20),
-              _revealSection(2, _buildEssentialProducts(context)),
-
-              const SizedBox(height: 20),
-              _revealSection(3, _buildClinicAppointmentCard(context)),
-
-              const SizedBox(height: 20),
-              _revealSection(4, _buildUrgentCareCard()),
-
-              const SizedBox(height: 20),
-              _revealSection(5, _buildReviewsSection(context)),
-
-              const SizedBox(height: 20),
-              _revealSection(6, _buildVideoStories(context)),
-
-              const SizedBox(height: 20),
-              _revealSection(7, _buildExpertTips()),
-
-              const SizedBox(height: 20),
-              _revealSection(8, _buildWhyTrustDrHair()),
-
-              const SizedBox(height: 20),
-              _revealSection(9, _buildAnalyticsSection()),
-
-              const SizedBox(height: 20),
-              _revealSection(10, _buildFaqSection()),
-
-              const SizedBox(height: 20),
-              _revealSection(11, _buildCertifications()),
-
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         );
       },
@@ -820,6 +835,282 @@ class _HomeViewState extends State<HomeView>
     );
   }
 
+  Widget _buildPendingAssessmentStepper(
+    BuildContext context,
+    HairTestState hairState,
+  ) {
+    final hasProgress = HomeJourneySelector.hasAssessmentProgress(hairState);
+    final currentStep = hairState.currentStep.clamp(0, hairState.totalSteps);
+    final progressPercent =
+        ((currentStep / hairState.totalSteps) * 100).toInt();
+
+    // Determine milestone statuses across 4 core clinical stages
+    final stage1Done = hairState.currentStep > 0 ||
+        hairState.stage != null ||
+        hairState.primaryConcern != null;
+    final stage2Done = hairState.currentStep > 2 ||
+        (hairState.duration != null && hairState.dandruff != null);
+    final stage3Done = hairState.currentStep > 5 ||
+        (hairState.gutHealth != null &&
+            hairState.stressLevel != null &&
+            hairState.familyHistory != null);
+    final stage4Done = hairState.photos.isNotEmpty || hairState.isCompleted;
+
+    final stages = [
+      (label: 'Pattern', isDone: stage1Done, stepNum: '1'),
+      (label: 'Scalp', isDone: stage2Done, stepNum: '2'),
+      (label: 'Habits', isDone: stage3Done, stepNum: '3'),
+      (label: 'Photos', isDone: stage4Done, stepNum: '4'),
+    ];
+
+    int activeIndex = 0;
+    if (stage1Done && !stage2Done) {
+      activeIndex = 1;
+    } else if (stage2Done && !stage3Done) {
+      activeIndex = 2;
+    } else if (stage3Done && !stage4Done) {
+      activeIndex = 3;
+    } else if (stage4Done) {
+      activeIndex = 3;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFFED7AA), width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0C0D1B2A),
+              blurRadius: 16,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row: Icon, Title, Subtitle, and Pending Badge
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: const Icon(
+                    LucideIcons.clipboardCheck,
+                    color: Color(0xFFD97706),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Hair & Scalp Assessment',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasProgress
+                            ? 'In progress · Step ${currentStep + 1} of ${hairState.totalSteps} ($progressPercent%)'
+                            : 'Pending assessment · Takes 2 minutes',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.secondaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFFCD34D)),
+                  ),
+                  child: const Text(
+                    'PENDING',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFB45309),
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 4-Stage Visual Stepper
+            Row(
+              children: [
+                for (int i = 0; i < stages.length; i++) ...[
+                  // Step Node
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: stages[i].isDone
+                              ? const Color(0xFF10B981)
+                              : i == activeIndex
+                              ? AppColors.primary
+                              : const Color(0xFFF3F4F6),
+                          border: Border.all(
+                            color: stages[i].isDone
+                                ? const Color(0xFF059669)
+                                : i == activeIndex
+                                ? const Color(0xFF99F6E4)
+                                : const Color(0xFFE5E7EB),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: stages[i].isDone
+                              ? const Icon(
+                                  LucideIcons.check,
+                                  color: Colors.white,
+                                  size: 14,
+                                )
+                              : Text(
+                                  stages[i].stepNum,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: i == activeIndex
+                                        ? Colors.white
+                                        : const Color(0xFF9CA3AF),
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        stages[i].label,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: i == activeIndex
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: i == activeIndex
+                              ? AppColors.primaryDark
+                              : AppColors.secondaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Connecting line between nodes
+                  if (i < stages.length - 1)
+                    Expanded(
+                      child: Container(
+                        height: 2.5,
+                        margin: const EdgeInsets.only(
+                          bottom: 16,
+                          left: 4,
+                          right: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: stages[i].isDone
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFE5E7EB),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Clinical Explanation Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    LucideIcons.shieldCheck,
+                    size: 15,
+                    color: AppColors.primary,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Complete all steps to unlock doctor-verified root cause analysis & custom care plan.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        height: 1.35,
+                        color: AppColors.secondaryDark,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // CTA Button to Resume / Start Assessment
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: ElevatedButton.icon(
+                onPressed: widget.onStartHairTest,
+                icon: const Icon(LucideIcons.playCircle, size: 16),
+                label: Text(
+                  hasProgress
+                      ? 'Resume Assessment (Step ${currentStep + 1} of ${hairState.totalSteps})'
+                      : 'Start Free Hair Assessment',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(21),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // --- SECTION 6: WHY TRUST DR. HAIR ---
   Widget _buildWhyTrustDrHair() {
     final trustPoints = [
@@ -1015,7 +1306,7 @@ class _HomeViewState extends State<HomeView>
                   return GestureDetector(
                     onTap: () => context.push(RouteNames.videos),
                     child: _buildVideoCard(
-                      image: story.thumbnail,
+                      image: story.effectiveThumbnail,
                       title: story.name,
                       subtitle: story.treatment.isNotEmpty
                           ? story.treatment

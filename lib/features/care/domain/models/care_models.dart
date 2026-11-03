@@ -388,16 +388,56 @@ class CareOrder {
     'totalAmount': totalAmount,
   };
 
-  factory CareOrder.fromJson(Map<String, dynamic> json) => CareOrder(
-    orderId: json['orderId'] as String? ?? '',
-    orderDate: json['orderDate'] as String? ?? '',
-    estimatedDelivery: json['estimatedDelivery'] as String? ?? '',
-    status: json['status'] as String? ?? '',
-    currentStep: (json['currentStep'] as num?)?.toInt() ?? 0,
-    courierName: json['courierName'] as String? ?? '',
-    trackingNumber: json['trackingNumber'] as String? ?? '',
-    deliveryAddress: json['deliveryAddress'] as String? ?? '',
-    items: (json['items'] as List<dynamic>? ?? const []).cast<String>(),
-    totalAmount: (json['totalAmount'] as num?)?.toInt() ?? 0,
-  );
+  factory CareOrder.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'];
+    List<String> parsedItems = [];
+    if (rawItems is List) {
+      parsedItems = rawItems.map((it) {
+        if (it is String) return it;
+        if (it is Map) {
+          final title = it['title'] ?? it['name'] ?? 'Product';
+          final qty = it['quantity'] ?? 1;
+          return '$title × $qty';
+        }
+        return it.toString();
+      }).toList();
+    }
+
+    final pricing = json['pricing'] is Map ? json['pricing'] as Map : null;
+    final total = (pricing?['total'] ?? json['totalAmount'] ?? json['total'] ?? 0) as num;
+
+    final fulfillment = json['fulfillment'] is Map ? json['fulfillment'] as Map : null;
+    final statusStr = (fulfillment?['status'] ?? json['status'] ?? 'New').toString();
+
+    int step = 0;
+    if (statusStr == 'Preparing') {
+      step = 1;
+    } else if (statusStr == 'Shipped') {
+      step = 2;
+    } else if (statusStr == 'Delivered') {
+      step = 3;
+    }
+
+    final addr = json['shipping_address'] ?? json['deliveryAddress'];
+    String formattedAddr = '';
+    if (addr is String) {
+      formattedAddr = addr;
+    } else if (addr is Map) {
+      formattedAddr = addr['formattedAddress'] as String? ??
+          '${addr['name'] ?? ''}, ${addr['house_number'] ?? ''}, ${addr['street'] ?? ''}, ${addr['city'] ?? ''}';
+    }
+
+    return CareOrder(
+      orderId: json['order_id'] as String? ?? json['orderId'] as String? ?? '',
+      orderDate: json['created_at'] as String? ?? json['orderDate'] as String? ?? '',
+      estimatedDelivery: json['estimatedDelivery'] as String? ?? '3-5 business days',
+      status: statusStr,
+      currentStep: (json['currentStep'] as num?)?.toInt() ?? step,
+      courierName: (fulfillment?['courier'] ?? json['courierName'] ?? '').toString(),
+      trackingNumber: (fulfillment?['tracking_number'] ?? json['trackingNumber'] ?? '').toString(),
+      deliveryAddress: formattedAddr,
+      items: parsedItems,
+      totalAmount: total.toInt(),
+    );
+  }
 }

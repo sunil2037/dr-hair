@@ -13,22 +13,132 @@ import '../../../../core/widgets/app_toast.dart';
 
 /// 6. Order Tracking View
 /// Live prescription & clinical kit dispatch tracking, compounding status, and WhatsApp support.
-class OrderTrackingView extends StatelessWidget {
+class OrderTrackingView extends StatefulWidget {
   const OrderTrackingView({super.key});
+
+  @override
+  State<OrderTrackingView> createState() => _OrderTrackingViewState();
+}
+
+class _OrderTrackingViewState extends State<OrderTrackingView> {
+  int _selectedOrderIndex = 0;
+  bool _isCancelling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CareCubit>().fetchPatientOrders();
+    });
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        return const Color(0xFF10B981);
+      case 'shipped':
+        return const Color(0xFF3B82F6);
+      case 'preparing':
+        return const Color(0xFFF59E0B);
+      case 'cancelled':
+      case 'refunded':
+        return const Color(0xFFEF4444);
+      case 'new':
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  Future<void> _handleCancelOrder(String orderId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Order?'),
+        content: const Text(
+          'Are you sure you want to cancel this order? Any reserved inventory will be released immediately.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep Order'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Cancel Order'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isCancelling = true);
+      final success = await context.read<CareCubit>().cancelOrder(orderId);
+      if (!mounted) return;
+      setState(() => _isCancelling = false);
+      if (success) {
+        AppToast.show(
+          context,
+          const SnackBar(content: Text('Order cancelled and stock released.')),
+        );
+      } else {
+        AppToast.show(
+          context,
+          const SnackBar(content: Text('Failed to cancel order.')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CareCubit, CareState>(
       builder: (context, state) {
-        final order = state.orders.isNotEmpty ? state.orders.first : null;
+        final safeIndex = state.orders.isEmpty
+            ? 0
+            : _selectedOrderIndex.clamp(0, state.orders.length - 1);
+        final order = state.orders.isNotEmpty ? state.orders[safeIndex] : null;
         final isPreviewOrder =
             order?.status.startsWith('Preview only') ?? false;
+        final isCancellable = order != null &&
+            !isPreviewOrder &&
+            (order.status == 'New' || order.status == 'Preparing');
 
         return CarePageScaffold(
           title: 'Orders & Deliveries',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (state.orders.length > 1) ...[
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(state.orders.length, (idx) {
+                      final ord = state.orders[idx];
+                      final isSelected = idx == safeIndex;
+                      final shortId = ord.orderId.length > 12
+                          ? '${ord.orderId.substring(0, 8)}...'
+                          : ord.orderId;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8, bottom: 12),
+                        child: ChoiceChip(
+                          label: Text('#$shortId (${ord.status})'),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary100,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _selectedOrderIndex = idx);
+                            }
+                          },
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
               if (order == null)
                 careCard(
                   child: const Center(
@@ -65,9 +175,9 @@ class OrderTrackingView extends StatelessWidget {
               else ...[
                 // Order Status Banner Card
                 careCard(
-                  backgroundColor: const Color(0xFFECFDF5),
+                  backgroundColor: _getStatusColor(order.status).withValues(alpha: 0.08),
                   border: Border.all(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                    color: _getStatusColor(order.status).withValues(alpha: 0.3),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +211,7 @@ class OrderTrackingView extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981),
+                              color: _getStatusColor(order.status),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -378,10 +488,50 @@ class OrderTrackingView extends StatelessWidget {
                   ),
                 ),
 
+                // Cancel Order button (if status is New or Preparing)
+                if (isCancellable) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: _isCancelling
+                          ? null
+                          : () => _handleCancelOrder(order.orderId),
+                      icon: _isCancelling
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.error,
+                              ),
+                            )
+                          : const Icon(LucideIcons.ban, size: 18),
+                      label: Text(
+                        _isCancelling ? 'Cancelling...' : 'Cancel Order & Release Items',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
                 // Support button
-                if (!isPreviewOrder) SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
+                if (!isPreviewOrder) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -422,8 +572,9 @@ class OrderTrackingView extends StatelessWidget {
                 ),
               ],
             ],
-          ),
-        );
+          ],
+        ),
+      );
       },
     );
   }

@@ -79,8 +79,11 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
     } else if (authState.isAuthenticated) {
       final cachedCompleted =
           AppLocalCache.instance.getBool('has_completed_hair_test') ?? false;
-      if (authState.nextStep == 'ASSESSMENT' ||
-          (!authState.hasCompletedAssessment && !cachedCompleted)) {
+      final cachedSkipped =
+          AppLocalCache.instance.getBool('has_skipped_hair_test') ?? false;
+      if ((authState.nextStep == 'ASSESSMENT' ||
+              (!authState.hasCompletedAssessment && !cachedCompleted)) &&
+          !cachedSkipped) {
         context.go(RouteNames.hairTest);
       } else {
         context.go(RouteNames.mainShell);

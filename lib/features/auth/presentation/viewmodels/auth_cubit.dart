@@ -72,13 +72,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<bool> sendOtp(String login) async {
     final normalizedLogin = login.trim();
-    emit(
-      state.copyWith(
-        status: AuthStatus.loading,
-        clearError: true,
-        clearDevelopmentOtp: true,
-      ),
-    );
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
     try {
       final repo = repository;
       if (repo == null) {
@@ -86,7 +80,7 @@ class AuthCubit extends Cubit<AuthState> {
           'Authentication is not configured.',
         );
       }
-      final developmentOtp = await repo.requestOtp(normalizedLogin);
+      await repo.requestOtp(normalizedLogin);
 
       _startCountdownTimer();
       emit(
@@ -95,7 +89,6 @@ class AuthCubit extends Cubit<AuthState> {
           isOtpSent: true,
           phoneNumber: normalizedLogin,
           resendCountdown: 30,
-          developmentOtp: developmentOtp,
           clearError: true,
         ),
       );
@@ -105,7 +98,6 @@ class AuthCubit extends Cubit<AuthState> {
         state.copyWith(
           status: AuthStatus.failure,
           isOtpSent: false,
-          clearDevelopmentOtp: true,
           errorMessage: _message(
             error,
             'Could not send the verification code.',
@@ -146,13 +138,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String phoneNumber,
   }) async {
     final login = phoneNumber.trim();
-    emit(
-      state.copyWith(
-        status: AuthStatus.loading,
-        clearError: true,
-        clearDevelopmentOtp: true,
-      ),
-    );
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
     try {
       final repo = repository;
       if (repo == null) {
@@ -343,7 +329,6 @@ class AuthCubit extends Cubit<AuthState> {
         resendCountdown: 0,
         phoneNumber: '',
         clearError: true,
-        clearDevelopmentOtp: true,
       ),
     );
   }

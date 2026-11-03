@@ -38,7 +38,6 @@ void main() {
         expect(repository.requestCount, 1);
         expect(repository.lastRequestedLogin, '+91 9876543210');
         expect(cubit.state.isOtpSent, isTrue);
-        expect(cubit.state.developmentOtp, '123456');
       },
     );
 
