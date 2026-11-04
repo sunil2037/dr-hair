@@ -350,16 +350,21 @@ class _VideosContentState extends State<_VideosContent>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Patient Video Stories',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.3,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
+              const Expanded(
+                child: Text(
+                  'Patient Video Stories',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                    shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
