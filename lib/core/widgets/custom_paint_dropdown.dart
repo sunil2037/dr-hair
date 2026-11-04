@@ -619,3 +619,4 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
     );
   }
 }
+

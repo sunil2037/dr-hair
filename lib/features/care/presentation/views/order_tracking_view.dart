@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../domain/models/care_models.dart';
 import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
 import '../widgets/care_widgets.dart';
@@ -52,7 +53,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
     }
   }
 
-  Future<void> _handleCancelOrder(PatientOrder order) async {
+  Future<void> _handleCancelOrder(CareOrder order) async {
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -702,7 +703,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
 /// Dedicated, clinical bottom sheet providing empathetic order cancellation,
 /// clear policy explanation, and feedback reasons for the Dr. Hair care team.
 class _CancelOrderBottomSheet extends StatefulWidget {
-  final PatientOrder order;
+  final CareOrder order;
 
   const _CancelOrderBottomSheet({required this.order});
 
