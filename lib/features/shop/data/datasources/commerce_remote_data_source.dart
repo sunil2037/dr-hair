@@ -26,7 +26,7 @@ class CommerceRemoteDataSource {
     try {
       final headers = await _buildHeaders(token: token);
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/patient/addresses',
+        ApiEndpoints.patientAddresses,
         options: Options(headers: headers),
       );
       final data = response.data?['data'];
@@ -47,7 +47,7 @@ class CommerceRemoteDataSource {
     try {
       final headers = await _buildHeaders(token: token);
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/patient/addresses',
+        ApiEndpoints.patientAddresses,
         data: address.toJson(),
         options: Options(headers: headers),
       );
@@ -82,7 +82,7 @@ class CommerceRemoteDataSource {
     }
 
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/commerce/checkout',
+      ApiEndpoints.commerceCheckout,
       data: body,
       options: Options(headers: headers),
     );
@@ -110,7 +110,7 @@ class CommerceRemoteDataSource {
     }
 
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/commerce/verify-payment',
+      ApiEndpoints.commerceVerifyPayment,
       data: payload,
       options: Options(headers: headers),
     );
@@ -129,7 +129,7 @@ class CommerceRemoteDataSource {
     try {
       final headers = await _buildHeaders(token: token);
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/patient/orders',
+        ApiEndpoints.patientOrders,
         queryParameters: {'page': page, 'limit': limit},
         options: Options(headers: headers),
       );
@@ -152,7 +152,7 @@ class CommerceRemoteDataSource {
   }) async {
     final headers = await _buildHeaders(token: token);
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/patient/orders/$orderId/cancel',
+      ApiEndpoints.patientOrderCancel(orderId),
       data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
       options: Options(headers: headers),
     );

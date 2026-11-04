@@ -23,7 +23,7 @@ class PolicyRepository {
           ? 'terms-conditions'
           : (type == PolicyType.returnsAndRefunds ? 'refund-policy' : type.slug);
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/content/policies/$slug',
+        ApiEndpoints.contentPolicyBySlug(slug),
         options: Options(extra: const {'silent': true}),
       );
       final data = response.data?['data'];

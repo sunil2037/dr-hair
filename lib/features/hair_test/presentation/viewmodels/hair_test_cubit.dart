@@ -118,7 +118,7 @@ class HairTestCubit extends Cubit<HairTestState> {
             enableDebugLogging: false,
           ).dio;
       final response = await dioToUse.get<Map<String, dynamic>>(
-        '/api/v1/patient/assessment/draft',
+        ApiEndpoints.patientAssessmentDraft,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
       final draft = response.data?['data']?['draft'];
@@ -417,7 +417,7 @@ class HairTestCubit extends Cubit<HairTestState> {
               );
         final dioToUse = _dio ?? client!.dio;
         final response = await dioToUse.post<Map<String, dynamic>>(
-          '/api/v1/hair-tests/submit_form',
+          ApiEndpoints.hairTestSubmitForm,
           data: FormData.fromMap({
             'full_name': name,
             if (age.isNotEmpty) 'age': age,
@@ -517,7 +517,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         unawaited(() async {
           try {
             await dioToUse.delete<Map<String, dynamic>>(
-              '/api/v1/patient/assessment/draft',
+              ApiEndpoints.patientAssessmentDraft,
               options:
                   Options(headers: {'Authorization': 'Bearer $sessionToken'}),
             );
@@ -839,7 +839,7 @@ class HairTestCubit extends Cubit<HairTestState> {
       unawaited(() async {
         try {
           await dioToUse.put<Map<String, dynamic>>(
-            '/api/v1/patient/assessment/draft',
+            ApiEndpoints.patientAssessmentDraft,
             data: {
               'step': state.currentStep,
               'formData': _draftJson(),
@@ -885,7 +885,7 @@ class HairTestCubit extends Cubit<HairTestState> {
               enableDebugLogging: false,
             ).dio;
         await dioToUse.delete<Map<String, dynamic>>(
-          '/api/v1/patient/assessment/draft',
+          ApiEndpoints.patientAssessmentDraft,
           options: Options(headers: {'Authorization': 'Bearer $token'}),
         );
       } catch (_) {}

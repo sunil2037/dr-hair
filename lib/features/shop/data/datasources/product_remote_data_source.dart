@@ -32,7 +32,7 @@ class ProductRemoteDataSource {
     }
 
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/products',
+      ApiEndpoints.products,
       queryParameters: queryParams,
       options: Options(extra: const {'silent': true}),
     );
@@ -63,7 +63,7 @@ class ProductRemoteDataSource {
     if (cleanId.isEmpty) return null;
 
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/products/$cleanId',
+      ApiEndpoints.productById(cleanId),
       options: Options(extra: const {'silent': true}),
     );
 

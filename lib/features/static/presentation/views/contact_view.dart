@@ -61,7 +61,7 @@ class _ContactViewState extends State<ContactView> {
       try {
         final dio = DioClient(baseUrl: ApiEndpoints.backendBaseUrl).dio;
         await dio.post<Map<String, dynamic>>(
-          '/api/v1/support/inquiries',
+          ApiEndpoints.supportInquiries,
           data: {
             'name': name,
             'email': email.isNotEmpty ? email : null,

@@ -13,7 +13,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> requestOtp(String login) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/send_login_otp',
+      ApiEndpoints.authSendLoginOtp,
       data: {'login': login},
       options: Options(extra: const {'sensitive': true}),
     );
@@ -25,7 +25,7 @@ class AuthRemoteDataSource {
     required String otp,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/verify_login_otp',
+      ApiEndpoints.authVerifyLoginOtp,
       data: {'login': login, 'otp': otp},
       options: Options(extra: const {'sensitive': true}),
     );
@@ -37,7 +37,7 @@ class AuthRemoteDataSource {
     required String password,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/login',
+      ApiEndpoints.authLogin,
       data: {'email': email.trim().toLowerCase(), 'password': password},
       options: Options(extra: const {'sensitive': true}),
     );
@@ -49,7 +49,7 @@ class AuthRemoteDataSource {
     String? tempToken,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/send-signup-otp',
+      ApiEndpoints.authSendSignupOtp,
       data: {
         'phone': phone.trim(),
         if (tempToken != null && tempToken.isNotEmpty) 'tempToken': tempToken,
@@ -66,7 +66,7 @@ class AuthRemoteDataSource {
     required String otp,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/register',
+      ApiEndpoints.authRegister,
       data: {
         'name': name.trim(),
         'email': email.trim().toLowerCase(),
@@ -86,7 +86,7 @@ class AuthRemoteDataSource {
     String? name,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/social-login',
+      ApiEndpoints.authSocialLogin,
       data: {
         'provider': provider,
         'id_token': idToken,
@@ -105,7 +105,7 @@ class AuthRemoteDataSource {
     required String tempToken,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/verify-social-signup',
+      ApiEndpoints.authVerifySocialSignup,
       data: {
         'phone': phone.trim(),
         'otp': otp.trim(),
@@ -118,7 +118,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> forgotPassword(String login) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/forgot-password',
+      ApiEndpoints.authForgotPassword,
       data: {'login': login.trim()},
       options: Options(extra: const {'sensitive': true}),
     );
@@ -131,7 +131,7 @@ class AuthRemoteDataSource {
     required String newPassword,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/reset-password',
+      ApiEndpoints.authResetPassword,
       data: {
         'login': login.trim(),
         'otp': otp.trim(),
@@ -144,7 +144,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> getProfile(String token) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/users/get_profile',
+      ApiEndpoints.userGetProfile,
       options: _authorized(token),
     );
     return _asMap(response.data);
@@ -152,7 +152,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> getSession(String token) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/auth/session',
+      ApiEndpoints.authSession,
       options: _authorized(token, silent: true),
     );
     return _asMap(response.data);
@@ -163,7 +163,7 @@ class AuthRemoteDataSource {
     required String sessionId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/auth/refresh',
+      ApiEndpoints.authRefresh,
       data: {'refresh_token': refreshToken, 'session_id': sessionId},
       options: Options(extra: const {'sensitive': true, 'silent': true}),
     );
@@ -181,7 +181,7 @@ class AuthRemoteDataSource {
   }) async {
     final login = verifiedLogin.trim();
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/users/loginSignup',
+      ApiEndpoints.userLoginSignup,
       data: {
         'name': name,
         if (login.contains('@')) 'email': login,
@@ -209,7 +209,7 @@ class AuthRemoteDataSource {
     bool clearProfileUrl = false,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/users/updateProfile',
+      ApiEndpoints.userUpdateProfile,
       data: {
         'name': ?name,
         'age': ?age,
@@ -240,7 +240,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> removeProfilePhoto(String token) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/users/updateProfile',
+      ApiEndpoints.userUpdateProfile,
       data: {'profile_url': null},
       options: _authorized(token),
     );
@@ -249,7 +249,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> deleteAccount(String token) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/users/deleteAccount',
+      ApiEndpoints.userDeleteAccount,
       options: _authorized(token),
     );
     return _asMap(response.data);
@@ -258,7 +258,7 @@ class AuthRemoteDataSource {
   Future<void> logout(String token, {String? fcmToken}) async {
     try {
       await _dio.post<Map<String, dynamic>>(
-        '/api/v1/auth/logout',
+        ApiEndpoints.authLogout,
         data: fcmToken != null && fcmToken.isNotEmpty
             ? {'fcm_token': fcmToken}
             : null,

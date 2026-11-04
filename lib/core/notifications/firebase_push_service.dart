@@ -126,7 +126,7 @@ class FirebasePushService {
       });
 
       await _dio.post(
-        '/api/v1/notifications/device-tokens',
+        ApiEndpoints.notificationDeviceTokens,
         data: {'token': token.trim(), 'platform': _currentPlatformName},
         options: options,
       );
@@ -137,7 +137,7 @@ class FirebasePushService {
         if (newToken.trim().isNotEmpty) {
           try {
             await _dio.post(
-              '/api/v1/notifications/device-tokens',
+              ApiEndpoints.notificationDeviceTokens,
               data: {
                 'token': newToken.trim(),
                 'platform': _currentPlatformName,
@@ -166,7 +166,7 @@ class FirebasePushService {
             : null;
 
         await _dio.delete(
-          '/api/v1/notifications/device-tokens',
+          ApiEndpoints.notificationDeviceTokens,
           data: {'token': token.trim()},
           options: options,
         );

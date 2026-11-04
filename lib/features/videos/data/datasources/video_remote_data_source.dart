@@ -29,7 +29,7 @@ class VideoRemoteDataSource {
     }
 
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/videos',
+      ApiEndpoints.videos,
       queryParameters: queryParams,
       options: Options(extra: const {'silent': true}),
     );

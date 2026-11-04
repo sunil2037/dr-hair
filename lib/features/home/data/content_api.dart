@@ -57,7 +57,7 @@ class ContentApi {
       if (placement != null) queryParams['placement'] = placement;
 
       final response = await _dio.get(
-        '/api/v1/content',
+        ApiEndpoints.content,
         queryParameters: queryParams,
       );
 

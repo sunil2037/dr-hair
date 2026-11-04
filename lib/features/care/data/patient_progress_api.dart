@@ -56,7 +56,7 @@ class PatientProgressApi {
       };
     });
     await _dio.post<Map<String, dynamic>>(
-      '/api/v1/patient/progress-checkins',
+      ApiEndpoints.patientProgressCheckins,
       data: {
         'id': id,
         'date': date.toIso8601String(),
@@ -74,7 +74,7 @@ class PatientProgressApi {
     required String token,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/patient/progress-checkins',
+      ApiEndpoints.patientProgressCheckins,
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
     final data = response.data?['data'];
@@ -91,7 +91,7 @@ class PatientProgressApi {
     required String checkInId,
   }) async {
     await _dio.delete<Map<String, dynamic>>(
-      '/api/v1/patient/progress-checkins/${Uri.encodeComponent(checkInId)}',
+      ApiEndpoints.patientProgressCheckinById(checkInId),
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
   }

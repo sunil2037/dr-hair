@@ -13,7 +13,7 @@ class ReviewRemoteDataSource {
   Future<List<ReviewModel>> getReviews({String? category, int? page}) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/reviews/review_get',
+        ApiEndpoints.reviewsGet,
         queryParameters: {
           if (category != null && category != 'All') 'category': category,
           'page': ?page,

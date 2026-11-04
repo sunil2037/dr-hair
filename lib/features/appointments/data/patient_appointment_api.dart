@@ -15,7 +15,7 @@ class PatientAppointmentApi {
 
   Future<List<Map<String, dynamic>>> list(String token) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/patient/appointments',
+      ApiEndpoints.patientAppointments,
       options: _authorized(token),
     );
     final data = response.data?['data'];
@@ -34,7 +34,7 @@ class PatientAppointmentApi {
     String? paymentTransactionId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/patient/appointments',
+      ApiEndpoints.patientAppointments,
       data: {
         'starts_at': startsAt.toUtc().toIso8601String(),
         'reason': reason,
@@ -55,7 +55,7 @@ class PatientAppointmentApi {
     required Map<String, dynamic> data,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/api/v1/patient/appointments/${Uri.encodeComponent(appointmentId)}',
+      ApiEndpoints.patientAppointmentById(appointmentId),
       data: data,
       options: _authorized(token),
     );

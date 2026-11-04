@@ -16,7 +16,7 @@ class PatientClinicalApi {
 
   Future<Map<String, dynamic>> getClinicalRecord(String accessToken) async {
     final response = await _client.dio.get<Map<String, dynamic>>(
-      '/api/v1/patient/clinical-record',
+      ApiEndpoints.patientClinicalRecord,
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
     final envelope = response.data;
@@ -34,7 +34,7 @@ class PatientClinicalApi {
     required String reportId,
   }) async {
     final response = await _client.dio.get<Map<String, dynamic>>(
-      '/api/v1/patient/reports/${Uri.encodeComponent(reportId)}/download',
+      ApiEndpoints.patientReportDownload(reportId),
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
     final envelope = response.data;

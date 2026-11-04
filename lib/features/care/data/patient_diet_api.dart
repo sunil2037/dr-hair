@@ -24,7 +24,7 @@ class PatientDietApi {
 
   Future<PatientDietPlanResponse> getPatientDietPlan(String token) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/patient/diet-plan',
+      ApiEndpoints.patientDietPlan,
       options: Options(
         headers: {
           'Authorization': 'Bearer $token',

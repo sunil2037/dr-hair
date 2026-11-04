@@ -37,7 +37,7 @@ class CartRemoteDataSource {
     try {
       final headers = await _buildHeaders();
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/cart',
+        ApiEndpoints.cart,
         options: Options(
           headers: headers,
           extra: const {'silent': true},
@@ -61,7 +61,7 @@ class CartRemoteDataSource {
     try {
       final headers = await _buildHeaders();
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/cart/items',
+        ApiEndpoints.cartItems,
         data: {
           'productId': productId,
           if (planTitle != null && planTitle.isNotEmpty) 'planTitle': planTitle,
@@ -87,7 +87,7 @@ class CartRemoteDataSource {
     try {
       final headers = await _buildHeaders();
       final response = await _dio.patch<Map<String, dynamic>>(
-        '/api/v1/cart/items/${Uri.encodeComponent(itemId)}',
+        ApiEndpoints.cartItemById(itemId),
         data: {'quantity': quantity},
         options: Options(
           headers: headers,
@@ -106,7 +106,7 @@ class CartRemoteDataSource {
     try {
       final headers = await _buildHeaders();
       final response = await _dio.delete<Map<String, dynamic>>(
-        '/api/v1/cart/items/${Uri.encodeComponent(itemId)}',
+        ApiEndpoints.cartItemById(itemId),
         options: Options(
           headers: headers,
           extra: const {'silent': true},
@@ -124,7 +124,7 @@ class CartRemoteDataSource {
     try {
       final headers = await _buildHeaders();
       await _dio.delete(
-        '/api/v1/cart',
+        ApiEndpoints.cart,
         options: Options(
           headers: headers,
           extra: const {'silent': true},
@@ -140,7 +140,7 @@ class CartRemoteDataSource {
     try {
       final headers = await _buildHeaders();
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/cart/apply-reward',
+        ApiEndpoints.cartApplyReward,
         data: {'code': code.trim().toUpperCase()},
         options: Options(
           headers: headers,

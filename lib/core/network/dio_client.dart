@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/api_endpoints.dart';
 import '../session/session_coordinator.dart';
+import '../storage/secure_session_store.dart';
 import 'failure.dart';
 
 /// DioClient with:
@@ -56,10 +57,21 @@ class DioClient {
       dio.httpClientAdapter = mockAdapter!;
     }
 
-    // Yellow Color Console Logging & Loader Interceptor
+    // Yellow Color Console Logging, Auth Interceptor & Loader Interceptor
     dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
+        onRequest: (options, handler) async {
+          // Auto-attach Bearer authorization header if not explicitly set
+          if (!options.headers.containsKey('Authorization') &&
+              !options.headers.containsKey('authorization')) {
+            try {
+              final token = await SecureSessionStore().readToken();
+              if (token != null && token.trim().isNotEmpty) {
+                options.headers['Authorization'] = 'Bearer ${token.trim()}';
+              }
+            } catch (_) {}
+          }
+
           if (options.extra['silent'] != true) {
             _startLoading();
           }

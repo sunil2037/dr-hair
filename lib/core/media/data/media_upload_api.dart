@@ -25,7 +25,7 @@ class MediaUploadApi {
     }
 
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/media/upload',
+      ApiEndpoints.mediaUpload,
       data: FormData.fromMap({'files': files}),
       options: Options(
         headers: {'Authorization': 'Bearer $token', 'X-Media-Purpose': purpose},
