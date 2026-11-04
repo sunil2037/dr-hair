@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -326,7 +327,7 @@ class _VideosContentState extends State<_VideosContent>
 
     return Container(
       padding: EdgeInsets.only(
-        top: topPadding + 62,
+        top: topPadding + 10,
         left: 16,
         right: 16,
         bottom: 12,
@@ -665,6 +666,10 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       );
       _youtubeController = ytController;
 
+      // Initialize the controller and configure transparent background
+      ytController.webViewController.setBackgroundColor(Colors.transparent);
+      ytController.init();
+
       _playerSubscription = ytController.listen((value) {
         if (!mounted) return;
 
@@ -921,7 +926,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
           ),
         ),
 
-        // 2. Video Player Layer (Wrapped in IgnorePointer so it never consumes touches or gestures!)
+        // 2. Video Player Layer (Inlined WebViewWidget directly in the Reel Stack, avoiding OverlayPortal takeover)
         Positioned.fill(
           child: IgnorePointer(
             ignoring: true,
@@ -929,18 +934,16 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                     _youtubeController != null &&
                     !_isTesting &&
                     !_hasPlaybackError
-                ? SizedBox.expand(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: 360,
-                        height: 640,
-                        child: YoutubePlayer(
-                          controller: _youtubeController!,
-                          aspectRatio: 9 / 16,
-                          enableFullScreenOnVerticalDrag: false,
-                          autoFullScreen: false,
-                          backgroundColor: Colors.transparent,
+                ? ClipRect(
+                    child: SizedBox.expand(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: 360,
+                          height: 640,
+                          child: WebViewWidget(
+                            controller: _youtubeController!.webViewController,
+                          ),
                         ),
                       ),
                     ),
