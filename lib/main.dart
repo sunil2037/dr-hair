@@ -51,6 +51,8 @@ Future<void> main() async {
 
 class MyApp extends StatefulWidget {
   final AuthCubit? authCubit;
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   const MyApp({super.key, this.authCubit});
 
@@ -100,7 +102,7 @@ class _MyAppState extends State<MyApp> {
         final title = notif.title ?? '';
         final body = notif.body ?? '';
         final location = FirebasePushService.resolveMessageLocation(message);
-        ScaffoldMessenger.of(context).showSnackBar(
+        MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: const Color(0xFF1E293B),
@@ -161,6 +163,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     final app = MaterialApp.router(
       title: AppStrings.appName,
+      scaffoldMessengerKey: MyApp.scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: AppRouter.router,
