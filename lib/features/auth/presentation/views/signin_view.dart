@@ -511,6 +511,21 @@ class _SigninViewState extends State<SigninView>
     bool otpSent = false;
     bool isSheetBusy = false;
     String? phoneErr;
+    Timer? resendTimer;
+    int resendCountdown = 30;
+
+    void startSheetCountdown(void Function(void Function()) setSheetState) {
+      resendTimer?.cancel();
+      resendCountdown = 30;
+      resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+        if (resendCountdown <= 1) {
+          t.cancel();
+          setSheetState(() => resendCountdown = 0);
+        } else {
+          setSheetState(() => resendCountdown--);
+        }
+      });
+    }
 
     showModalBottomSheet<void>(
       context: context,
@@ -628,6 +643,7 @@ class _SigninViewState extends State<SigninView>
                           setSheetState(() => isSheetBusy = false);
                           if (sent) {
                             setSheetState(() => otpSent = true);
+                            startSheetCountdown(setSheetState);
                           } else {
                             if (sheetContext.mounted) {
                               setSheetState(() {
@@ -728,6 +744,7 @@ class _SigninViewState extends State<SigninView>
                           );
                           setSheetState(() => isSheetBusy = false);
                           if (verified) {
+                            resendTimer?.cancel();
                             if (sheetContext.mounted) {
                               Navigator.pop(sheetContext);
                             }
@@ -748,6 +765,91 @@ class _SigninViewState extends State<SigninView>
                           }
                         },
                       ),
+                      const SizedBox(height: 12),
+                      if (resendCountdown > 0)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.clock,
+                                  size: 14,
+                                  color: AppColors.secondaryDark,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Resend OTP in 00:${resendCountdown.toString().padLeft(2, '0')}',
+                                  style: const TextStyle(
+                                    color: AppColors.secondaryDark,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: isSheetBusy
+                                ? null
+                                : () async {
+                                    setSheetState(() => isSheetBusy = true);
+                                    final cubit = sheetContext.read<AuthCubit>();
+                                    final sent = await cubit.sendSignupOtp(
+                                      phoneCtrl.text.trim(),
+                                    );
+                                    setSheetState(() => isSheetBusy = false);
+                                    if (sent) {
+                                      for (final c in otpCtrls) {
+                                        c.clear();
+                                      }
+                                      if (otpNodes.isNotEmpty) {
+                                        otpNodes[0].requestFocus();
+                                      }
+                                      startSheetCountdown(setSheetState);
+                                      if (sheetContext.mounted) {
+                                        AppToast.show(
+                                          sheetContext,
+                                          const SnackBar(
+                                            backgroundColor: AppColors.primary,
+                                            content: Text(
+                                              'A fresh verification code was sent.',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    } else if (sheetContext.mounted) {
+                                      AppToast.show(
+                                        sheetContext,
+                                        SnackBar(
+                                          backgroundColor: AppColors.danger,
+                                          content: Text(
+                                            cubit.state.errorMessage ??
+                                                'Could not resend OTP.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                            icon: const Icon(
+                              LucideIcons.rotateCw,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            label: const Text(
+                              'Resend OTP',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ],
                 ),
@@ -770,6 +872,21 @@ class _SigninViewState extends State<SigninView>
     bool isResetBusy = false;
     bool obscureNewPass = true;
     String? errText;
+    Timer? resendTimer;
+    int resendCountdown = 30;
+
+    void startResetCountdown(void Function(void Function()) setSheetState) {
+      resendTimer?.cancel();
+      resendCountdown = 30;
+      resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+        if (resendCountdown <= 1) {
+          t.cancel();
+          setSheetState(() => resendCountdown = 0);
+        } else {
+          setSheetState(() => resendCountdown--);
+        }
+      });
+    }
 
     showModalBottomSheet<void>(
       context: context,
@@ -856,6 +973,7 @@ class _SigninViewState extends State<SigninView>
                           setSheetState(() => isResetBusy = false);
                           if (ok) {
                             setSheetState(() => otpSent = true);
+                            startResetCountdown(setSheetState);
                           } else {
                             setSheetState(
                               () => errText =
@@ -928,6 +1046,7 @@ class _SigninViewState extends State<SigninView>
                           );
                           setSheetState(() => isResetBusy = false);
                           if (ok) {
+                            resendTimer?.cancel();
                             if (sheetContext.mounted) {
                               Navigator.pop(sheetContext);
                             }
@@ -952,6 +1071,81 @@ class _SigninViewState extends State<SigninView>
                           }
                         },
                       ),
+                      const SizedBox(height: 12),
+                      if (resendCountdown > 0)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.clock,
+                                  size: 14,
+                                  color: AppColors.secondaryDark,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Resend OTP in 00:${resendCountdown.toString().padLeft(2, '0')}',
+                                  style: const TextStyle(
+                                    color: AppColors.secondaryDark,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: isResetBusy
+                                ? null
+                                : () async {
+                                    setSheetState(() => isResetBusy = true);
+                                    final cubit = sheetContext.read<AuthCubit>();
+                                    final ok = await cubit.forgotPassword(
+                                      loginCtrl.text.trim(),
+                                    );
+                                    setSheetState(() => isResetBusy = false);
+                                    if (ok) {
+                                      otpCtrl.clear();
+                                      startResetCountdown(setSheetState);
+                                      if (sheetContext.mounted) {
+                                        AppToast.show(
+                                          sheetContext,
+                                          const SnackBar(
+                                            backgroundColor: AppColors.primary,
+                                            content: Text(
+                                              'A fresh reset code was sent.',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    } else if (sheetContext.mounted) {
+                                      setSheetState(
+                                        () => errText =
+                                            cubit.state.errorMessage ??
+                                            'Could not resend code.',
+                                      );
+                                    }
+                                  },
+                            icon: const Icon(
+                              LucideIcons.rotateCw,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            label: const Text(
+                              'Resend OTP',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ],
                 ),
