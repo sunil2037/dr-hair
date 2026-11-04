@@ -292,6 +292,11 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(status: AuthStatus.loading, clearError: true));
     try {
       final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      // Always disconnect or signOut prior to prompt so Android/iOS presents the account chooser dialog
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
       final account = await googleSignIn.signIn();
       if (account == null) {
         emit(state.copyWith(status: AuthStatus.unauthenticated));
@@ -628,6 +633,10 @@ class AuthCubit extends Cubit<AuthState> {
         FirebasePushService.unregisterDeviceToken(accessToken: currentToken),
       );
     }
+    try {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+    } catch (_) {}
     try {
       await repository?.clearSession();
     } catch (_) {
