@@ -225,7 +225,10 @@ class RoutineTrackerView extends StatelessWidget {
                     child: TextButton.icon(
                       onPressed: () => context.push(RouteNames.progress),
                       icon: const Icon(LucideIcons.camera, size: 16),
-                      label: const Text('View progress journal'),
+                      label: const Text(
+                        'View progress journal',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ),
                 ],
@@ -239,7 +242,10 @@ class RoutineTrackerView extends StatelessWidget {
               if (state.routineTasks.isEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 36,
+                    horizontal: 20,
+                  ),
                   margin: const EdgeInsets.only(top: 10, bottom: 20),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -254,11 +260,15 @@ class RoutineTrackerView extends StatelessWidget {
                           color: AppColors.primary5,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(LucideIcons.clipboardList, size: 36, color: AppColors.primary),
+                        child: const Icon(
+                          LucideIcons.calendarClock,
+                          size: 36,
+                          color: AppColors.primary,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'No Active Care Plan Assigned',
+                        'Care Routine in Preparation',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -267,171 +277,185 @@ class RoutineTrackerView extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Complete a clinical hair assessment or consult with Dr. Hair doctors to receive your personalized treatment routine.',
+                        'Your hair assessment has been submitted. Dr. Hair doctors are reviewing your profile and your daily treatment steps will appear here once assigned.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           height: 1.4,
                           color: Colors.grey.shade600,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        onPressed: () => context.push(RouteNames.hairTest),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      const SizedBox(height: 18),
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            context.push(RouteNames.clinicAppointment),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
                         ),
-                        icon: const Icon(LucideIcons.sparkles, size: 16),
-                        label: const Text('Take Free Hair Assessment', style: TextStyle(fontWeight: FontWeight.w700)),
+                        icon: const Icon(LucideIcons.calendar, size: 16),
+                        label: const Text(
+                          'Book Doctor Consultation',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 )
               else
                 ...state.routineTasks.map((task) {
-                final isDone = task.isCompleted;
+                  final isDone = task.isCompleted;
 
-                Color tagBg;
-                Color tagColor;
-                if (task.category.contains('Topical')) {
-                  tagBg = AppColors.primary5;
-                  tagColor = AppColors.primary;
-                } else if (task.category.contains('Supplement')) {
-                  tagBg = const Color(0xFFECFDF5);
-                  tagColor = const Color(0xFF059669);
-                } else {
-                  tagBg = const Color(0xFFFFF7ED);
-                  tagColor = const Color(0xFFEA580C);
-                }
+                  Color tagBg;
+                  Color tagColor;
+                  if (task.category.contains('Topical')) {
+                    tagBg = AppColors.primary5;
+                    tagColor = AppColors.primary;
+                  } else if (task.category.contains('Supplement')) {
+                    tagBg = const Color(0xFFECFDF5);
+                    tagColor = const Color(0xFF059669);
+                  } else {
+                    tagBg = const Color(0xFFFFF7ED);
+                    tagColor = const Color(0xFFEA580C);
+                  }
 
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: isDone ? const Color(0xFFFAFAFA) : Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isDone
-                          ? const Color(0xFF10B981).withValues(alpha: 0.3)
-                          : AppColors.border,
-                      width: 1.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: isDone ? const Color(0xFFFAFAFA) : Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
                         color: isDone
-                            ? Colors.transparent
-                            : AppColors.primary.withValues(alpha: 0.03),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+                            ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                            : AppColors.border,
+                        width: 1.0,
                       ),
-                    ],
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      context.read<CareCubit>().toggleRoutineTask(task.id);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 20,
-                            height: 20,
-                            margin: const EdgeInsets.only(top: 2),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isDone
-                                  ? const Color(0xFF10B981)
-                                  : Colors.white,
-                              border: Border.all(
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDone
+                              ? Colors.transparent
+                              : AppColors.primary.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.read<CareCubit>().toggleRoutineTask(task.id);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 20,
+                              height: 20,
+                              margin: const EdgeInsets.only(top: 2),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: isDone
                                     ? const Color(0xFF10B981)
-                                    : AppColors.border,
-                                width: 2,
+                                    : Colors.white,
+                                border: Border.all(
+                                  color: isDone
+                                      ? const Color(0xFF10B981)
+                                      : AppColors.border,
+                                  width: 2,
+                                ),
                               ),
+                              child: isDone
+                                  ? const Icon(
+                                      LucideIcons.check,
+                                      size: 14,
+                                      color: Colors.white,
+                                    )
+                                  : null,
                             ),
-                            child: isDone
-                                ? const Icon(
-                                    LucideIcons.check,
-                                    size: 14,
-                                    color: Colors.white,
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: tagBg,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        task.category,
-                                        style: TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: tagColor,
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: tagBg,
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          task.category,
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: tagColor,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '· ${task.timeOfDay}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textSecondary,
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '· ${task.timeOfDay}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary,
+                                        ),
                                       ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    task.title,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDone
+                                          ? AppColors.textSecondary
+                                          : AppColors.primaryDark,
+                                      decoration: isDone
+                                          ? TextDecoration.lineThrough
+                                          : null,
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  task.title,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDone
-                                        ? AppColors.textSecondary
-                                        : AppColors.primaryDark,
-                                    decoration: isDone
-                                        ? TextDecoration.lineThrough
-                                        : null,
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  task.subtitle,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.secondaryDark,
-                                    height: 1.35,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    task.subtitle,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.secondaryDark,
+                                      height: 1.35,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
 
               const SizedBox(height: 8),
               Center(
