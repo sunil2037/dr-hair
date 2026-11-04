@@ -65,15 +65,18 @@ class _NotificationsContent extends StatelessWidget {
             title: const Text(
               'Notifications',
               style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
                 color: AppColors.primaryDark,
               ),
             ),
             leading: IconButton(
               tooltip: 'Back',
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(LucideIcons.arrowLeft, color: AppColors.primaryDark),
+              icon: const Icon(
+                LucideIcons.arrowLeft,
+                color: AppColors.primaryDark,
+              ),
             ),
             actions: [
               if (state.unreadCount > 0)
@@ -95,7 +98,8 @@ class _NotificationsContent extends StatelessWidget {
           body: Skeletonizer(
             enabled: state.isLoading && state.notifications.isEmpty,
             child: RefreshIndicator(
-              onRefresh: () => context.read<NotificationsCubit>().loadNotifications(),
+              onRefresh: () =>
+                  context.read<NotificationsCubit>().loadNotifications(),
               color: AppColors.primary,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -110,7 +114,10 @@ class _NotificationsContent extends StatelessWidget {
                     const Center(
                       child: Text(
                         'You’re all caught up',
-                        style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryDark,
+                        ),
                       ),
                     ),
                   ],
@@ -124,10 +131,16 @@ class _NotificationsContent extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24).copyWith(top: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 64,
@@ -166,7 +179,10 @@ class _NotificationsContent extends StatelessWidget {
     );
   }
 
-  Widget _notificationCard(BuildContext context, NotificationItemModel notification) {
+  Widget _notificationCard(
+    BuildContext context,
+    NotificationItemModel notification,
+  ) {
     final isRead = notification.isRead;
 
     return Padding(

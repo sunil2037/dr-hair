@@ -30,7 +30,9 @@ class _AssessmentRequiredRouteState extends State<AssessmentRequiredRoute> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final assessment = context.read<HairTestCubit?>()?.state;
-      if (assessment != null && assessment.isCompleted && !assessment.isRetesting) {
+      if (assessment != null &&
+          assessment.isCompleted &&
+          !assessment.isRetesting) {
         return;
       }
       await showAssessmentRequiredSheet(context);
@@ -48,9 +50,8 @@ class _AssessmentRequiredRouteState extends State<AssessmentRequiredRoute> {
   @override
   Widget build(BuildContext context) {
     final assessment = context.watch<HairTestCubit?>()?.state;
-    final allowed = assessment != null &&
-        assessment.isCompleted &&
-        !assessment.isRetesting;
+    final allowed =
+        assessment != null && assessment.isCompleted && !assessment.isRetesting;
     if (allowed) return widget.child;
     return const Scaffold(
       backgroundColor: AppColors.background,
@@ -68,6 +69,7 @@ Future<bool?> _showAssessmentRequiredSheet(BuildContext context) async {
   final startAssessment = await showModalBottomSheet<bool>(
     context: context,
     useSafeArea: true,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) => Container(
       padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
@@ -79,17 +81,54 @@ Future<bool?> _showAssessmentRequiredSheet(BuildContext context) async {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+          Center(
+            child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
           const SizedBox(height: 20),
-          const Text('Start with your hair assessment', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
+          Center(
+            child: const Text(
+              'Start with your hair assessment',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Complete the assessment to unlock your personalized treatment plan, daily routine, and progress tracking.', style: TextStyle(fontSize: 14, height: 1.45, color: AppColors.secondaryDark)),
+          const Text(
+            'Complete the assessment to unlock your personalized treatment plan, daily routine, and progress tracking.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              color: AppColors.secondaryDark,
+            ),
+          ),
           const SizedBox(height: 20),
-          AppButton(text: 'Start assessment', variant: AppButtonVariant.filled, backgroundColor: AppColors.primary, foregroundColor: Colors.white, onPressed: () {
-            Navigator.of(sheetContext).pop(true);
-          }),
+          AppButton(
+            text: 'Start assessment',
+            variant: AppButtonVariant.filled,
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            onPressed: () {
+              Navigator.of(sheetContext).pop(true);
+            },
+          ),
           const SizedBox(height: 8),
-          Center(child: TextButton(onPressed: () => Navigator.of(sheetContext).pop(false), child: const Text('Maybe later'))),
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.of(sheetContext).pop(false),
+              child: const Text('Maybe later'),
+            ),
+          ),
         ],
       ),
     ),
