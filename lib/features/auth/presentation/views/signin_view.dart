@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -598,7 +600,10 @@ class _SigninViewState extends State<SigninView>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('🇮🇳', style: TextStyle(fontSize: 16)),
+                              const Text(
+                                '🇮🇳',
+                                style: TextStyle(fontSize: 16),
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 _countryCode,
@@ -798,7 +803,8 @@ class _SigninViewState extends State<SigninView>
                                 ? null
                                 : () async {
                                     setSheetState(() => isSheetBusy = true);
-                                    final cubit = sheetContext.read<AuthCubit>();
+                                    final cubit = sheetContext
+                                        .read<AuthCubit>();
                                     final sent = await cubit.sendSignupOtp(
                                       phoneCtrl.text.trim(),
                                     );
@@ -1104,7 +1110,8 @@ class _SigninViewState extends State<SigninView>
                                 ? null
                                 : () async {
                                     setSheetState(() => isResetBusy = true);
-                                    final cubit = sheetContext.read<AuthCubit>();
+                                    final cubit = sheetContext
+                                        .read<AuthCubit>();
                                     final ok = await cubit.forgotPassword(
                                       loginCtrl.text.trim(),
                                     );
