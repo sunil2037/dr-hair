@@ -29,6 +29,7 @@ class RouteNames {
   static const String dietPlan = '/diet-plan';
   static const String reminders = '/reminders';
   static const String orders = '/orders';
+  static const String orderTracking = '/order-tracking';
   static const String policy = '/policy';
   static const String privacyPolicy = '/privacy-policy';
   static const String terms = '/terms';

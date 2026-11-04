@@ -704,16 +704,24 @@ class CareCubit extends Cubit<CareState> {
     _persistOrders();
   }
 
-  Future<void> fetchPatientOrders({String? sessionToken}) async {
+  Future<List<CareOrder>> fetchPatientOrders({
+    String? sessionToken,
+    String? status,
+  }) async {
     final token = sessionToken ?? _sessionToken;
-    if (token == null || token.isEmpty) return;
     try {
-      final serverOrders = await _commerceDataSource.fetchPatientOrders(token: token);
-      if (serverOrders.isNotEmpty) {
+      final serverOrders = await _commerceDataSource.fetchPatientOrders(
+        token: token,
+        status: status,
+      );
+      if (status == null || status.isEmpty) {
         emit(state.copyWith(orders: serverOrders));
         _persistOrders();
       }
-    } catch (_) {}
+      return serverOrders;
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<bool> cancelOrder(String orderId, {String? reason, String? sessionToken}) async {

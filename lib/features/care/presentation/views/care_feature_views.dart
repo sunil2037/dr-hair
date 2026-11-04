@@ -9,6 +9,7 @@ export '../widgets/add_reminder_bottom_sheet.dart';
 // Feature Views
 export 'diet_plan_view.dart';
 export 'order_tracking_view.dart';
+export 'orders_list_view.dart';
 export 'progress_tracking_view.dart';
 export 'reminders_view.dart';
 export 'routine_tracker_view.dart';

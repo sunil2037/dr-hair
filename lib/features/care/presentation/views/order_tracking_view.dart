@@ -14,7 +14,8 @@ import '../../../../core/widgets/app_toast.dart';
 /// 6. Order Tracking View
 /// Live prescription & clinical kit dispatch tracking, compounding status, and WhatsApp support.
 class OrderTrackingView extends StatefulWidget {
-  const OrderTrackingView({super.key});
+  final String? initialOrderId;
+  const OrderTrackingView({super.key, this.initialOrderId});
 
   @override
   State<OrderTrackingView> createState() => _OrderTrackingViewState();
@@ -23,6 +24,7 @@ class OrderTrackingView extends StatefulWidget {
 class _OrderTrackingViewState extends State<OrderTrackingView> {
   int _selectedOrderIndex = 0;
   bool _isCancelling = false;
+  bool _initialIndexSet = false;
 
   @override
   void initState() {
@@ -97,6 +99,13 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
   Widget build(BuildContext context) {
     return BlocBuilder<CareCubit, CareState>(
       builder: (context, state) {
+        if (!_initialIndexSet && widget.initialOrderId != null && state.orders.isNotEmpty) {
+          final targetIdx = state.orders.indexWhere((o) => o.orderId == widget.initialOrderId);
+          if (targetIdx != -1) {
+            _selectedOrderIndex = targetIdx;
+            _initialIndexSet = true;
+          }
+        }
         final safeIndex = state.orders.isEmpty
             ? 0
             : _selectedOrderIndex.clamp(0, state.orders.length - 1);
@@ -108,7 +117,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
             (order.status == 'New' || order.status == 'Preparing');
 
         return CarePageScaffold(
-          title: 'Orders & Deliveries',
+          title: 'Track Order',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

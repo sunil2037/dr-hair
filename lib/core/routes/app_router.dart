@@ -29,6 +29,7 @@ import '../widgets/assessment_gate.dart';
 import '../widgets/auth_gate.dart';
 import '../../features/care/presentation/views/diet_plan_view.dart';
 import '../../features/care/presentation/views/order_tracking_view.dart';
+import '../../features/care/presentation/views/orders_list_view.dart';
 import '../../features/care/presentation/views/progress_tracking_view.dart';
 import '../../features/care/presentation/views/reminders_view.dart';
 import '../../features/care/presentation/views/routine_tracker_view.dart';
@@ -239,7 +240,16 @@ class AppRouter {
         path: RouteNames.orders,
         builder: (context, state) => const AuthRequiredRoute(
           routePath: RouteNames.orders,
-          child: OrderTrackingView(),
+          child: OrdersListView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.orderTracking,
+        builder: (context, state) => AuthRequiredRoute(
+          routePath: RouteNames.orderTracking,
+          child: OrderTrackingView(
+            initialOrderId: state.extra as String?,
+          ),
         ),
       ),
       GoRoute(

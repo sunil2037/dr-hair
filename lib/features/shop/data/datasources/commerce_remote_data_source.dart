@@ -125,12 +125,17 @@ class CommerceRemoteDataSource {
     String? token,
     int page = 1,
     int limit = 20,
+    String? status,
   }) async {
     try {
       final headers = await _buildHeaders(token: token);
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
       final response = await _dio.get<Map<String, dynamic>>(
         ApiEndpoints.patientOrders,
-        queryParameters: {'page': page, 'limit': limit},
+        queryParameters: queryParams,
         options: Options(headers: headers),
       );
       final data = response.data?['data'];
