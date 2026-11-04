@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/storage/app_local_cache.dart';
+import '../../../core/storage/secure_session_store.dart';
 import '../data/patient_appointment_api.dart';
 import '../domain/clinic_appointment.dart';
 
@@ -36,11 +37,13 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     }
   }
 
-  Future<void> loadFromApi(String token) async {
+  Future<void> loadFromApi([String? token]) async {
+    final activeToken = token ?? await SecureSessionStore().readToken();
+    if (activeToken == null || activeToken.trim().isEmpty) return;
     isLoading = true;
     loadError = null;
     try {
-      final records = await api.list(token);
+      final records = await api.list(activeToken);
       emit(records.map(ClinicAppointment.fromJson).whereType<ClinicAppointment>().toList());
       await _persist();
     } catch (error) {
@@ -109,11 +112,12 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
         )) {
       return 'This appointment request is no longer available.';
     }
-    if (accessToken != null && accessToken.isNotEmpty) {
+    final activeToken = accessToken ?? await SecureSessionStore().readToken();
+    if (activeToken != null && activeToken.isNotEmpty) {
       try {
         if (replacingId == null) {
           final res = await api.create(
-            token: accessToken,
+            token: activeToken,
             startsAt: startsAt,
             reason: reason.trim(),
             consultationFee: consultationFee,
@@ -128,12 +132,12 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
           }
         } else {
           await api.update(
-            token: accessToken,
+            token: activeToken,
             appointmentId: replacingId,
             data: {'action': 'reschedule', 'starts_at': startsAt.toUtc().toIso8601String()},
           );
         }
-        await loadFromApi(accessToken);
+        await loadFromApi(activeToken);
         return null;
       } catch (error) {
         return _errorMessage(error, 'Appointment request could not be saved.');
@@ -162,10 +166,11 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
   }
 
   Future<String?> cancel(String id, String patientId, {String? accessToken}) async {
-    if (accessToken != null && accessToken.isNotEmpty) {
+    final activeToken = accessToken ?? await SecureSessionStore().readToken();
+    if (activeToken != null && activeToken.isNotEmpty) {
       try {
-        await api.update(token: accessToken, appointmentId: id, data: {'action': 'cancel'});
-        await loadFromApi(accessToken);
+        await api.update(token: activeToken, appointmentId: id, data: {'action': 'cancel'});
+        await loadFromApi(activeToken);
         return null;
       } catch (error) {
         return _errorMessage(error, 'Appointment request could not be cancelled.');
