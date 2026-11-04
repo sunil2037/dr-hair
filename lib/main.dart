@@ -60,6 +60,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   StreamSubscription<RemoteMessage>? _tapSubscription;
+  StreamSubscription<RemoteMessage>? _foregroundSubscription;
 
   @override
   void initState() {
@@ -89,6 +90,57 @@ class _MyAppState extends State<MyApp> {
     ) {
       _navigateFromMessage(message);
     });
+
+    // Handle incoming notification when app is in foreground
+    _foregroundSubscription = FirebasePushService.foregroundMessages.listen((
+      message,
+    ) {
+      final notif = message.notification;
+      if (notif != null && mounted) {
+        final title = notif.title ?? '';
+        final body = notif.body ?? '';
+        final location = FirebasePushService.resolveMessageLocation(message);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title.isNotEmpty)
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
+                  ),
+                if (body.isNotEmpty)
+                  Text(
+                    body,
+                    style: const TextStyle(
+                      color: Color(0xFFCBD5E1),
+                      fontSize: 12,
+                    ),
+                  ),
+              ],
+            ),
+            action: location != null && location.isNotEmpty
+                ? SnackBarAction(
+                    label: 'VIEW',
+                    textColor: const Color(0xFF5EEAD4),
+                    onPressed: () => _navigateFromMessage(message),
+                  )
+                : null,
+          ),
+        );
+      }
+    });
   }
 
   void _navigateFromMessage(RemoteMessage message) {
@@ -101,6 +153,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     _tapSubscription?.cancel();
+    _foregroundSubscription?.cancel();
     super.dispose();
   }
 

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dr_hair/core/storage/app_local_cache.dart';
 import 'package:dr_hair/features/care/data/patient_progress_api.dart';
+import 'package:dr_hair/features/care/data/patient_diet_api.dart';
+import 'package:dr_hair/features/care/domain/models/care_models.dart';
 import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
 import 'package:dr_hair/features/treatment/data/patient_clinical_api.dart';
 
@@ -218,7 +220,55 @@ void main() {
 
       backendBoundCubit.close();
     });
+
+    test('fetchPatientDietPlan loads meals and treatment details from diet API', () async {
+      final fakeDiet = _FakeDietApi(
+        meals: [
+          const DietMeal(
+            type: 'Breakfast',
+            name: 'Sprouted Moong & Paneer',
+            nutrients: 'Protein (22g) · Biotin',
+            benefit: 'Supports keratin production',
+            isCompleted: false,
+          ),
+        ],
+        treatmentName: 'Targeted Follicular Regrowth Diet',
+        doctorName: 'Dr. Jai Bansal',
+      );
+
+      final dietCubit = CareCubit(null, null, null, null, fakeDiet);
+      await dietCubit.fetchPatientDietPlan('test_jwt_token');
+
+      expect(dietCubit.state.dietPlans.length, equals(1));
+      expect(dietCubit.state.dietPlans.first.first.name, equals('Sprouted Moong & Paneer'));
+      expect(dietCubit.state.dietTreatmentName, equals('Targeted Follicular Regrowth Diet'));
+      expect(dietCubit.state.dietDoctorName, equals('Dr. Jai Bansal'));
+      expect(dietCubit.state.isLoadingDiet, isFalse);
+
+      dietCubit.close();
+    });
   });
+}
+
+class _FakeDietApi extends PatientDietApi {
+  final List<DietMeal> meals;
+  final String treatmentName;
+  final String doctorName;
+
+  _FakeDietApi({
+    this.meals = const [],
+    this.treatmentName = 'Personalized Nutrition Plan',
+    this.doctorName = 'Dr. Hair Clinical Team',
+  });
+
+  @override
+  Future<PatientDietPlanResponse> getPatientDietPlan(String token) async {
+    return PatientDietPlanResponse(
+      meals: meals,
+      treatmentName: treatmentName,
+      doctorName: doctorName,
+    );
+  }
 }
 
 class _FakeClinicalApi extends PatientClinicalApi {

@@ -50,6 +50,7 @@ class _HomeViewState extends State<HomeView>
   Future<List<VideoStoryModel>>? _videoStoriesFuture;
   late final Future<List<ProductItem>> _productsFuture;
   late final Future<List<ContentItem>> _tipsFuture;
+  late final Future<List<ContentItem>> _faqsFuture;
   bool _motionConfigured = false;
 
   void _fetchVideoStories() {
@@ -83,6 +84,10 @@ class _HomeViewState extends State<HomeView>
     _tipsFuture = _isTestExecution
         ? Future.value(const <ContentItem>[])
         : ContentApi().getPublishedContent(type: 'tip', placement: 'home');
+
+    _faqsFuture = _isTestExecution
+        ? Future.value(const <ContentItem>[])
+        : ContentApi().getPublishedContent(type: 'faq', placement: 'home');
 
     _entranceController = AnimationController(
       vsync: this,
@@ -222,7 +227,10 @@ class _HomeViewState extends State<HomeView>
                 const SizedBox(height: 20),
                 _revealSection(11, _buildCertifications()),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                _buildMedicalDisclaimer(),
+
+                const SizedBox(height: 28),
               ],
             ),
           ),
@@ -1730,34 +1738,65 @@ class _HomeViewState extends State<HomeView>
 
   // --- SECTION 13: FAQS ---
   Widget _buildFaqSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Frequently Asked',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-            ),
+    return FutureBuilder<List<ContentItem>>(
+      future: _faqsFuture,
+      builder: (context, snapshot) {
+        final List<Map<String, String>> faqs;
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          faqs = snapshot.data!
+              .map(
+                (item) => {
+                  'question': item.title,
+                  'answer': item.content.isNotEmpty
+                      ? item.content
+                      : item.subtitle,
+                },
+              )
+              .toList();
+        } else {
+          faqs = const [
+            {
+              'question': 'What is doctor-backed hair recovery?',
+              'answer':
+                  'Unlike generic commercial shampoos, our plans involve licensed dermatologists assessing your scalp photos, lifestyle, and genetics to formulate targeted clinical topicals and nutrients.',
+            },
+            {
+              'question': 'How long until I see visible results?',
+              'answer':
+                  'Most patients experience hair shedding reduction within 4-6 weeks, followed by noticeable follicular thickening and new growth in 3-5 months.',
+            },
+            {
+              'question': 'Is the online hair test really free?',
+              'answer':
+                  'Yes, the 3-minute diagnostic assessment and initial follicular health report are 100% free with no obligation to purchase.',
+            },
+          ];
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Frequently Asked',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ...faqs.map(
+                (f) => _buildFaqItem(
+                  question: f['question']!,
+                  answer: f['answer']!,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
-          _buildFaqItem(
-            question: 'What is doctor-backed hair recovery?',
-            answer: 'Unlike generic commercial shampoos, our plans involve licensed dermatologists assessing your scalp photos, lifestyle, and genetics to formulate targeted clinical topicals and nutrients.',
-          ),
-          _buildFaqItem(
-            question: 'How long until I see visible results?',
-            answer: 'Most patients experience hair shedding reduction within 4-6 weeks, followed by noticeable follicular thickening and new growth in 3-5 months.',
-          ),
-          _buildFaqItem(
-            question: 'Is the online hair test really free?',
-            answer: 'Yes, the 3-minute diagnostic assessment and initial follicular health report are 100% free with no obligation to purchase.',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1859,6 +1898,40 @@ class _HomeViewState extends State<HomeView>
           ),
         ),
       ],
+    );
+  }
+  Widget _buildMedicalDisclaimer() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              LucideIcons.shieldAlert,
+              size: 16,
+              color: Color(0xFF64748B),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Clinical Medical Notice: Dr. Hair provides trichological wellness guidance, personalized follicular care plans, and licensed doctor consultations. Digital assessments are informational and do not replace emergency medical diagnosis or hospital care.',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  color: Color(0xFF64748B),
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

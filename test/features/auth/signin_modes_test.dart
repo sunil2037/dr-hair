@@ -30,44 +30,42 @@ void main() {
       );
     }
 
-    testWidgets(
-      'renders tab switcher, email/password fields, and social buttons on Sign In tab',
-      (tester) async {
-        await tester.pumpWidget(createTestApp());
-        await tester.pumpAndSettle();
+    testWidgets('renders tab switcher, email/password fields, and social buttons on Sign In tab', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestApp());
+      await tester.pumpAndSettle();
 
-        // Main tab switcher
-        expect(find.text('Sign In'), findsWidgets);
-        expect(find.text('Sign Up'), findsWidgets);
+      // Main tab switcher
+      expect(find.text('Sign In'), findsWidgets);
+      expect(find.text('Sign Up'), findsWidgets);
 
-        // Social Auth Buttons
-        expect(find.text('Google'), findsOneWidget);
-        expect(find.text('Apple'), findsOneWidget);
+      // Social Auth Buttons
+      expect(find.text('Google'), findsOneWidget);
+      expect(find.text('Apple'), findsOneWidget);
 
-        // Sign In mode has Email & Password directly
-        expect(find.text('Email Address'), findsOneWidget);
-        expect(find.text('Password'), findsOneWidget);
-        expect(find.text('Forgot Password?'), findsOneWidget);
-      },
-    );
+      // Sign In mode has Email & Password directly
+      expect(find.text('Email Address'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
+      expect(find.text('Forgot Password?'), findsOneWidget);
+    });
 
-    testWidgets(
-      'switching to Sign Up tab displays registration fields with mobile verification',
-      (tester) async {
-        await tester.pumpWidget(createTestApp());
-        await tester.pumpAndSettle();
+    testWidgets('switching to Sign Up tab displays registration fields with mobile verification', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestApp());
+      await tester.pumpAndSettle();
 
-        // Tap Sign Up tab
-        await tester.tap(find.text('Sign Up').first);
-        await tester.pumpAndSettle();
+      // Tap Sign Up tab
+      await tester.tap(find.text('Sign Up').first);
+      await tester.pumpAndSettle();
 
-        expect(find.text('Create Patient Chart'), findsOneWidget);
-        expect(find.text('Full Name'), findsOneWidget);
-        expect(find.text('Email Address'), findsOneWidget);
-        expect(find.text('Password'), findsOneWidget);
-        expect(find.text('Mobile Number'), findsOneWidget);
-        expect(find.text('Send Verification OTP'), findsOneWidget);
-      },
-    );
+      expect(find.text('Create Patient Chart'), findsOneWidget);
+      expect(find.text('Full Name'), findsOneWidget);
+      expect(find.text('Email Address'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
+      expect(find.text('Mobile Number'), findsOneWidget);
+      expect(find.text('Send Verification OTP'), findsOneWidget);
+    });
   });
 }
