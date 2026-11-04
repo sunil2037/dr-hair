@@ -169,178 +169,322 @@ class _OrdersListViewState extends State<OrdersListView>
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: const Text(
-              'My Orders',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark,
-                letterSpacing: -0.2,
-              ),
+          body: NestedScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
             ),
-            centerTitle: true,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(
-                LucideIcons.arrowLeft,
-                color: AppColors.primaryDark,
-              ),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-            actions: [
-              IconButton(
-                icon: _isRefreshing
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(
-                        LucideIcons.refreshCw,
+            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              return <Widget>[
+                SliverAppBar(
+                  pinned: true,
+                  floating: true,
+                  snap: false,
+                  elevation: innerBoxIsScrolled ? 1 : 0,
+                  shadowColor: Colors.black.withValues(alpha: 0.08),
+                  backgroundColor: Colors.white,
+                  surfaceTintColor: Colors.white,
+                  expandedHeight: 125.0,
+                  leading: IconButton(
+                    icon: const Icon(
+                      LucideIcons.arrowLeft,
+                      color: AppColors.primaryDark,
+                    ),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  centerTitle: true,
+                  title: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: innerBoxIsScrolled ? 1.0 : 0.0,
+                    child: const Text(
+                      'My Orders',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.primaryDark,
-                        size: 20,
+                        letterSpacing: -0.2,
                       ),
-                onPressed: _isRefreshing ? null : _loadOrders,
-                tooltip: 'Refresh Orders',
-              ),
-            ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(56),
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.neutral100,
-                    borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    indicator: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: AppColors.primary,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.25),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  actions: [
+                    IconButton(
+                      icon: _isRefreshing
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              LucideIcons.refreshCw,
+                              color: AppColors.primaryDark,
+                              size: 20,
+                            ),
+                      onPressed: _isRefreshing ? null : _loadOrders,
+                      tooltip: 'Refresh Orders',
                     ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: AppColors.neutral600,
-                    labelStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(width: 4),
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.parallax,
+                    background: Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.fromLTRB(20, 48, 20, 0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'My Orders',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.primaryDark,
+                                    letterSpacing: -0.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  allOrders.isEmpty
+                                      ? 'Track personalized kits & care shipments'
+                                      : '${allOrders.length} order${allOrders.length == 1 ? '' : 's'} placed with clinic',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.neutral500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary5,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: const Icon(
+                              LucideIcons.packageCheck,
+                              size: 22,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  ),
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(60),
+                    child: Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: _buildSlidingTabBar(
+                        pendingCount: pendingOrders.length,
+                        confirmedCount: confirmedOrders.length,
+                        cancelledCount: cancelledOrders.length,
+                      ),
                     ),
-                    tabs: [
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('Pending'),
-                            if (pendingOrders.isNotEmpty) ...[
-                              const SizedBox(width: 5),
-                              _buildTabBadge(
-                                '${pendingOrders.length}',
-                                isSelected: _tabController.index == 0,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('Confirmed'),
-                            if (confirmedOrders.isNotEmpty) ...[
-                              const SizedBox(width: 5),
-                              _buildTabBadge(
-                                '${confirmedOrders.length}',
-                                isSelected: _tabController.index == 1,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('Cancelled'),
-                            if (cancelledOrders.isNotEmpty) ...[
-                              const SizedBox(width: 5),
-                              _buildTabBadge(
-                                '${cancelledOrders.length}',
-                                isSelected: _tabController.index == 2,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-              ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _buildOrdersTabList(
+                  orders: pendingOrders,
+                  emptyTitle: 'No Pending Orders',
+                  emptySubtitle:
+                      'All your new and preparing orders will show up here.',
+                  category: OrderCategory.pending,
+                ),
+                _buildOrdersTabList(
+                  orders: confirmedOrders,
+                  emptyTitle: 'No Confirmed Orders',
+                  emptySubtitle:
+                      'Orders that have been dispatched or delivered will appear here.',
+                  category: OrderCategory.confirmed,
+                ),
+                _buildOrdersTabList(
+                  orders: cancelledOrders,
+                  emptyTitle: 'No Cancelled Orders',
+                  emptySubtitle:
+                      'You do not have any cancelled or refunded orders.',
+                  category: OrderCategory.cancelled,
+                ),
+              ],
             ),
-          ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildOrdersTabList(
-                orders: pendingOrders,
-                emptyTitle: 'No Pending Orders',
-                emptySubtitle:
-                    'All your new and preparing orders will show up here.',
-                category: OrderCategory.pending,
-              ),
-              _buildOrdersTabList(
-                orders: confirmedOrders,
-                emptyTitle: 'No Confirmed Orders',
-                emptySubtitle: 'Orders that have been dispatched or delivered will appear here.',
-                category: OrderCategory.confirmed,
-              ),
-              _buildOrdersTabList(
-                orders: cancelledOrders,
-                emptyTitle: 'No Cancelled Orders',
-                emptySubtitle:
-                    'You do not have any cancelled or refunded orders.',
-                category: OrderCategory.cancelled,
-              ),
-            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildTabBadge(String count, {required bool isSelected}) {
+  // ---------------------------------------------------------------------------
+  // SLIDING TAB BAR (Exact sleek sliding pill indicator styled like Auth Tab Bar)
+  // ---------------------------------------------------------------------------
+  Widget _buildSlidingTabBar({
+    required int pendingCount,
+    required int confirmedCount,
+    required int cancelledCount,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      height: 48,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isSelected
-            ? Colors.white.withValues(alpha: 0.25)
-            : AppColors.neutral300,
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.primary5.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 1.2),
       ),
-      child: Text(
-        count,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          color: isSelected ? Colors.white : AppColors.neutral800,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tabWidth = constraints.maxWidth / 3;
+          return AnimatedBuilder(
+            animation: _tabController.animation ?? _tabController,
+            builder: (context, _) {
+              final animValue = _tabController.animation?.value ??
+                  _tabController.index.toDouble();
+              final leftOffset =
+                  (animValue * tabWidth).clamp(0.0, constraints.maxWidth - tabWidth);
+
+              return Stack(
+                children: [
+                  // Physical Sliding active white pill with soft drop shadow
+                  Positioned(
+                    left: leftOffset,
+                    top: 0,
+                    bottom: 0,
+                    width: tabWidth,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.04),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Interactive Tab Labels with Badges
+                  Row(
+                    children: [
+                      _buildSlidingTabItem(
+                        label: 'Pending',
+                        count: pendingCount,
+                        tabIndex: 0,
+                        currentProgress: animValue,
+                      ),
+                      _buildSlidingTabItem(
+                        label: 'Confirmed',
+                        count: confirmedCount,
+                        tabIndex: 1,
+                        currentProgress: animValue,
+                      ),
+                      _buildSlidingTabItem(
+                        label: 'Cancelled',
+                        count: cancelledCount,
+                        tabIndex: 2,
+                        currentProgress: animValue,
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSlidingTabItem({
+    required String label,
+    required int count,
+    required int tabIndex,
+    required double currentProgress,
+  }) {
+    final double selectionAmount =
+        (1.0 - (currentProgress - tabIndex).abs()).clamp(0.0, 1.0);
+    final bool isSelected = selectionAmount > 0.5;
+
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          _tabController.animateTo(
+            tabIndex,
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeInOutCubic,
+          );
+        },
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: Color.lerp(
+                      AppColors.secondaryDark,
+                      AppColors.primaryDark,
+                      selectionAmount,
+                    ),
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: 5),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Color.lerp(
+                      Colors.black.withValues(alpha: 0.05),
+                      AppColors.primary.withValues(alpha: 0.12),
+                      selectionAmount,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Color.lerp(
+                        AppColors.textSecondary,
+                        AppColors.primary,
+                        selectionAmount,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -358,7 +502,9 @@ class _OrdersListViewState extends State<OrdersListView>
         color: AppColors.primary,
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Center(
@@ -439,7 +585,9 @@ class _OrdersListViewState extends State<OrdersListView>
       color: AppColors.primary,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         itemCount: orders.length,
         separatorBuilder: (_, _) => const SizedBox(height: 14),
         itemBuilder: (context, index) {
@@ -471,8 +619,16 @@ class _OrdersListViewState extends State<OrdersListView>
         highlightColor: AppColors.primary.withValues(alpha: 0.04),
         child: Container(
           decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.neutral200, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
