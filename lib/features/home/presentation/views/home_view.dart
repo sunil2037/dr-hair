@@ -464,31 +464,31 @@ class _HomeViewState extends State<HomeView>
                 'URGENT CARE',
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             const Text(
               'Worried about hair fall?',
               style: TextStyle(
                 color: AppColors.primaryDark,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
               'Talk with a specialist about your hair concerns and the care options that may suit you.',
               style: TextStyle(
                 color: AppColors.secondaryDark,
-                fontSize: 14,
+                fontSize: 12,
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             InkWell(
               onTap: _launchWhatsapp,
               child: const FittedBox(
@@ -501,7 +501,7 @@ class _HomeViewState extends State<HomeView>
                       'Consult a specialist',
                       style: TextStyle(
                         color: AppColors.primary,
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1757,18 +1757,15 @@ class _HomeViewState extends State<HomeView>
           faqs = const [
             {
               'question': 'What is doctor-backed hair recovery?',
-              'answer':
-                  'Unlike generic commercial shampoos, our plans involve licensed dermatologists assessing your scalp photos, lifestyle, and genetics to formulate targeted clinical topicals and nutrients.',
+              'answer': 'Unlike generic commercial shampoos, our plans involve licensed dermatologists assessing your scalp photos, lifestyle, and genetics to formulate targeted clinical topicals and nutrients.',
             },
             {
               'question': 'How long until I see visible results?',
-              'answer':
-                  'Most patients experience hair shedding reduction within 4-6 weeks, followed by noticeable follicular thickening and new growth in 3-5 months.',
+              'answer': 'Most patients experience hair shedding reduction within 4-6 weeks, followed by noticeable follicular thickening and new growth in 3-5 months.',
             },
             {
               'question': 'Is the online hair test really free?',
-              'answer':
-                  'Yes, the 3-minute diagnostic assessment and initial follicular health report are 100% free with no obligation to purchase.',
+              'answer': 'Yes, the 3-minute diagnostic assessment and initial follicular health report are 100% free with no obligation to purchase.',
             },
           ];
         }
@@ -1900,6 +1897,7 @@ class _HomeViewState extends State<HomeView>
       ],
     );
   }
+
   Widget _buildMedicalDisclaimer() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1913,11 +1911,7 @@ class _HomeViewState extends State<HomeView>
         child: const Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              LucideIcons.shieldAlert,
-              size: 16,
-              color: Color(0xFF64748B),
-            ),
+            Icon(LucideIcons.shieldAlert, size: 16, color: Color(0xFF64748B)),
             SizedBox(width: 10),
             Expanded(
               child: Text(

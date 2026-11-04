@@ -675,10 +675,7 @@ class _HairTestContent extends StatelessWidget {
               decoration: BoxDecoration(
                 color: hasPhoto ? Colors.black : AppColors.primary5,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: borderColor,
-                  width: hasPhoto ? 2 : 1.5,
-                ),
+                border: Border.all(color: borderColor, width: 1),
                 boxShadow: hasPhoto
                     ? [
                         BoxShadow(

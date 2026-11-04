@@ -297,12 +297,14 @@ class _CartViewState extends State<CartView> {
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
       appBar: AppBar(
+        centerTitle: true,
         title: const Text(
           'My Cart',
           style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: AppColors.primaryDark,
           ),
         ),
@@ -339,60 +341,62 @@ class _CartViewState extends State<CartView> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Empty State Illustration
-            Container(
-              width: 150,
-              height: 150,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary5,
-                shape: BoxShape.circle,
-              ),
-              child: Image.asset(
-                'assets/icons/SearchWithCross.png',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  LucideIcons.shoppingBag,
-                  size: 72,
-                  color: AppColors.primary,
-                ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(height: 120),
+          // Empty State Illustration
+          Container(
+            width: 150,
+            height: 150,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primary5,
+              shape: BoxShape.circle,
+            ),
+            child: Image.asset(
+              'assets/icons/SearchWithCross.png',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                LucideIcons.shoppingBag,
+                size: 72,
+                color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 24),
 
-            const Text(
-              'Your Cart is Empty',
+          const Text(
+            'Your Cart is Empty',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryDark,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Looks like you haven\'t added any hair treatments yet. Explore our doctor-approved formulations to begin your hair health journey.',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark,
-                letterSpacing: -0.3,
+                fontSize: 12,
+                color: AppColors.secondaryDark,
+                height: 1.45,
               ),
             ),
-            const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 28),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Looks like you haven\'t added any hair treatments yet. Explore our doctor-approved formulations to begin your hair health journey.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: AppColors.secondaryDark,
-                  height: 1.45,
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // Explore Treatments Button
-            ElevatedButton.icon(
+          // Explore Treatments Button
+          SizedBox(
+            height: 45,
+            child: ElevatedButton.icon(
               onPressed: () {
                 if (Navigator.of(context).canPop()) {
                   Navigator.of(context).pop();
@@ -400,7 +404,7 @@ class _CartViewState extends State<CartView> {
                   context.go(RouteNames.mainShell);
                 }
               },
-              icon: const Icon(LucideIcons.sparkles, size: 16),
+              // icon: const Icon(LucideIcons.sparkles, size: 16),
               label: const Text(
                 'Explore Treatments',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
@@ -411,55 +415,55 @@ class _CartViewState extends State<CartView> {
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
-                  vertical: 14,
+                  vertical: 5,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
 
-            // Keep the demo reset affordance only in standalone preview mode.
-            if (context.read<CartCubit?>() == null)
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _localItems = [
-                      {
-                        'title': 'Follicle Booster Serum',
-                        'desc': 'Advance Density Complex • 30ml',
-                        'price': 1299,
-                        'quantity': 1,
-                        'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
-                      },
-                      {
-                        'title': 'Clinical Scalp Detox Shampoo',
-                        'desc': 'Anti-Microbial Zinc Pyrithione • 200ml',
-                        'price': 749,
-                        'quantity': 1,
-                        'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=400',
-                      },
-                    ];
-                  });
-                  HapticFeedback.lightImpact();
-                },
-                icon: const Icon(
-                  LucideIcons.rotateCcw,
-                  size: 14,
+          // Keep the demo reset affordance only in standalone preview mode.
+          if (context.read<CartCubit?>() == null)
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _localItems = [
+                    {
+                      'title': 'Follicle Booster Serum',
+                      'desc': 'Advance Density Complex • 30ml',
+                      'price': 1299,
+                      'quantity': 1,
+                      'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
+                    },
+                    {
+                      'title': 'Clinical Scalp Detox Shampoo',
+                      'desc': 'Anti-Microbial Zinc Pyrithione • 200ml',
+                      'price': 749,
+                      'quantity': 1,
+                      'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=400',
+                    },
+                  ];
+                });
+                HapticFeedback.lightImpact();
+              },
+              icon: const Icon(
+                LucideIcons.rotateCcw,
+                size: 14,
+                color: AppColors.primary,
+              ),
+              label: const Text(
+                'Reset Demo Cart Items',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.primary,
                 ),
-                label: const Text(
-                  'Reset Demo Cart Items',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
