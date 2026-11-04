@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/services/care_notification_service.dart';
 import '../../data/patient_progress_api.dart';
+import '../../data/patient_diet_api.dart';
 import '../../domain/models/care_models.dart';
 import '../../../../core/storage/app_local_cache.dart';
 import '../../../treatment/data/patient_clinical_api.dart';
@@ -19,6 +20,7 @@ class CareCubit extends Cubit<CareState> {
   final PatientClinicalApi _clinicalApi;
   final PatientProgressApi _progressApi;
   final CommerceRemoteDataSource _commerceDataSource;
+  final PatientDietApi _dietApi;
   String? _patientId;
   String? _sessionToken;
 
@@ -39,9 +41,11 @@ class CareCubit extends Cubit<CareState> {
     PatientClinicalApi? clinicalApi,
     PatientProgressApi? progressApi,
     CommerceRemoteDataSource? commerceDataSource,
+    PatientDietApi? dietApi,
   ])  : _clinicalApi = clinicalApi ?? PatientClinicalApi(),
         _progressApi = progressApi ?? PatientProgressApi(),
         _commerceDataSource = commerceDataSource ?? CommerceRemoteDataSource(),
+        _dietApi = dietApi ?? PatientDietApi(),
         super(const CareState()) {
     _initPersistence();
   }
@@ -205,7 +209,38 @@ class CareCubit extends Cubit<CareState> {
       if (serverTasks != null) {
         _persistRoutineTasks();
       }
+      await fetchPatientDietPlan(token);
     } catch (_) {}
+  }
+
+  Future<void> fetchPatientDietPlan([String? token]) async {
+    final activeToken = token ?? _sessionToken;
+    if (activeToken == null || activeToken.isEmpty) return;
+
+    if (!isClosed) {
+      emit(state.copyWith(isLoadingDiet: true));
+    }
+
+    try {
+      final res = await _dietApi.getPatientDietPlan(activeToken);
+      if (!isClosed) {
+        final List<List<DietMeal>> plans = res.meals.isNotEmpty
+            ? [res.meals]
+            : state.dietPlans;
+        emit(
+          state.copyWith(
+            dietPlans: plans,
+            dietTreatmentName: res.treatmentName,
+            dietDoctorName: res.doctorName,
+            isLoadingDiet: false,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!isClosed) {
+        emit(state.copyWith(isLoadingDiet: false));
+      }
+    }
   }
 
   void _initializeDefaultData() {

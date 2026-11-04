@@ -56,9 +56,9 @@ class _HomeViewState extends State<HomeView>
     _videoStoriesFuture = widget.videoRepository == null && _isTestExecution
         ? Future.value(const <VideoStoryModel>[])
         : (widget.videoRepository ?? VideoRepositoryImpl())
-            .getVideos(limit: 6, placement: 'home')
-            .then((res) => res.items)
-            .catchError((_) => const <VideoStoryModel>[]);
+              .getVideos(limit: 6, placement: 'home')
+              .then((res) => res.items)
+              .catchError((_) => const <VideoStoryModel>[]);
   }
 
   static const bool _isFlutterTest = bool.fromEnvironment(
@@ -186,7 +186,10 @@ class _HomeViewState extends State<HomeView>
                   _revealSection(1, _buildTodayCard(context)),
                 ] else ...[
                   const SizedBox(height: 16),
-                  _revealSection(1, _buildPendingAssessmentStepper(context, hairState)),
+                  _revealSection(
+                    1,
+                    _buildPendingAssessmentStepper(context, hairState),
+                  ),
                 ],
 
                 const SizedBox(height: 20),
@@ -841,16 +844,19 @@ class _HomeViewState extends State<HomeView>
   ) {
     final hasProgress = HomeJourneySelector.hasAssessmentProgress(hairState);
     final currentStep = hairState.currentStep.clamp(0, hairState.totalSteps);
-    final progressPercent =
-        ((currentStep / hairState.totalSteps) * 100).toInt();
+    final progressPercent = ((currentStep / hairState.totalSteps) * 100)
+        .toInt();
 
     // Determine milestone statuses across 4 core clinical stages
-    final stage1Done = hairState.currentStep > 0 ||
+    final stage1Done =
+        hairState.currentStep > 0 ||
         hairState.stage != null ||
         hairState.primaryConcern != null;
-    final stage2Done = hairState.currentStep > 2 ||
+    final stage2Done =
+        hairState.currentStep > 2 ||
         (hairState.duration != null && hairState.dandruff != null);
-    final stage3Done = hairState.currentStep > 5 ||
+    final stage3Done =
+        hairState.currentStep > 5 ||
         (hairState.gutHealth != null &&
             hairState.stressLevel != null &&
             hairState.familyHistory != null);
@@ -1127,7 +1133,7 @@ class _HomeViewState extends State<HomeView>
         'color': const Color(0xFF0D9488),
       },
       {
-        'title': 'FDA Approved',
+        'title': 'Clinically Verified',
         'icon': LucideIcons.shieldCheck,
         'bg': const Color(0xFFFAF5FF),
         'color': const Color(0xFF7E22CE),
@@ -1155,7 +1161,7 @@ class _HomeViewState extends State<HomeView>
           ),
           const SizedBox(height: 4),
           const Text(
-            'Sample trust points shown for this app demo.',
+            'Clinical standards, verified ingredients, and personalized trichology care.',
             style: TextStyle(fontSize: 11, color: AppColors.secondaryDark),
           ),
           const SizedBox(height: 16),
@@ -1241,7 +1247,13 @@ class _HomeViewState extends State<HomeView>
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () => context.push(RouteNames.videos),
+                onTap: () {
+                  final shell = StatefulNavigationShell.maybeOf(context);
+                  if (shell != null) {
+                    shell.goBranch(2);
+                  }
+                  context.go(RouteNames.videos);
+                },
                 child: const Text(
                   'Watch All',
                   style: TextStyle(
@@ -1304,7 +1316,16 @@ class _HomeViewState extends State<HomeView>
                 itemBuilder: (context, index) {
                   final story = stories[index];
                   return GestureDetector(
-                    onTap: () => context.push(RouteNames.videos),
+                    onTap: () {
+                      final shell = StatefulNavigationShell.maybeOf(context);
+                      if (shell != null) {
+                        shell.goBranch(2);
+                      }
+                      context.go(
+                        '${RouteNames.videos}?videoId=${Uri.encodeComponent(story.id)}',
+                        extra: story.id,
+                      );
+                    },
                     child: _buildVideoCard(
                       image: story.effectiveThumbnail,
                       title: story.name,
@@ -1328,7 +1349,7 @@ class _HomeViewState extends State<HomeView>
     required String subtitle,
   }) {
     return Container(
-      width: 200,
+      width: 170,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(22)),
       child: Stack(
@@ -1603,18 +1624,21 @@ class _HomeViewState extends State<HomeView>
         final List<Map<String, String>> tips;
         if (snapshot.hasData && snapshot.data!.isNotEmpty) {
           tips = snapshot.data!
-              .map((item) => {
-                    'icon': '💡',
-                    'title': item.title,
-                    'desc': item.content,
-                  })
+              .map(
+                (item) => {
+                  'icon': '💡',
+                  'title': item.title,
+                  'desc': item.content,
+                },
+              )
               .toList();
         } else {
           tips = [
             {
               'icon': '🔥',
               'title': 'Avoid excessive heat styling',
-              'desc': 'High temperatures weaken hair shafts and damage follicles.',
+              'desc':
+                  'High temperatures weaken hair shafts and damage follicles.',
             },
             {
               'icon': '🥗',
@@ -1624,7 +1648,8 @@ class _HomeViewState extends State<HomeView>
             {
               'icon': '🧘',
               'title': 'Manage stress levels',
-              'desc': 'Chronic stress triggers telogen effluvium hair shedding.',
+              'desc':
+                  'Chronic stress triggers telogen effluvium hair shedding.',
             },
             {
               'icon': '🧴',

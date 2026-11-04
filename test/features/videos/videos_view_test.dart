@@ -178,4 +178,50 @@ void main() {
     expect(find.text('Muted'), findsOneWidget);
     cubit.close();
   });
+
+  testWidgets(
+      'VideosView opens and displays target video when initialVideoId is passed',
+      (tester) async {
+    final story1 = VideoStoryModel.fromJson({
+      'id': 'vid-1',
+      'public_id': 'cloud-1',
+      'author_name': 'Yashveer Soni',
+      'author_handle': '@yashveer.soni',
+      'category': 'Hair Fall',
+      'tag': 'Hair Fall',
+      'secure_url': 'https://res.cloudinary.com/demo/video/upload/so_0/sample.mp4',
+      'thumbnail_url': 'https://images.unsplash.com/photo-1',
+    });
+    final story2 = VideoStoryModel.fromJson({
+      'id': 'vid-2',
+      'public_id': 'cloud-2',
+      'author_name': 'Ananya Mehra',
+      'author_handle': '@ananya.mehra',
+      'category': 'Dandruff',
+      'tag': 'Dandruff',
+      'secure_url': 'https://res.cloudinary.com/demo/video/upload/so_0/dog.mp4',
+      'thumbnail_url': 'https://images.unsplash.com/photo-2',
+    });
+
+    final cubit = VideosCubit(
+      initialState: VideosState(
+        videos: [story1, story2],
+        isLoading: false,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: VideosView(
+          cubit: cubit,
+          initialVideoId: 'vid-2',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(cubit.state.activeIndex, 1);
+    expect(find.text('Ananya Mehra'), findsOneWidget);
+    cubit.close();
+  });
 }

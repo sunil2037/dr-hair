@@ -38,7 +38,7 @@ class DioClient {
         customDio ??
         Dio(
           BaseOptions(
-            baseUrl: baseUrl ?? ApiEndpoints.baseUrl,
+            baseUrl: baseUrl ?? ApiEndpoints.backendBaseUrl,
             connectTimeout: const Duration(
               milliseconds: ApiEndpoints.connectTimeout,
             ),

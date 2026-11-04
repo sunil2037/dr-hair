@@ -78,7 +78,8 @@ class VideoStoryModel {
   factory VideoStoryModel.fromJson(Map<String, dynamic> json) {
     final publicId =
         json['public_id']?.toString() ?? json['publicId']?.toString();
-    final id = json['id']?.toString() ?? publicId ?? '';
+    final id =
+        json['id']?.toString() ?? json['_id']?.toString() ?? publicId ?? '';
     final name =
         json['author_name']?.toString() ??
         json['name']?.toString() ??
@@ -290,9 +291,4 @@ class VideoStoryModel {
     if (ytid != null) return 'https://i.ytimg.com/vi/$ytid/maxresdefault.jpg';
     return '';
   }
-
-  static List<VideoStoryModel> get initialStories => const [];
-
-  /// Explicit test fixture for automated widget/unit test mocking.
-  static List<VideoStoryModel> get testStories => [];
 }

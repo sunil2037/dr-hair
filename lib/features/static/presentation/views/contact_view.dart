@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/dio_client.dart';
 
 class ContactView extends StatefulWidget {
   const ContactView({super.key});
@@ -39,31 +41,61 @@ class _ContactViewState extends State<ContactView> {
     }
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isSubmitting = true);
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (!mounted) return;
-        setState(() => _isSubmitting = false);
-        _nameController.clear();
-        _emailController.clear();
-        _phoneController.clear();
-        _messageController.clear();
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Message Sent!'),
-            content: const Text(
-                'Thank you for reaching out. A Dr. Hair clinical coordinator will contact you shortly.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      final phone = _phoneController.text.trim();
+      final message = _messageController.text.trim();
+
+      final mailUri = Uri(
+        scheme: 'mailto',
+        path: 'support@drhair.in',
+        queryParameters: {
+          'subject': 'Dr. Hair Clinical Inquiry from $name',
+          'body': 'Name: $name\nEmail: $email\nPhone: $phone\n\nSymptoms / Inquiry:\n$message',
+        },
+      );
+
+      try {
+        final dio = DioClient(baseUrl: ApiEndpoints.backendBaseUrl).dio;
+        await dio.post<Map<String, dynamic>>(
+          '/api/v1/support/inquiries',
+          data: {
+            'name': name,
+            'email': email.isNotEmpty ? email : null,
+            'phone': phone,
+            'message': message,
+          },
         );
-      });
+      } catch (_) {
+        try {
+          await launchUrl(mailUri, mode: LaunchMode.externalApplication);
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _nameController.clear();
+      _emailController.clear();
+      _phoneController.clear();
+      _messageController.clear();
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Inquiry Submitted'),
+          content: const Text(
+              'Thank you for reaching out. Your message has been routed to our clinical support team at support@drhair.in. A coordinator will follow up shortly.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 

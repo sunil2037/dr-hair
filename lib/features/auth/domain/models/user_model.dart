@@ -12,6 +12,9 @@ class UserModel {
   final bool isGuest;
   final DateTime? loggedInAt;
   final String? photoUrl;
+  final List<String> authProviders;
+  final String? googleId;
+  final String? appleId;
 
   const UserModel({
     required this.id,
@@ -27,6 +30,9 @@ class UserModel {
     this.isGuest = false,
     this.loggedInAt,
     this.photoUrl,
+    this.authProviders = const ['password'],
+    this.googleId,
+    this.appleId,
   });
 
   UserModel copyWith({
@@ -44,6 +50,9 @@ class UserModel {
     DateTime? loggedInAt,
     String? photoUrl,
     bool clearPhotoUrl = false,
+    List<String>? authProviders,
+    String? googleId,
+    String? appleId,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -59,6 +68,9 @@ class UserModel {
       isGuest: isGuest ?? this.isGuest,
       loggedInAt: loggedInAt ?? this.loggedInAt,
       photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
+      authProviders: authProviders ?? this.authProviders,
+      googleId: googleId ?? this.googleId,
+      appleId: appleId ?? this.appleId,
     );
   }
 
@@ -87,6 +99,12 @@ class UserModel {
       city: json['city']?.toString(),
       occupation: json['occupation']?.toString(),
       photoUrl: json['profile_url']?.toString(),
+      authProviders: (json['authProviders'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const ['password'],
+      googleId: json['googleId']?.toString(),
+      appleId: json['appleId']?.toString(),
       isGuest: false,
       loggedInAt: DateTime.now(),
     );

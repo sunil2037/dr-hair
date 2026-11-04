@@ -46,6 +46,7 @@ void main() {
     expect(find.text('Clinic appointments'), findsOneWidget);
     expect(find.text('My cart'), findsOneWidget);
     expect(find.text('Orders & delivery'), findsOneWidget);
+    expect(find.text('Settings & preferences'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
     expect(find.text('App Version ${AppStrings.appVersion}'), findsOneWidget);
   });

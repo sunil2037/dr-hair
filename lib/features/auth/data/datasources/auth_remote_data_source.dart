@@ -32,6 +32,111 @@ class AuthRemoteDataSource {
     return _asMap(response.data);
   }
 
+  Future<Map<String, dynamic>> loginWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/login',
+      data: {'email': email.trim().toLowerCase(), 'password': password},
+      options: Options(extra: const {'sensitive': true}),
+    );
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> sendSignupOtp(String phone) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/send-signup-otp',
+      data: {'phone': phone.trim()},
+      options: Options(extra: const {'sensitive': true}),
+    );
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> registerWithPassword({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String otp,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/register',
+      data: {
+        'name': name.trim(),
+        'email': email.trim().toLowerCase(),
+        'password': password,
+        'phone': phone.trim(),
+        'otp': otp.trim(),
+      },
+      options: Options(extra: const {'sensitive': true}),
+    );
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> socialLogin({
+    required String provider,
+    required String idToken,
+    String? email,
+    String? name,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/social-login',
+      data: {
+        'provider': provider,
+        'id_token': idToken,
+        'provider_id': idToken,
+        'email': ?(email?.trim().toLowerCase()),
+        'name': ?name?.trim(),
+      },
+      options: Options(extra: const {'sensitive': true}),
+    );
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> verifySocialSignup({
+    required String phone,
+    required String otp,
+    required String tempToken,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/verify-social-signup',
+      data: {
+        'phone': phone.trim(),
+        'otp': otp.trim(),
+        'temp_token': tempToken.trim(),
+      },
+      options: Options(extra: const {'sensitive': true}),
+    );
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> forgotPassword(String login) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/forgot-password',
+      data: {'login': login.trim()},
+      options: Options(extra: const {'sensitive': true}),
+    );
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String login,
+    required String otp,
+    required String newPassword,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/reset-password',
+      data: {
+        'login': login.trim(),
+        'otp': otp.trim(),
+        'newPassword': newPassword,
+      },
+      options: Options(extra: const {'sensitive': true}),
+    );
+    return _asMap(response.data);
+  }
+
   Future<Map<String, dynamic>> getProfile(String token) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/users/get_profile',

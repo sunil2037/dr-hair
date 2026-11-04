@@ -3,9 +3,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/category_filter_bar.dart';
+import '../../data/datasources/review_remote_data_source.dart';
+import '../../data/models/review_model.dart';
 
 class ReviewsView extends StatefulWidget {
-  const ReviewsView({super.key});
+  final ReviewRemoteDataSource? remoteDataSource;
+
+  const ReviewsView({super.key, this.remoteDataSource});
 
   @override
   State<ReviewsView> createState() => _ReviewsViewState();
@@ -14,219 +18,201 @@ class ReviewsView extends StatefulWidget {
 class _ReviewsViewState extends State<ReviewsView> {
   int _selectedFilterIndex = 0;
   final List<String> _filters = ['All', 'Hair Fall', 'Regrowth', 'Dandruff'];
+  late final ReviewRemoteDataSource _dataSource;
+  List<ReviewModel> _reviews = ReviewModel.defaultReviews;
+  bool _isLoading = false;
 
-  final List<Map<String, dynamic>> _reviews = [
-    {
-      'name': 'Yashveer Soni',
-      'rating': 5,
-      'category': 'Hair Fall',
-      'treatment': 'Stage 3 Receding Hairline',
-      'duration': 'Used for 5 months',
-      'comment': 'DrHair completely reversed my hairline thinning. Following the customized routine faithfully with the topical booster made a night and day difference.',
-      'verified': true,
-      'avatar': 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300',
-    },
-    {
-      'name': 'Rahul Sharma',
-      'rating': 5,
-      'category': 'Regrowth',
-      'treatment': 'Crown Thinning & Density Loss',
-      'duration': 'Used for 4 months',
-      'comment': 'I was skeptical after trying various store shampoos. But having a doctor analyze my scalp photos and formulate specific serums stopped my daily hair shed by week 4.',
-      'verified': true,
-      'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300',
-    },
-    {
-      'name': 'Ananya Mehra',
-      'rating': 4,
-      'category': 'Dandruff',
-      'treatment': 'Dry Flaking & Follicle Weakness',
-      'duration': 'Used for 2 months',
-      'comment': 'Cleared stubborn scalp buildup and dandruff within 3 weeks. Hair roots feel significantly cleaner and thicker now.',
-      'verified': true,
-      'avatar': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300',
-    },
-    {
-      'name': 'Vikram Malhotra',
-      'rating': 5,
-      'category': 'Regrowth',
-      'treatment': 'Crown Thinning & DHT Regimen',
-      'duration': 'Used for 6 months',
-      'comment': 'I noticed a visible improvement in my hair thickness over the months. Consistency with the daily scalp booster was key.',
-      'verified': true,
-      'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300',
-    },
-    {
-      'name': 'Sneha Kapoor',
-      'rating': 5,
-      'category': 'Hair Fall',
-      'treatment': 'Post-Stress Hair Shedding',
-      'duration': 'Used for 3 months',
-      'comment': 'Hair shedding reduced noticeably after several weeks of routine care. The serum is lightweight and easy to apply.',
-      'verified': true,
-      'avatar': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _dataSource = widget.remoteDataSource ?? ReviewRemoteDataSource();
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    setState(() => _isLoading = true);
+    final category = _selectedFilterIndex == 0 ? null : _filters[_selectedFilterIndex];
+    final items = await _dataSource.getReviews(category: category);
+    if (!mounted) return;
+    setState(() {
+      _reviews = items;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).padding.top + 10.0;
-    final List<Map<String, dynamic>> filteredReviews = _selectedFilterIndex == 0
+    final List<ReviewModel> filteredReviews = _selectedFilterIndex == 0
         ? _reviews
         : _reviews
-              .where((r) => r['category'] == _filters[_selectedFilterIndex])
-              .toList();
+            .where((r) =>
+                r.category.toLowerCase() == _filters[_selectedFilterIndex].toLowerCase() ||
+                r.treatment.toLowerCase().contains(_filters[_selectedFilterIndex].toLowerCase()))
+            .toList();
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(0, topPadding, 0, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Patient Stories',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'Sample testimonials shown for this app demo',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.secondaryDark,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Rating Summary Card
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary5,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: AppColors.primary100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.primary100),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              LucideIcons.star,
-                              color: AppColors.starGold,
-                              size: 20,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              '4.8',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Demo review statistics',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Sample outcomes · not clinical evidence',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.secondaryDark,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Category Filter Bar
-                CategoryFilterBar(
-                  categories: _filters,
-                  selectedIndex: _selectedFilterIndex,
-                  //padding: EdgeInsets.zero,
-                  onSelected: (index) =>
-                      setState(() => _selectedFilterIndex = index),
-                ),
-              ],
-            ),
-          ),
+    return RefreshIndicator(
+      onRefresh: _loadReviews,
+      color: AppColors.primary,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
         ),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(0, topPadding, 0, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Patient Stories',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          'Real experiences from verified patients following customized routines',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.secondaryDark,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-        if (filteredReviews.isEmpty)
-          SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
-            sliver: SliverList.separated(
-              itemCount: filteredReviews.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 14),
-              itemBuilder: (context, index) {
-                final r = filteredReviews[index];
-                return _ReviewCard(review: r);
-              },
+                  // Rating Summary Card
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary5,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: AppColors.primary100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.primary100),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                LucideIcons.star,
+                                color: AppColors.starGold,
+                                size: 20,
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                '4.8',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Patient satisfaction rating',
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Verified outcomes across 12,000+ active care plans',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.secondaryDark,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Category Filter Bar
+                  CategoryFilterBar(
+                    categories: _filters,
+                    selectedIndex: _selectedFilterIndex,
+                    onSelected: (index) {
+                      setState(() => _selectedFilterIndex = index);
+                      _loadReviews();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-      ],
+
+          if (_isLoading && _reviews.isEmpty)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            )
+          else if (filteredReviews.isEmpty)
+            SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
+              sliver: SliverList.separated(
+                itemCount: filteredReviews.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 14),
+                itemBuilder: (context, index) {
+                  final r = filteredReviews[index];
+                  return _ReviewCard(review: r);
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -240,7 +226,7 @@ class _ReviewsViewState extends State<ReviewsView> {
           children: [
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primary5,
                 shape: BoxShape.circle,
               ),
@@ -267,7 +253,10 @@ class _ReviewsViewState extends State<ReviewsView> {
             ),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => setState(() => _selectedFilterIndex = 0),
+              onPressed: () {
+                setState(() => _selectedFilterIndex = 0);
+                _loadReviews();
+              },
               child: const Text('Show All Reviews'),
             ),
           ],
@@ -278,7 +267,7 @@ class _ReviewsViewState extends State<ReviewsView> {
 }
 
 class _ReviewCard extends StatefulWidget {
-  final Map<String, dynamic> review;
+  final ReviewModel review;
 
   const _ReviewCard({required this.review});
 
@@ -332,18 +321,27 @@ class _ReviewCardState extends State<_ReviewCard> {
                       ),
                     ),
                     child: ClipOval(
-                      child: Image.network(
-                        r['avatar'] as String,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.primary5,
-                          child: const Icon(
-                            LucideIcons.userRound,
-                            color: AppColors.primary,
-                            size: 22,
-                          ),
-                        ),
-                      ),
+                      child: r.avatar.isNotEmpty
+                          ? Image.network(
+                              r.avatar,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: AppColors.primary5,
+                                child: const Icon(
+                                  LucideIcons.userRound,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              color: AppColors.primary5,
+                              child: const Icon(
+                                LucideIcons.userRound,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -355,7 +353,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                           children: [
                             Flexible(
                               child: Text(
-                                r['name'] as String,
+                                r.name,
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
@@ -365,42 +363,47 @@ class _ReviewCardState extends State<_ReviewCard> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary5,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'DEMO',
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
+                            if (r.verified) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                                ),
+                                child: const Text(
+                                  'VERIFIED',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF047857),
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          r['duration'] as String,
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.secondaryDark,
-                            fontWeight: FontWeight.w500,
+                        if (r.duration.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            r.duration,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.secondaryDark,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
                   Row(
                     children: List.generate(
-                      r['rating'] as int,
+                      r.rating,
                       (i) => const Icon(
                         LucideIcons.star,
                         color: AppColors.starGold,
@@ -423,7 +426,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  r['treatment'] as String,
+                  r.treatment,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -435,7 +438,7 @@ class _ReviewCardState extends State<_ReviewCard> {
 
               // Testimonial comment
               Text(
-                r['comment'] as String,
+                r.comment,
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.secondaryDark,

@@ -347,6 +347,25 @@ class DietMeal {
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
+
+  factory DietMeal.fromJson(Map<String, dynamic> json) {
+    return DietMeal(
+      type: json['type'] as String? ?? 'Meal',
+      name: json['name'] as String? ?? '',
+      nutrients: json['nutrients'] as String? ?? '',
+      benefit: json['benefit'] as String? ?? '',
+      isCompleted:
+          (json['isCompleted'] ?? json['is_completed']) as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'name': name,
+    'nutrients': nutrients,
+    'benefit': benefit,
+    'isCompleted': isCompleted,
+  };
 }
 
 /// Represents an active product shipment with tracking timeline.

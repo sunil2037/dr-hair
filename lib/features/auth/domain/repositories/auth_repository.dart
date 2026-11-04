@@ -13,6 +13,11 @@ class AuthVerification {
   final bool hasCompletedAssessment;
   final String? nextStep;
   final Map<String, dynamic>? latestAssessment;
+  final bool requiresPhoneVerification;
+  final String? tempToken;
+  final String? socialEmail;
+  final String? socialName;
+  final String? socialProvider;
 
   const AuthVerification({
     required this.token,
@@ -25,6 +30,11 @@ class AuthVerification {
     this.hasCompletedAssessment = false,
     this.nextStep,
     this.latestAssessment,
+    this.requiresPhoneVerification = false,
+    this.tempToken,
+    this.socialEmail,
+    this.socialName,
+    this.socialProvider,
   });
 }
 
@@ -45,6 +55,49 @@ abstract interface class AuthRepository {
   Future<AuthVerification> verifyOtp({
     required String login,
     required String otp,
+  });
+
+  /// Authenticate with email and password
+  Future<AuthVerification> loginWithPassword({
+    required String email,
+    required String password,
+  });
+
+  /// Requests a real 6-digit signup verification OTP for a mobile number
+  Future<void> sendSignupOtp(String phone);
+
+  /// Registers a new patient with Name, Email, Password, Phone, and verified OTP
+  Future<AuthVerification> registerWithPassword({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String otp,
+  });
+
+  /// Social Login with Google or Apple
+  Future<AuthVerification> socialLogin({
+    required String provider,
+    required String idToken,
+    String? email,
+    String? name,
+  });
+
+  /// Complete social signup with verified phone number and OTP
+  Future<AuthVerification> verifySocialSignup({
+    required String phone,
+    required String otp,
+    required String tempToken,
+  });
+
+  /// Request password reset code
+  Future<void> forgotPassword(String login);
+
+  /// Reset password with verified code
+  Future<void> resetPassword({
+    required String login,
+    required String otp,
+    required String newPassword,
   });
 
   Future<AuthVerification?> restoreSession();

@@ -539,6 +539,23 @@ class ProfileView extends StatelessWidget {
           ]),
           const SizedBox(height: 22),
           _buildSectionHeader(
+            title: 'PREFERENCES',
+            subtitle: 'Notification toggles and account security',
+          ),
+          const SizedBox(height: 10),
+          _buildGroupedCard([
+            _ProfileMenuTile(
+              icon: LucideIcons.settings,
+              iconColor: const Color(0xFF0F766E),
+              iconBgColor: const Color(0xFFF0FDFA),
+              title: 'Settings & preferences',
+              subtitle: 'Push alerts, account info, and deletion',
+              onTap: () => context.push(RouteNames.settings),
+              showDivider: false,
+            ),
+          ]),
+          const SizedBox(height: 22),
+          _buildSectionHeader(
             title: 'LEGAL & POLICIES',
             subtitle: 'Terms, DPDP privacy notices, and refund terms',
           ),
@@ -851,9 +868,27 @@ class ProfileView extends StatelessWidget {
                 ],
               ),
             ),
-            Column(
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                GestureDetector(
+                  onTap: () => context.push(RouteNames.settings),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      LucideIcons.settings,
+                      color: AppColors.primary,
+                      size: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => context.push(RouteNames.updateProfile),
                   child: Container(

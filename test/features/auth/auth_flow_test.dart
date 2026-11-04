@@ -15,7 +15,6 @@ import 'package:dr_hair/core/constants/app_strings.dart';
 import 'package:dr_hair/core/theme/app_theme.dart';
 import 'package:dr_hair/features/home/presentation/views/home_view.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'fake_auth_repository.dart';
 
@@ -39,7 +38,7 @@ void main() {
     });
 
     testWidgets(
-      'SigninView renders bottom card, validates 10-digit phone, and transitions to OTP',
+      'SigninView renders bottom card, validates email and password, and signs in',
       (tester) async {
         final repository = FakeAuthRepository();
         final authCubit = AuthCubit(repository: repository);
@@ -53,47 +52,33 @@ void main() {
         );
 
         expect(find.text('Welcome Back'), findsOneWidget);
-        expect(find.text('Mobile Number'), findsOneWidget);
-        expect(find.text('+91'), findsOneWidget);
-        expect(find.text('Send Verification OTP'), findsOneWidget);
-        expect(find.text('Continue as Guest'), findsNothing);
+        expect(find.text('Email Address'), findsOneWidget);
+        expect(find.text('Password'), findsOneWidget);
+        expect(find.text('Forgot Password?'), findsOneWidget);
+        expect(find.text('Sign In'), findsWidgets);
 
-        // Test validation on invalid input (less than 10 digits)
-        await tester.tap(find.text('Send Verification OTP'));
+        // Test validation on empty credentials
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In').first);
         await tester.pumpAndSettle();
-        expect(
-          find.text('Please enter a valid 10-digit mobile number'),
-          findsOneWidget,
-        );
-        expect(find.byType(SnackBar), findsNothing);
+        expect(find.text('Please enter a valid email address'), findsOneWidget);
+        expect(find.text('Password must be at least 6 characters'), findsOneWidget);
 
-        // Enter valid 10-digit mobile number
-        await tester.enterText(find.byType(TextField).first, '9876543210');
-        await tester.pumpAndSettle();
-
-        // Tap Send OTP to trigger animated transition inside the bottom card
-        await tester.tap(find.text('Send Verification OTP'));
+        // Enter valid credentials
+        final textFields = find.byType(TextField);
+        await tester.enterText(textFields.at(0), 'patient@example.com');
+        await tester.enterText(textFields.at(1), 'password123');
         await tester.pumpAndSettle();
 
-        // Ensure card animated to OTP step
-        expect(find.text('Enter Verification Code'), findsOneWidget);
-        expect(find.text('Verify & Proceed'), findsOneWidget);
-        expect(find.textContaining('Local test code:'), findsNothing);
-        expect(repository.lastRequestedLogin, '9876543210');
-
-        // Top back button should be visible when OTP field is active
-        expect(find.byIcon(LucideIcons.arrowLeft), findsWidgets);
-
-        // Tap the top back button to return to phone step
-        await tester.tap(find.byIcon(LucideIcons.arrowLeft).first);
+        // Tap Sign In to trigger login
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In').first);
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
 
-        // Should be back on phone step
-        expect(find.text('Send Verification OTP'), findsOneWidget);
+        expect(authCubit.state.isAuthenticated, isTrue);
       },
     );
 
-    testWidgets('SigninView accepts the six-digit SMS code and verifies it', (
+    testWidgets('SigninView switches to Sign Up, validates inputs, and sends verification OTP', (
       tester,
     ) async {
       final repository = FakeAuthRepository();
@@ -108,32 +93,36 @@ void main() {
         ),
       );
 
-      // Enter valid phone number and proceed to OTP step
-      await tester.enterText(find.byType(TextField).first, '9876543210');
+      // Switch to Sign Up tab
+      await tester.tap(find.text('Sign Up').first);
       await tester.pumpAndSettle();
+
+      expect(find.text('Create Patient Chart'), findsOneWidget);
+      expect(find.text('Send Verification OTP'), findsOneWidget);
+
+      final textFields = find.byType(TextField);
+      await tester.enterText(textFields.at(0), 'Ramesh Kumar');
+      await tester.enterText(textFields.at(1), 'ramesh@example.com');
+      await tester.enterText(textFields.at(2), 'password123');
+      await tester.enterText(textFields.at(3), '9876543210');
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Send Verification OTP'));
       await tester.pumpAndSettle();
 
       expect(find.text('Enter Verification Code'), findsOneWidget);
-      expect(find.textContaining('Local test code:'), findsNothing);
+      expect(find.textContaining('9876543210'), findsWidgets);
       expect(find.text('Verify & Proceed'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).first, '123456');
       await tester.pumpAndSettle();
-
-      // Ensure digits are auto-filled
-      expect(find.byType(TextField), findsNWidgets(6));
 
       // Tap Verify & Proceed
       await tester.tap(find.text('Verify & Proceed'));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
-      // Ensure authenticated in cubit
       expect(authCubit.state.isAuthenticated, isTrue);
-      expect(repository.requestCount, 1);
-      expect(repository.verifyCount, 1);
-      expect(repository.lastVerifiedLogin, '9876543210');
     });
 
     testWidgets('End-to-end Splash -> Login -> Home routing flow works', (
@@ -161,19 +150,18 @@ void main() {
       // 1. Initial screen is SplashView
       expect(find.byType(SplashView), findsOneWidget);
 
-      // Tap screen (or let splash timer fire) to proceed to login screen
+      // Tap screen to proceed to login screen
       await tester.tap(find.byType(SplashView));
       await tester.pumpAndSettle();
 
-      // 2. Now on SigninView (Login Screen) with bottom card
+      // 2. Now on SigninView with bottom card
       expect(find.byType(SigninView), findsOneWidget);
       expect(find.text('Welcome Back'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField).first, '9876543210');
-      await tester.tap(find.text('Send Verification OTP'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, '123456');
-      await tester.tap(find.text('Verify & Proceed'));
+      final textFields = find.byType(TextField);
+      await tester.enterText(textFields.at(0), 'patient@example.com');
+      await tester.enterText(textFields.at(1), 'password123');
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In').first);
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
@@ -212,8 +200,17 @@ void main() {
         await tester.tap(find.byType(SplashView));
         await tester.pumpAndSettle();
 
-        // 2. SigninView
-        await tester.enterText(find.byType(TextField).first, '9876543210');
+        // 2. SigninView: switch to Sign Up
+        await tester.tap(find.text('Sign Up').first);
+        await tester.pumpAndSettle();
+
+        final textFields = find.byType(TextField);
+        await tester.enterText(textFields.at(0), 'New Patient');
+        await tester.enterText(textFields.at(1), 'newpatient@example.com');
+        await tester.enterText(textFields.at(2), 'password123');
+        await tester.enterText(textFields.at(3), '9876543210');
+        await tester.pumpAndSettle();
+
         await tester.tap(find.text('Send Verification OTP'));
         await tester.pumpAndSettle();
         await tester.enterText(find.byType(TextField).first, '123456');

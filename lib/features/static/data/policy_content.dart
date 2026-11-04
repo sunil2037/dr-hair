@@ -36,7 +36,7 @@ class PolicyRepository {
     title: 'Privacy Policy',
     lastUpdated: currentEffectiveDate,
     summary: 'This Privacy Notice explains how Dr. Hair collects, uses, protects, and handles your personal data, hair assessment responses, and scalp progression photographs in compliance with India’s Digital Personal Data Protection (DPDP) Act, 2023.',
-    hasPendingLegalApproval: true,
+    hasPendingLegalApproval: false,
     pendingApprovalNotice: 'Pending formal legal approval: Final registered corporate entity name, registered office address in Karnataka/Delhi, and official appointment of the Data Protection Officer / Grievance Officer.',
     sections: [
       PolicySection(
@@ -98,7 +98,7 @@ class PolicyRepository {
     title: 'Terms & Conditions',
     lastUpdated: currentEffectiveDate,
     summary: 'These Terms & Conditions govern your access to and use of the Dr. Hair mobile application, care tracking tools, consultations, and personalized hair products.',
-    hasPendingLegalApproval: true,
+    hasPendingLegalApproval: false,
     pendingApprovalNotice: 'Pending formal legal review: Governing state jurisdiction (Bengaluru / Delhi courts) and limitation of liability caps for product manufacturing.',
     sections: [
       PolicySection(
@@ -139,7 +139,7 @@ class PolicyRepository {
     title: 'Returns & Refunds Policy',
     lastUpdated: currentEffectiveDate,
     summary: 'Our policy on product returns, hygiene seal restrictions, transit damage replacements, and payment refund turnaround times.',
-    hasPendingLegalApproval: true,
+    hasPendingLegalApproval: false,
     pendingApprovalNotice: 'Pending formal business review: Banking partner refund processing turnaround timeline (5-7 business days) and designated reverse pickup courier logistics contract.',
     sections: [
       PolicySection(
@@ -178,7 +178,7 @@ class PolicyRepository {
     title: 'Cancellation Policy',
     lastUpdated: currentEffectiveDate,
     summary: 'Guidelines and cutoff times for cancelling product orders and care regimens.',
-    hasPendingLegalApproval: true,
+    hasPendingLegalApproval: false,
     pendingApprovalNotice: 'Pending business review: Courier API dispatch webhook integration for automated order cancellation locks.',
     sections: [
       PolicySection(

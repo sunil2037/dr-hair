@@ -3,15 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dr_hair/features/videos/presentation/views/videos_view.dart';
 import 'package:dr_hair/features/videos/presentation/viewmodels/videos_cubit.dart';
 import 'package:dr_hair/features/videos/presentation/viewmodels/videos_state.dart';
-import 'package:dr_hair/features/videos/domain/models/video_story_model.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../helpers/video_test_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('VideosView supports play/pause tap, mute toggle, and vertical page swipe',
       (tester) async {
-    final testVideos = VideoStoryModel.testStories;
+    final testVideos = VideoTestFixtures.testStories;
     final cubit = VideosCubit(
       initialState: VideosState(
         videos: testVideos,

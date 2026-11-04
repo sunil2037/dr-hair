@@ -19,7 +19,8 @@ class VideosCubit extends Cubit<VideosState> {
     return state.filters[index];
   }
 
-  Future<void> loadInitialVideos() async {
+  Future<void> loadInitialVideos({String? initialVideoId}) async {
+    if (isClosed) return;
     emit(state.copyWith(isLoading: true, errorMessage: null));
     try {
       final category = _categoryForIndex(state.selectedFilterIndex);
@@ -30,14 +31,34 @@ class VideosCubit extends Cubit<VideosState> {
         placement: 'reels',
       );
 
+      if (isClosed) return;
+
+      int targetIndex = 0;
+      if (initialVideoId != null && initialVideoId.isNotEmpty) {
+        final found = result.items.indexWhere((v) =>
+            v.id == initialVideoId ||
+            v.publicId == initialVideoId ||
+            v.youtubeVideoId == initialVideoId);
+        if (found != -1) {
+          targetIndex = found;
+        }
+      }
+
+      final updatedVideos = result.items.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final v = entry.value;
+        return v.copyWith(isPlaying: idx == targetIndex);
+      }).toList();
+
       emit(state.copyWith(
-        videos: result.items,
+        videos: updatedVideos,
         hasMore: result.hasMore,
         currentPage: result.page,
         isLoading: false,
-        activeIndex: 0,
+        activeIndex: targetIndex,
       ));
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to load videos: $e',
@@ -46,7 +67,7 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   Future<void> loadNextChunk() async {
-    if (state.isLoadingMore || !state.hasMore || state.isLoading) return;
+    if (isClosed || state.isLoadingMore || !state.hasMore || state.isLoading) return;
 
     emit(state.copyWith(isLoadingMore: true));
     try {
@@ -59,6 +80,8 @@ class VideosCubit extends Cubit<VideosState> {
         placement: 'reels',
       );
 
+      if (isClosed) return;
+
       final existingIds = state.videos.map((v) => v.id).toSet();
       final newItems = result.items.where((v) => !existingIds.contains(v.id)).toList();
 
@@ -69,7 +92,9 @@ class VideosCubit extends Cubit<VideosState> {
         isLoadingMore: false,
       ));
     } catch (_) {
-      emit(state.copyWith(isLoadingMore: false));
+      if (!isClosed) {
+        emit(state.copyWith(isLoadingMore: false));
+      }
     }
   }
 
@@ -78,7 +103,7 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   Future<void> changeFilter(int index) async {
-    if (index < 0 || index >= state.filters.length) return;
+    if (isClosed || index < 0 || index >= state.filters.length) return;
 
     emit(state.copyWith(
       selectedFilterIndex: index,
@@ -96,19 +121,42 @@ class VideosCubit extends Cubit<VideosState> {
         placement: 'reels',
       );
 
+      if (isClosed) return;
+
+      final updatedVideos = result.items.asMap().entries.map((entry) {
+        return entry.value.copyWith(isPlaying: entry.key == 0);
+      }).toList();
+
       emit(state.copyWith(
-        videos: result.items,
+        videos: updatedVideos,
         hasMore: result.hasMore,
         currentPage: result.page,
         isLoading: false,
         activeIndex: 0,
       ));
     } catch (_) {
-      emit(state.copyWith(isLoading: false));
+      if (!isClosed) {
+        emit(state.copyWith(isLoading: false));
+      }
     }
   }
 
+  int selectVideoById(String targetId) {
+    if (isClosed) return -1;
+    final filtered = state.filteredVideos;
+    final index = filtered.indexWhere((v) =>
+        v.id == targetId ||
+        v.publicId == targetId ||
+        v.youtubeVideoId == targetId);
+    if (index != -1) {
+      onPageChanged(index);
+      return index;
+    }
+    return -1;
+  }
+
   void onPageChanged(int index) {
+    if (isClosed) return;
     final filtered = state.filteredVideos;
     if (index < 0 || index >= filtered.length) return;
 
@@ -133,6 +181,7 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   void togglePlayPause(String videoId) {
+    if (isClosed) return;
     final updatedVideos = state.videos.map((v) {
       if (v.id == videoId) {
         return v.copyWith(isPlaying: !v.isPlaying);
@@ -144,6 +193,7 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   void toggleLike(String videoId) {
+    if (isClosed) return;
     final updatedVideos = state.videos.map((v) {
       if (v.id == videoId) {
         final newIsLiked = !v.isLiked;
@@ -160,6 +210,7 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   void toggleSave(String videoId) {
+    if (isClosed) return;
     final updatedVideos = state.videos.map((v) {
       if (v.id == videoId) {
         return v.copyWith(isSaved: !v.isSaved);
@@ -171,10 +222,12 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   void toggleMute() {
+    if (isClosed) return;
     emit(state.copyWith(isMuted: !state.isMuted));
   }
 
   void incrementShare(String videoId) {
+    if (isClosed) return;
     final updatedVideos = state.videos.map((v) {
       if (v.id == videoId) {
         return v.copyWith(shares: v.shares + 1);
@@ -186,6 +239,7 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   void addComment(String videoId, String text) {
+    if (isClosed) return;
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
 
@@ -212,14 +266,14 @@ class VideosCubit extends Cubit<VideosState> {
   }
 
   /// Triggered by VisibilityDetector when a reel's visible percentage changes.
-  /// - Automatically increments views on first viewport intersection (>= 50%).
-  /// - Auto-pauses when scrolled out of view (< 20%).
+  /// Counts as viewed when at least 50% visible and not viewed yet.
+  /// Auto-pauses when scrolled out of view (< 20%).
   void onVisibilityChanged(String videoId, double visibleFraction) {
+    if (isClosed) return;
     bool hasChanges = false;
     Set<String> updatedViewed = state.viewedVideoIds;
     List<VideoStoryModel> updatedVideos = state.videos;
 
-    // View detection: Count as viewed when at least 50% visible and not viewed yet
     if (visibleFraction >= 0.5 && !state.viewedVideoIds.contains(videoId)) {
       updatedViewed = {...state.viewedVideoIds, videoId};
       updatedVideos = updatedVideos.map((v) {
@@ -231,24 +285,11 @@ class VideosCubit extends Cubit<VideosState> {
       hasChanges = true;
     }
 
-    // Auto-pause if video scrolls out of dominant view (< 45%)
-    if (visibleFraction < 0.45) {
+    if (visibleFraction < 0.2) {
       final index = updatedVideos.indexWhere((v) => v.id == videoId);
       if (index != -1 && updatedVideos[index].isPlaying) {
         updatedVideos = updatedVideos.map((v) {
           if (v.id == videoId) return v.copyWith(isPlaying: false);
-          return v;
-        }).toList();
-        hasChanges = true;
-      }
-    }
-
-    // Auto-play when dominant in view (>= 75%) and it is the active index
-    if (visibleFraction >= 0.75) {
-      final index = updatedVideos.indexWhere((v) => v.id == videoId);
-      if (index != -1 && index == state.activeIndex && !updatedVideos[index].isPlaying) {
-        updatedVideos = updatedVideos.map((v) {
-          if (v.id == videoId) return v.copyWith(isPlaying: true);
           return v;
         }).toList();
         hasChanges = true;
@@ -265,6 +306,7 @@ class VideosCubit extends Cubit<VideosState> {
 
   /// Pauses all video playback immediately (e.g. app sent to background, screen disposed).
   void pauseAll() {
+    if (isClosed) return;
     final updatedVideos = state.videos.map((v) => v.copyWith(isPlaying: false)).toList();
     emit(state.copyWith(videos: updatedVideos));
   }

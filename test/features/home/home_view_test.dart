@@ -9,6 +9,7 @@ import 'package:dr_hair/features/shop/data/models/product_model.dart';
 import 'package:dr_hair/features/shop/domain/repositories/product_repository.dart';
 import 'package:dr_hair/features/videos/domain/models/video_story_model.dart';
 import 'package:dr_hair/features/videos/domain/repositories/video_repository.dart';
+import '../../helpers/video_test_fixtures.dart';
 
 class _FakeHomeProductRepository implements ProductRepository {
   @override
@@ -41,7 +42,7 @@ class _FakeHomeVideoRepository implements VideoRepository {
     String? category,
     String? placement = 'reels',
   }) async {
-    final items = VideoStoryModel.testStories.take(limit).toList();
+    final items = VideoTestFixtures.testStories.take(limit).toList();
     return (items: items, hasMore: false, total: items.length, page: 1);
   }
 }

@@ -8,6 +8,7 @@ class RouteNames {
   static const String hairTest = '/hair-test';
   static const String videos = '/videos';
   static const String profile = '/profile';
+  static const String settings = '/settings';
   static const String updateProfile = '/update-profile';
   static const String treatmentDetails = '/treatment-details';
   static const String cart = '/cart';

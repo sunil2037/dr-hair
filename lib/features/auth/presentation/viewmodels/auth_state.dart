@@ -22,6 +22,11 @@ class AuthState {
   final bool hasCompletedAssessment;
   final String? nextStep;
   final Map<String, dynamic>? latestAssessment;
+  final bool requiresPhoneVerification;
+  final String? tempToken;
+  final String? socialEmail;
+  final String? socialName;
+  final String? socialProvider;
 
   const AuthState({
     this.status = AuthStatus.initial,
@@ -36,6 +41,11 @@ class AuthState {
     this.hasCompletedAssessment = false,
     this.nextStep,
     this.latestAssessment,
+    this.requiresPhoneVerification = false,
+    this.tempToken,
+    this.socialEmail,
+    this.socialName,
+    this.socialProvider,
   });
 
   bool get isAuthenticated {
@@ -71,10 +81,16 @@ class AuthState {
     bool? hasCompletedAssessment,
     String? nextStep,
     Map<String, dynamic>? latestAssessment,
+    bool? requiresPhoneVerification,
+    String? tempToken,
+    String? socialEmail,
+    String? socialName,
+    String? socialProvider,
     bool clearUser = false,
     bool clearError = false,
     bool clearSession = false,
     bool clearLatestAssessment = false,
+    bool clearPhoneVerification = false,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -92,6 +108,14 @@ class AuthState {
       latestAssessment: clearLatestAssessment
           ? null
           : (latestAssessment ?? this.latestAssessment),
+      requiresPhoneVerification: clearPhoneVerification
+          ? false
+          : (requiresPhoneVerification ?? this.requiresPhoneVerification),
+      tempToken: clearPhoneVerification ? null : (tempToken ?? this.tempToken),
+      socialEmail: clearPhoneVerification ? null : (socialEmail ?? this.socialEmail),
+      socialName: clearPhoneVerification ? null : (socialName ?? this.socialName),
+      socialProvider:
+          clearPhoneVerification ? null : (socialProvider ?? this.socialProvider),
     );
   }
 }

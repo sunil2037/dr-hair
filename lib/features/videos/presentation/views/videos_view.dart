@@ -21,28 +21,36 @@ import '../viewmodels/videos_state.dart';
 
 class VideosView extends StatelessWidget {
   final VideosCubit? cubit;
+  final String? initialVideoId;
 
-  const VideosView({super.key, this.cubit});
+  const VideosView({super.key, this.cubit, this.initialVideoId});
 
   @override
   Widget build(BuildContext context) {
     if (cubit != null) {
       return BlocProvider<VideosCubit>.value(
         value: cubit!,
-        child: const _VideosContent(isCustomCubit: true),
+        child: _VideosContent(
+          isCustomCubit: true,
+          initialVideoId: initialVideoId,
+        ),
       );
     }
     return BlocProvider<VideosCubit>(
       create: (_) => VideosCubit(),
-      child: const _VideosContent(isCustomCubit: false),
+      child: _VideosContent(
+        isCustomCubit: false,
+        initialVideoId: initialVideoId,
+      ),
     );
   }
 }
 
 class _VideosContent extends StatefulWidget {
   final bool isCustomCubit;
+  final String? initialVideoId;
 
-  const _VideosContent({this.isCustomCubit = false});
+  const _VideosContent({this.isCustomCubit = false, this.initialVideoId});
 
   @override
   State<_VideosContent> createState() => _VideosContentState();
@@ -52,6 +60,7 @@ class _VideosContentState extends State<_VideosContent>
     with WidgetsBindingObserver {
   late final PageController _pageController;
   late VideosCubit _cubit;
+  String? _targetVideoIdToOpen;
 
   @override
   void initState() {
@@ -59,11 +68,48 @@ class _VideosContentState extends State<_VideosContent>
     WidgetsBinding.instance.addObserver(this);
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     _pageController = PageController();
+    _targetVideoIdToOpen = widget.initialVideoId;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !widget.isCustomCubit) {
-        _cubit.loadInitialVideos();
+      if (mounted) {
+        if (!widget.isCustomCubit) {
+          _cubit.loadInitialVideos(initialVideoId: widget.initialVideoId);
+        } else if (_targetVideoIdToOpen != null) {
+          _tryJumpToTargetVideo();
+        }
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant _VideosContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialVideoId != null &&
+        widget.initialVideoId != oldWidget.initialVideoId) {
+      _targetVideoIdToOpen = widget.initialVideoId;
+      _tryJumpToTargetVideo();
+    }
+  }
+
+  void _tryJumpToTargetVideo() {
+    if (_targetVideoIdToOpen == null) return;
+    final videos = _cubit.state.filteredVideos;
+    if (videos.isEmpty) return;
+
+    final targetId = _targetVideoIdToOpen!;
+    final index = videos.indexWhere((v) =>
+        v.id == targetId ||
+        v.publicId == targetId ||
+        v.youtubeVideoId == targetId);
+
+    if (index != -1) {
+      _targetVideoIdToOpen = null;
+      _cubit.onPageChanged(index);
+      if (_pageController.hasClients &&
+          _pageController.page?.round() != index) {
+        _pageController.jumpToPage(index);
+      }
+    }
   }
 
   @override
@@ -82,7 +128,9 @@ class _VideosContentState extends State<_VideosContent>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _cubit.pauseAll();
+    if (!widget.isCustomCubit) {
+      _cubit.pauseAll();
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -91,10 +139,20 @@ class _VideosContentState extends State<_VideosContent>
   Widget build(BuildContext context) {
     return BlocConsumer<VideosCubit, VideosState>(
       listenWhen: (previous, current) =>
-          previous.selectedFilterIndex != current.selectedFilterIndex,
+          previous.selectedFilterIndex != current.selectedFilterIndex ||
+          previous.videos != current.videos ||
+          previous.activeIndex != current.activeIndex,
       listener: (context, state) {
+        if (_targetVideoIdToOpen != null && state.filteredVideos.isNotEmpty) {
+          _tryJumpToTargetVideo();
+          return;
+        }
+
         if (_pageController.hasClients) {
-          _pageController.jumpToPage(0);
+          final currentPage = _pageController.page?.round() ?? 0;
+          if (currentPage != state.activeIndex) {
+            _pageController.jumpToPage(state.activeIndex);
+          }
         }
       },
       builder: (context, state) {
@@ -567,7 +625,9 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       duration: const Duration(milliseconds: 600),
     );
 
-    _initVideoPlayer();
+    if (widget.isActive) {
+      _initVideoPlayer();
+    }
   }
 
   void _initVideoPlayer() {
@@ -602,6 +662,14 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
       _playerSubscription = ytController.listen((value) {
         if (!mounted) return;
+
+        // Auto-play when player becomes ready or unstarted if active
+        if (widget.isActive && widget.video.isPlaying) {
+          if (value.playerState == PlayerState.unStarted ||
+              value.playerState == PlayerState.cued) {
+            ytController.playVideo();
+          }
+        }
 
         // Auto-loop YouTube Shorts seamlessly when completed
         if (value.playerState == PlayerState.ended) {
@@ -683,15 +751,31 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
     if (widget.video.youtubeVideoId != oldWidget.video.youtubeVideoId) {
       _disposePlayer();
-      _initVideoPlayer();
+      if (widget.isActive) {
+        _initVideoPlayer();
+      }
       return;
     }
 
-    if (widget.isActive != oldWidget.isActive ||
-        widget.video.isPlaying != oldWidget.video.isPlaying) {
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        if (_youtubeController == null) {
+          _initVideoPlayer();
+        } else if (widget.video.isPlaying) {
+          _youtubeController?.playVideo();
+          _startPlayback();
+        }
+      } else {
+        _disposePlayer();
+      }
+    } else if (widget.video.isPlaying != oldWidget.video.isPlaying) {
       if (widget.isActive && widget.video.isPlaying) {
-        _youtubeController?.playVideo();
-        _startPlayback();
+        if (_youtubeController == null) {
+          _initVideoPlayer();
+        } else {
+          _youtubeController?.playVideo();
+          _startPlayback();
+        }
       } else {
         _youtubeController?.pauseVideo();
         _pausePlayback();

@@ -87,6 +87,299 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthVerification> loginWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _remote.loginWithPassword(
+        email: email,
+        password: password,
+      );
+      final responseData = _mapValue(response['data']);
+      final token = _stringValue(response, responseData, 'token');
+      if (token.isEmpty) {
+        throw const AuthRepositoryException(
+          'The server did not return a session.',
+        );
+      }
+      final isRegistered = _boolValue(
+        response,
+        responseData,
+        'is_registered',
+        fallback: true,
+      );
+      final hasCompletedAssessment = _boolValue(
+        response,
+        responseData,
+        'has_completed_assessment',
+      );
+      final nextStep = _stringValue(response, responseData, 'next_step');
+      final refreshToken = _stringValue(
+        response,
+        responseData,
+        'refresh_token',
+      );
+      final sessionId = _stringValue(response, responseData, 'session_id');
+
+      await _sessionStore.writeSession(
+        token: token,
+        login: email,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+      );
+      if (hasCompletedAssessment) {
+        await AppLocalCache.instance.put('has_completed_hair_test', true);
+      }
+      final profile = _profileFromResponse(responseData);
+      final user = profile == null
+          ? null
+          : UserModel.fromJson(profile, fallbackLogin: email);
+
+      return AuthVerification(
+        token: token,
+        login: email,
+        isRegistered: isRegistered,
+        isAdmin: response['is_admin'] == true,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+        user: user,
+        hasCompletedAssessment: hasCompletedAssessment,
+        nextStep: nextStep,
+      );
+    } on DioException catch (error) {
+      throw _mapError(error, fallback: 'Invalid email or password.');
+    }
+  }
+
+  @override
+  Future<void> sendSignupOtp(String phone) async {
+    try {
+      await _remote.sendSignupOtp(phone);
+    } on DioException catch (error) {
+      throw _mapError(error, fallback: 'Could not send the signup code.');
+    }
+  }
+
+  @override
+  Future<AuthVerification> registerWithPassword({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String otp,
+  }) async {
+    try {
+      final response = await _remote.registerWithPassword(
+        name: name,
+        email: email,
+        password: password,
+        phone: phone,
+        otp: otp,
+      );
+      final responseData = _mapValue(response['data']);
+      final token = _stringValue(response, responseData, 'token');
+      if (token.isEmpty) {
+        throw const AuthRepositoryException(
+          'Registration succeeded but session was not returned.',
+        );
+      }
+      final refreshToken = _stringValue(
+        response,
+        responseData,
+        'refresh_token',
+      );
+      final sessionId = _stringValue(response, responseData, 'session_id');
+
+      await _sessionStore.writeSession(
+        token: token,
+        login: email,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+      );
+
+      final profile = _profileFromResponse(responseData);
+      final user = profile == null
+          ? null
+          : UserModel.fromJson(profile, fallbackLogin: email);
+
+      return AuthVerification(
+        token: token,
+        login: email,
+        isRegistered: true,
+        isAdmin: false,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+        user: user,
+        hasCompletedAssessment: false,
+        nextStep: 'ASSESSMENT',
+      );
+    } on DioException catch (error) {
+      throw _mapError(error, fallback: 'Registration could not be completed.');
+    }
+  }
+
+  @override
+  Future<AuthVerification> socialLogin({
+    required String provider,
+    required String idToken,
+    String? email,
+    String? name,
+  }) async {
+    try {
+      final response = await _remote.socialLogin(
+        provider: provider,
+        idToken: idToken,
+        email: email,
+        name: name,
+      );
+      final responseData = _mapValue(response['data']);
+
+      if (responseData?['requires_phone_verification'] == true ||
+          response['requires_phone_verification'] == true) {
+        return AuthVerification(
+          token: '',
+          login: email ?? '',
+          isRegistered: false,
+          isAdmin: false,
+          requiresPhoneVerification: true,
+          tempToken: _stringValue(response, responseData, 'temp_token'),
+          socialEmail: email ?? _stringValue(response, responseData, 'email'),
+          socialName: name ?? _stringValue(response, responseData, 'name'),
+          socialProvider: provider,
+        );
+      }
+
+      final token = _stringValue(response, responseData, 'token');
+      if (token.isEmpty) {
+        throw const AuthRepositoryException(
+          'The server did not return a session.',
+        );
+      }
+      final refreshToken = _stringValue(
+        response,
+        responseData,
+        'refresh_token',
+      );
+      final sessionId = _stringValue(response, responseData, 'session_id');
+      final hasCompletedAssessment = _boolValue(
+        response,
+        responseData,
+        'has_completed_assessment',
+      );
+      final nextStep = _stringValue(response, responseData, 'next_step');
+      final resolvedLogin =
+          email ?? _stringValue(response, responseData, 'email');
+
+      await _sessionStore.writeSession(
+        token: token,
+        login: resolvedLogin,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+      );
+
+      final profile = _profileFromResponse(responseData);
+      final user = profile == null
+          ? null
+          : UserModel.fromJson(profile, fallbackLogin: resolvedLogin);
+
+      return AuthVerification(
+        token: token,
+        login: resolvedLogin,
+        isRegistered: true,
+        isAdmin: false,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+        user: user,
+        hasCompletedAssessment: hasCompletedAssessment,
+        nextStep: nextStep,
+      );
+    } on DioException catch (error) {
+      throw _mapError(error, fallback: 'Social sign-in could not be completed.');
+    }
+  }
+
+  @override
+  Future<AuthVerification> verifySocialSignup({
+    required String phone,
+    required String otp,
+    required String tempToken,
+  }) async {
+    try {
+      final response = await _remote.verifySocialSignup(
+        phone: phone,
+        otp: otp,
+        tempToken: tempToken,
+      );
+      final responseData = _mapValue(response['data']);
+      final token = _stringValue(response, responseData, 'token');
+      if (token.isEmpty) {
+        throw const AuthRepositoryException(
+          'The server did not return a session.',
+        );
+      }
+      final refreshToken = _stringValue(
+        response,
+        responseData,
+        'refresh_token',
+      );
+      final sessionId = _stringValue(response, responseData, 'session_id');
+
+      await _sessionStore.writeSession(
+        token: token,
+        login: phone,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+      );
+
+      final profile = _profileFromResponse(responseData);
+      final user = profile == null
+          ? null
+          : UserModel.fromJson(profile, fallbackLogin: phone);
+
+      return AuthVerification(
+        token: token,
+        login: phone,
+        isRegistered: true,
+        isAdmin: false,
+        refreshToken: refreshToken.isEmpty ? null : refreshToken,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+        user: user,
+        hasCompletedAssessment: false,
+        nextStep: 'ASSESSMENT',
+      );
+    } on DioException catch (error) {
+      throw _mapError(error, fallback: 'Verification code is invalid.');
+    }
+  }
+
+  @override
+  Future<void> forgotPassword(String login) async {
+    try {
+      await _remote.forgotPassword(login);
+    } on DioException catch (error) {
+      throw _mapError(error, fallback: 'Could not send the password reset code.');
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String login,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      await _remote.resetPassword(
+        login: login,
+        otp: otp,
+        newPassword: newPassword,
+      );
+    } on DioException catch (error) {
+      throw _mapError(error, fallback: 'Could not reset password.');
+    }
+  }
+
+  @override
   Future<AuthVerification?> restoreSession() async {
     var token = await _sessionStore.readToken();
     final refreshToken = await _sessionStore.readRefreshToken();
@@ -429,8 +722,10 @@ class AuthRepositoryImpl implements AuthRepository {
   bool _boolValue(
     Map<String, dynamic> response,
     Map<String, dynamic>? data,
-    String key,
-  ) => response[key] == true || data?[key] == true;
+    String key, {
+    bool fallback = false,
+  }) =>
+      response[key] == true || data?[key] == true || (fallback && response[key] == null && data?[key] == null);
 
   Map<String, dynamic>? _profileFromResponse(Map<String, dynamic>? data) {
     if (data == null) return null;

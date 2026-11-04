@@ -397,7 +397,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'UPI / Credit & Debit Card / Netbanking',
+                          'Pay on Delivery / Pay at Clinic',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
@@ -405,7 +405,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                           ),
                         ),
                         Text(
-                          'Payment provider connection required to continue',
+                          'Cash on Delivery & clinic counter payment supported',
                           style: TextStyle(
                             fontSize: 10,
                             color: AppColors.secondaryDark,

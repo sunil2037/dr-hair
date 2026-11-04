@@ -7,6 +7,9 @@ class CareState {
   final List<CareReminder> reminders;
   final List<List<DietMeal>> dietPlans;
   final int currentDietDay;
+  final String dietTreatmentName;
+  final String dietDoctorName;
+  final bool isLoadingDiet;
   final int waterCups;
   final List<String> routineCompletionDays;
   final List<CareOrder> orders;
@@ -19,6 +22,9 @@ class CareState {
     this.reminders = const [],
     this.dietPlans = const [],
     this.currentDietDay = 0,
+    this.dietTreatmentName = 'Personalized Nutrition Plan',
+    this.dietDoctorName = 'Dr. Hair Clinical Team',
+    this.isLoadingDiet = false,
     this.waterCups = 6,
     this.routineCompletionDays = const [],
     this.orders = const [],
@@ -53,6 +59,9 @@ class CareState {
     List<CareReminder>? reminders,
     List<List<DietMeal>>? dietPlans,
     int? currentDietDay,
+    String? dietTreatmentName,
+    String? dietDoctorName,
+    bool? isLoadingDiet,
     int? waterCups,
     List<String>? routineCompletionDays,
     List<CareOrder>? orders,
@@ -65,6 +74,9 @@ class CareState {
       reminders: reminders ?? this.reminders,
       dietPlans: dietPlans ?? this.dietPlans,
       currentDietDay: currentDietDay ?? this.currentDietDay,
+      dietTreatmentName: dietTreatmentName ?? this.dietTreatmentName,
+      dietDoctorName: dietDoctorName ?? this.dietDoctorName,
+      isLoadingDiet: isLoadingDiet ?? this.isLoadingDiet,
       waterCups: waterCups ?? this.waterCups,
       routineCompletionDays:
           routineCompletionDays ?? this.routineCompletionDays,

@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseUrl = 'https://api.drhair.com/v1';
+  static String get baseUrl => backendBaseUrl;
 
   /// Returns the configured backend Base URL:
   /// Priority:

@@ -9,6 +9,7 @@ import '../../features/hair_test/presentation/views/assessment_result_view.dart'
 import '../../features/hair_test/presentation/views/hair_test_view.dart';
 import '../../features/home/presentation/views/home_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
+import '../../features/profile/presentation/views/settings_view.dart';
 import '../../features/profile/presentation/views/update_profile_view.dart';
 import '../../features/reviews/presentation/views/reviews_view.dart';
 import '../../features/shell/presentation/views/main_shell_view.dart';
@@ -80,7 +81,12 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: RouteNames.videos,
-                builder: (context, state) => const VideosView(),
+                builder: (context, state) {
+                  final initialVideoId =
+                      state.uri.queryParameters['videoId'] ??
+                      (state.extra is String ? state.extra as String : null);
+                  return VideosView(initialVideoId: initialVideoId);
+                },
               ),
             ],
           ),
@@ -116,6 +122,13 @@ class AppRouter {
         builder: (context, state) => const AuthRequiredRoute(
           routePath: RouteNames.updateProfile,
           child: UpdateProfileView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.settings,
+        builder: (context, state) => const AuthRequiredRoute(
+          routePath: RouteNames.settings,
+          child: SettingsView(),
         ),
       ),
       GoRoute(

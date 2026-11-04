@@ -9,11 +9,13 @@ import '../../../../core/routes/route_names.dart';
 import '../../../../core/session/session_coordinator.dart';
 import '../../../../core/storage/app_local_cache.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../viewmodels/auth_cubit.dart';
 import '../viewmodels/auth_state.dart';
-import '../../../../core/widgets/app_toast.dart';
 
-enum _LoginStep { phone, otp }
+enum _AuthMode { signIn, signUp }
+
+enum _SignupStep { form, otp }
 
 class SigninView extends StatefulWidget {
   const SigninView({super.key});
@@ -27,18 +29,39 @@ class _SigninViewState extends State<SigninView>
   late final AnimationController _cardEntranceController;
   late final Animation<double> _cardOpacity;
   late final Animation<Offset> _cardSlide;
-  final _phoneController = TextEditingController();
+
+  // Active Mode & Steps
+  _AuthMode _activeMode = _AuthMode.signIn;
+  _SignupStep _signupStep = _SignupStep.form;
+
+  // Sign In Controllers
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  String? _emailError;
+  String? _passwordError;
+
+  // Sign Up Controllers
+  final _nameController = TextEditingController();
+  final _signupEmailController = TextEditingController();
+  final _signupPasswordController = TextEditingController();
+  final _signupPhoneController = TextEditingController();
+  bool _obscureSignupPassword = true;
+  String? _nameError;
+  String? _signupEmailError;
+  String? _signupPasswordError;
+  String? _signupPhoneError;
+
+  // OTP Controllers (for signup and inline verification)
   final List<TextEditingController> _otpControllers = List.generate(
     6,
     (_) => TextEditingController(),
   );
   final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
-  _LoginStep _currentStep = _LoginStep.phone;
   bool _isLoading = false;
   bool _entryMotionConfigured = false;
   final String _countryCode = '+91';
-  String? _phoneError;
   String? _clipboardOtp;
 
   @override
@@ -56,6 +79,7 @@ class _SigninViewState extends State<SigninView>
       begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(_cardOpacity);
+
     _checkClipboardForOtp();
   }
 
@@ -87,7 +111,12 @@ class _SigninViewState extends State<SigninView>
   @override
   void dispose() {
     _cardEntranceController.dispose();
-    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nameController.dispose();
+    _signupEmailController.dispose();
+    _signupPasswordController.dispose();
+    _signupPhoneController.dispose();
     for (final c in _otpControllers) {
       c.dispose();
     }
@@ -97,89 +126,272 @@ class _SigninViewState extends State<SigninView>
     super.dispose();
   }
 
-  void _onPhoneChanged(String val) {
-    if (_phoneError != null) {
-      setState(() => _phoneError = null);
+  bool get _isTesting =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+      const bool.fromEnvironment('flutter.test');
+
+  void _onLoginSuccess() {
+    if (!mounted) return;
+    final authCubit = context.read<AuthCubit>();
+    String? redirect;
+    try {
+      redirect = GoRouterState.of(context).uri.queryParameters['redirect'];
+    } catch (_) {
+      // In tests or non-GoRouter contexts
+    }
+
+    if (authCubit.state.requiresProfileCompletion ||
+        authCubit.state.nextStep == 'COMPLETE_PROFILE') {
+      final target = redirect != null && redirect.isNotEmpty
+          ? '${RouteNames.completeProfile}?redirect=${Uri.encodeComponent(redirect)}'
+          : RouteNames.completeProfile;
+      context.go(target);
+    } else if (redirect != null &&
+        redirect.isNotEmpty &&
+        redirect != RouteNames.signin) {
+      context.go(redirect);
+    } else if (authCubit.state.nextStep == 'ASSESSMENT' ||
+        !authCubit.state.hasCompletedAssessment) {
+      final cachedCompleted =
+          AppLocalCache.instance.getBool('has_completed_hair_test') ?? false;
+      final cachedSkipped =
+          AppLocalCache.instance.getBool('has_skipped_hair_test') ?? false;
+      if (!cachedCompleted && !cachedSkipped) {
+        context.go(RouteNames.hairTest);
+      } else {
+        _navigateToHome();
+      }
     } else {
-      setState(() {});
+      _navigateToHome();
     }
   }
 
-  void _onTopBackTapped() {
-    if (_currentStep == _LoginStep.otp) {
-      _editPhoneNumber();
-    } else {
+  void _navigateToHome() {
+    if (!mounted) return;
+    try {
+      context.go(RouteNames.mainShell);
+    } catch (_) {
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
     }
   }
 
-  Future<void> _proceedToOtp() async {
-    final rawPhone = _phoneController.text.trim();
-    if (_isLoading) return;
-    if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(rawPhone)) {
-      setState(() {
-        _phoneError = 'Please enter a valid 10-digit mobile number';
-      });
-      return;
+  // ---------------------------------------------------------------------------
+  // AUTH ACTION HANDLERS
+  // ---------------------------------------------------------------------------
+
+  Future<void> _handlePasswordLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    bool hasError = false;
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _emailError = 'Please enter a valid email address');
+      hasError = true;
+    } else {
+      setState(() => _emailError = null);
     }
 
-    setState(() {
-      _phoneError = null;
-      _isLoading = true;
-    });
+    if (password.isEmpty || password.length < 6) {
+      setState(() => _passwordError = 'Password must be at least 6 characters');
+      hasError = true;
+    } else {
+      setState(() => _passwordError = null);
+    }
 
+    if (hasError || _isLoading) return;
+
+    setState(() => _isLoading = true);
     final authCubit = context.read<AuthCubit>();
-    // The API stores and matches Indian phone identities as the 10-digit
-    // national number. Keep +91 as presentation only until the UI supports
-    // selecting other countries.
-    final sent = await authCubit.sendOtp(rawPhone);
+    final success = await authCubit.loginWithPassword(
+      email: email,
+      password: password,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      _onLoginSuccess();
+    } else {
+      final errorMsg =
+          authCubit.state.errorMessage ?? 'Invalid email or password.';
+      if (errorMsg.toLowerCase().contains('suspended') ||
+          errorMsg.toLowerCase().contains('blocked')) {
+        SessionCoordinator.instance.showAccountBlockedDialog(
+          context: context,
+          message: errorMsg,
+        );
+      } else {
+        AppToast.show(
+          context,
+          SnackBar(backgroundColor: AppColors.danger, content: Text(errorMsg)),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    final authCubit = context.read<AuthCubit>();
+    final success = await authCubit.loginWithGoogle();
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      _onLoginSuccess();
+    } else if (authCubit.state.requiresPhoneVerification) {
+      _showSocialPhoneVerificationSheet();
+    } else if (authCubit.state.errorMessage != null) {
+      AppToast.show(
+        context,
+        SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text(authCubit.state.errorMessage!),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    final authCubit = context.read<AuthCubit>();
+    final success = await authCubit.loginWithApple();
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      _onLoginSuccess();
+    } else if (authCubit.state.requiresPhoneVerification) {
+      _showSocialPhoneVerificationSheet();
+    } else if (authCubit.state.errorMessage != null) {
+      AppToast.show(
+        context,
+        SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text(authCubit.state.errorMessage!),
+        ),
+      );
+    }
+  }
+
+  Future<void> _proceedToSignupOtp() async {
+    final name = _nameController.text.trim();
+    final email = _signupEmailController.text.trim();
+    final password = _signupPasswordController.text;
+    final phone = _signupPhoneController.text.trim();
+
+    bool hasError = false;
+    if (name.length < 2) {
+      setState(() => _nameError = 'Enter your full name (minimum 2 letters)');
+      hasError = true;
+    } else {
+      setState(() => _nameError = null);
+    }
+
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _signupEmailError = 'Enter a valid email address');
+      hasError = true;
+    } else {
+      setState(() => _signupEmailError = null);
+    }
+
+    if (password.length < 6) {
+      setState(
+        () => _signupPasswordError = 'Password must be at least 6 characters',
+      );
+      hasError = true;
+    } else {
+      setState(() => _signupPasswordError = null);
+    }
+
+    if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(phone)) {
+      setState(
+        () => _signupPhoneError = 'Please enter a valid 10-digit mobile number',
+      );
+      hasError = true;
+    } else {
+      setState(() => _signupPhoneError = null);
+    }
+
+    if (hasError || _isLoading) return;
+
+    setState(() => _isLoading = true);
+    final authCubit = context.read<AuthCubit>();
+    final sent = await authCubit.sendSignupOtp(phone);
+
     if (!mounted) return;
     setState(() {
       _isLoading = false;
       if (sent) {
-        _currentStep = _LoginStep.otp;
+        _signupStep = _SignupStep.otp;
         for (final c in _otpControllers) {
           c.clear();
         }
       }
     });
+
     if (sent) {
       _checkClipboardForOtp();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _currentStep == _LoginStep.otp) {
+        if (mounted && _signupStep == _SignupStep.otp) {
           _otpFocusNodes[0].requestFocus();
         }
       });
-    }
-    if (!sent) {
+    } else {
       AppToast.show(
         context,
         SnackBar(
           backgroundColor: AppColors.danger,
           content: Text(
-            authCubit.state.errorMessage ?? 'Could not send the code.',
+            authCubit.state.errorMessage ?? 'Could not send verification OTP.',
           ),
         ),
       );
     }
   }
 
-  void _editPhoneNumber() {
-    FocusScope.of(context).unfocus();
-    for (final controller in _otpControllers) {
-      controller.clear();
+  Future<void> _submitRegistration() async {
+    final code = _otpControllers.map((c) => c.text).join();
+    if (code.length != 6 || !RegExp(r'^\d{6}$').hasMatch(code)) {
+      AppToast.show(
+        context,
+        const SnackBar(
+          content: Text('Enter the complete 6-digit verification code.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
     }
-    setState(() {
-      _currentStep = _LoginStep.phone;
-    });
-    context.read<AuthCubit?>()?.resetToPhoneStep();
-  }
 
-  bool get _isTesting =>
-      WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
-      const bool.fromEnvironment('flutter.test');
+    setState(() => _isLoading = true);
+    final authCubit = context.read<AuthCubit>();
+    final success = await authCubit.registerWithPassword(
+      name: _nameController.text.trim(),
+      email: _signupEmailController.text.trim(),
+      password: _signupPasswordController.text,
+      phone: _signupPhoneController.text.trim(),
+      otp: code,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      _onLoginSuccess();
+    } else {
+      AppToast.show(
+        context,
+        SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text(authCubit.state.errorMessage ?? 'Registration failed.'),
+        ),
+      );
+    }
+  }
 
   void _handleOtpChanged(int index, String value) {
     final digits = value.replaceAll(RegExp(r'\D'), '');
@@ -208,7 +420,7 @@ class _SigninViewState extends State<SigninView>
         if (!_isTesting) {
           Future.delayed(const Duration(milliseconds: 150), () {
             if (mounted && !_isLoading) {
-              _verifyOtpAndLogin();
+              _submitRegistration();
             }
           });
         }
@@ -228,7 +440,7 @@ class _SigninViewState extends State<SigninView>
         if (!_isTesting) {
           Future.delayed(const Duration(milliseconds: 150), () {
             if (mounted && !_isLoading) {
-              _verifyOtpAndLogin();
+              _submitRegistration();
             }
           });
         }
@@ -238,138 +450,617 @@ class _SigninViewState extends State<SigninView>
     }
   }
 
-  void _fillOtp(String code, {bool autoSubmit = false}) {
+  void _fillOtp(String code) {
     if (!RegExp(r'^\d{6}$').hasMatch(code)) return;
     for (var index = 0; index < _otpControllers.length; index++) {
       _otpControllers[index].text = code[index];
     }
     FocusScope.of(context).unfocus();
-    if (autoSubmit && !_isTesting) {
+    if (!_isTesting) {
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted && !_isLoading) {
-          _verifyOtpAndLogin();
+          _submitRegistration();
         }
       });
     }
   }
 
-  Future<void> _resendOtp() async {
+  Future<void> _resendSignupOtp() async {
+    final phone = _signupPhoneController.text.trim();
+    if (phone.isEmpty) return;
     final authCubit = context.read<AuthCubit>();
-    final sent = await authCubit.resendOtp();
+    final sent = await authCubit.sendSignupOtp(phone);
     if (!mounted) return;
     if (sent) {
       for (final c in _otpControllers) {
         c.clear();
       }
       _otpFocusNodes[0].requestFocus();
-    }
-    if (!sent) {
+      AppToast.show(
+        context,
+        SnackBar(
+          backgroundColor: AppColors.primary,
+          content: Text('A fresh verification code was sent to +91 $phone.'),
+        ),
+      );
+    } else {
       AppToast.show(
         context,
         SnackBar(
           backgroundColor: AppColors.danger,
           content: Text(
-            authCubit.state.errorMessage ?? 'Could not resend the code.',
+            authCubit.state.errorMessage ?? 'Could not resend code.',
           ),
         ),
       );
-      return;
     }
-    final phoneDisplay = '$_countryCode ${_phoneController.text.trim()}';
-    AppToast.show(
-      context,
-      SnackBar(
-        backgroundColor: AppColors.primary,
-        content: Text('A fresh code was sent to $phoneDisplay.'),
+  }
+
+  // ---------------------------------------------------------------------------
+  // SOCIAL SIGNUP PHONE VERIFICATION SHEET
+  // ---------------------------------------------------------------------------
+  void _showSocialPhoneVerificationSheet() {
+    final phoneCtrl = TextEditingController();
+    final otpCtrls = List.generate(6, (_) => TextEditingController());
+    final otpNodes = List.generate(6, (_) => FocusNode());
+    bool otpSent = false;
+    bool isSheetBusy = false;
+    String? phoneErr;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Verify Mobile Number',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'To protect your clinical records, please verify your mobile number with a quick OTP to complete registration.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryDark,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    if (!otpSent) ...[
+                      const Text(
+                        'Mobile Number',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.primary5.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.border,
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    '🇮🇳',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _countryCode,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(
+                              height: 24,
+                              child: VerticalDivider(
+                                color: AppColors.border,
+                                thickness: 1,
+                                width: 16,
+                              ),
+                            ),
+                            Expanded(
+                              child: TextField(
+                                controller: phoneCtrl,
+                                keyboardType: TextInputType.phone,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(10),
+                                ],
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.2,
+                                  color: AppColors.primaryDark,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText: '98765 43210',
+                                  border: InputBorder.none,
+                                  counterText: '',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (phoneErr != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          phoneErr!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      AppButton(
+                        text: 'Send Verification OTP',
+                        isLoading: isSheetBusy,
+                        onPressed: () async {
+                          final p = phoneCtrl.text.trim();
+                          if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(p)) {
+                            setSheetState(
+                              () => phoneErr =
+                                  'Enter a valid 10-digit mobile number',
+                            );
+                            return;
+                          }
+                          setSheetState(() {
+                            phoneErr = null;
+                            isSheetBusy = true;
+                          });
+                          final cubit = sheetContext.read<AuthCubit>();
+                          final sent = await cubit.sendSignupOtp(p);
+                          setSheetState(() => isSheetBusy = false);
+                          if (sent) {
+                            setSheetState(() => otpSent = true);
+                          } else {
+                            if (sheetContext.mounted) {
+                              AppToast.show(
+                                sheetContext,
+                                SnackBar(
+                                  backgroundColor: AppColors.danger,
+                                  content: Text(
+                                    cubit.state.errorMessage ??
+                                        'Could not send OTP.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ] else ...[
+                      Text(
+                        'Enter the 6-digit code sent to +91 ${phoneCtrl.text.trim()}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(6, (i) {
+                          return SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: TextField(
+                              controller: otpCtrls[i],
+                              focusNode: otpNodes[i],
+                              textAlign: TextAlign.center,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(1),
+                              ],
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryDark,
+                              ),
+                              decoration: InputDecoration(
+                                counterText: '',
+                                filled: true,
+                                fillColor: AppColors.primary5,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.border,
+                                  ),
+                                ),
+                              ),
+                              onChanged: (val) {
+                                if (val.isNotEmpty && i < 5) {
+                                  otpNodes[i + 1].requestFocus();
+                                } else if (val.isEmpty && i > 0) {
+                                  otpNodes[i - 1].requestFocus();
+                                }
+                              },
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 20),
+                      AppButton(
+                        text: 'Verify & Complete Signup',
+                        isLoading: isSheetBusy,
+                        onPressed: () async {
+                          final code = otpCtrls.map((c) => c.text).join();
+                          if (code.length != 6) return;
+                          setSheetState(() => isSheetBusy = true);
+                          final cubit = sheetContext.read<AuthCubit>();
+                          final verified = await cubit.verifySocialSignup(
+                            phone: phoneCtrl.text.trim(),
+                            otp: code,
+                          );
+                          setSheetState(() => isSheetBusy = false);
+                          if (verified) {
+                            if (sheetContext.mounted) {
+                              Navigator.pop(sheetContext);
+                            }
+                            _onLoginSuccess();
+                          } else {
+                            if (sheetContext.mounted) {
+                              AppToast.show(
+                                sheetContext,
+                                SnackBar(
+                                  backgroundColor: AppColors.danger,
+                                  content: Text(
+                                    cubit.state.errorMessage ??
+                                        'OTP verification failed.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Future<void> _verifyOtpAndLogin() async {
-    final code = _otpControllers.map((c) => c.text).join();
-    if (code.length != 6 || !RegExp(r'^\d{6}$').hasMatch(code)) {
-      AppToast.show(
-        context,
-        const SnackBar(
-          content: Text('Enter the complete 6-digit verification code.'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-      return;
-    }
+  // ---------------------------------------------------------------------------
+  // FORGOT PASSWORD BOTTOM SHEET
+  // ---------------------------------------------------------------------------
+  void _showForgotPasswordSheet() {
+    final loginCtrl = TextEditingController();
+    final otpCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    bool otpSent = false;
+    bool isResetBusy = false;
+    String? errText;
 
-    setState(() => _isLoading = true);
-    final authCubit = context.read<AuthCubit>();
-    final phone = _phoneController.text.trim();
-
-    final success = await authCubit.verifyOtp(otp: code, phoneNumber: phone);
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (success) {
-      String? redirect;
-      try {
-        redirect = GoRouterState.of(context).uri.queryParameters['redirect'];
-      } catch (_) {
-        // SigninView can also be previewed in a plain MaterialApp in tests.
-      }
-      if (authCubit.state.requiresProfileCompletion ||
-          authCubit.state.nextStep == 'COMPLETE_PROFILE') {
-        final target = redirect != null && redirect.isNotEmpty
-            ? '${RouteNames.completeProfile}?redirect=${Uri.encodeComponent(redirect)}'
-            : RouteNames.completeProfile;
-        context.go(target);
-      } else if (redirect != null &&
-          redirect.isNotEmpty &&
-          redirect != RouteNames.signin) {
-        context.go(redirect);
-      } else if (authCubit.state.nextStep == 'ASSESSMENT' ||
-          !authCubit.state.hasCompletedAssessment) {
-        final cachedCompleted =
-            AppLocalCache.instance.getBool('has_completed_hair_test') ?? false;
-        final cachedSkipped =
-            AppLocalCache.instance.getBool('has_skipped_hair_test') ?? false;
-        if (!cachedCompleted && !cachedSkipped) {
-          context.go(RouteNames.hairTest);
-        } else {
-          _navigateToHome();
-        }
-      } else {
-        _navigateToHome();
-      }
-    } else {
-      final errorMsg =
-          authCubit.state.errorMessage ?? 'Code verification failed.';
-      if (errorMsg.toLowerCase().contains('suspended by clinic administration') ||
-          errorMsg.toLowerCase().contains('account has been suspended')) {
-        SessionCoordinator.instance.showAccountBlockedDialog(
-          context: context,
-          message: errorMsg,
-        );
-      } else {
-        AppToast.show(
-          context,
-          SnackBar(
-            backgroundColor: AppColors.danger,
-            content: Text(errorMsg),
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
-        );
-      }
-    }
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Reset Password',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      otpSent
+                          ? 'Enter the 6-digit verification code and your new password.'
+                          : 'Enter your registered email address or mobile number to receive a reset code.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryDark,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    if (!otpSent) ...[
+                      const Text(
+                        'Registered Email or Mobile Number',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: loginCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. user@gmail.com or 9876543210',
+                          prefixIcon: const Icon(
+                            LucideIcons.mail,
+                            size: 18,
+                            color: AppColors.secondaryDark,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.primary5.withValues(alpha: 0.3),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: AppColors.border,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (errText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          errText!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      AppButton(
+                        text: 'Send Reset OTP',
+                        isLoading: isResetBusy,
+                        onPressed: () async {
+                          final val = loginCtrl.text.trim();
+                          if (val.isEmpty) {
+                            setSheetState(
+                              () =>
+                                  errText = 'Enter your email or phone number',
+                            );
+                            return;
+                          }
+                          setSheetState(() {
+                            errText = null;
+                            isResetBusy = true;
+                          });
+                          final cubit = sheetContext.read<AuthCubit>();
+                          final ok = await cubit.forgotPassword(val);
+                          setSheetState(() => isResetBusy = false);
+                          if (ok) {
+                            setSheetState(() => otpSent = true);
+                          } else {
+                            setSheetState(
+                              () => errText =
+                                  cubit.state.errorMessage ??
+                                  'Could not send code.',
+                            );
+                          }
+                        },
+                      ),
+                    ] else ...[
+                      const Text(
+                        '6-Digit Reset Code',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: otpCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(6),
+                        ],
+                        decoration: InputDecoration(
+                          hintText: '123456',
+                          prefixIcon: const Icon(
+                            LucideIcons.keyRound,
+                            size: 18,
+                            color: AppColors.secondaryDark,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.primary5.withValues(alpha: 0.3),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: AppColors.border,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'New Password (min 6 characters)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: newPassCtrl,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: '••••••••',
+                          prefixIcon: const Icon(
+                            LucideIcons.lock,
+                            size: 18,
+                            color: AppColors.secondaryDark,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.primary5.withValues(alpha: 0.3),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: AppColors.border,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (errText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          errText!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      AppButton(
+                        text: 'Set New Password',
+                        isLoading: isResetBusy,
+                        onPressed: () async {
+                          final code = otpCtrl.text.trim();
+                          final newPass = newPassCtrl.text;
+                          if (code.length != 6) {
+                            setSheetState(() => errText = 'Enter 6-digit code');
+                            return;
+                          }
+                          if (newPass.length < 6) {
+                            setSheetState(
+                              () => errText =
+                                  'Password must be at least 6 characters',
+                            );
+                            return;
+                          }
+                          setSheetState(() {
+                            errText = null;
+                            isResetBusy = true;
+                          });
+                          final cubit = sheetContext.read<AuthCubit>();
+                          final ok = await cubit.resetPassword(
+                            login: loginCtrl.text.trim(),
+                            otp: code,
+                            newPassword: newPass,
+                          );
+                          setSheetState(() => isResetBusy = false);
+                          if (ok) {
+                            if (sheetContext.mounted) {
+                              Navigator.pop(sheetContext);
+                            }
+                            _emailController.text = loginCtrl.text.trim();
+                            if (sheetContext.mounted) {
+                              AppToast.show(
+                                sheetContext,
+                                const SnackBar(
+                                  backgroundColor: AppColors.success,
+                                  content: Text(
+                                    'Password reset successfully. You can now sign in.',
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            setSheetState(
+                              () => errText =
+                                  cubit.state.errorMessage ??
+                                  'Password reset failed.',
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
-  void _navigateToHome() {
-    if (!mounted) return;
-    try {
-      context.go(RouteNames.mainShell);
-    } catch (_) {
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-    }
-  }
-
+  // ---------------------------------------------------------------------------
+  // MAIN SCAFFOLD BUILD
+  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -396,8 +1087,8 @@ class _SigninViewState extends State<SigninView>
             ),
           ),
 
-          // 2. Top Back Button (Only visible when OTP step is active)
-          if (_currentStep == _LoginStep.otp)
+          // 2. Top Back Button (Visible when Signup OTP step is active)
+          if (_activeMode == _AuthMode.signUp && _signupStep == _SignupStep.otp)
             Positioned(
               top: 0,
               left: 0,
@@ -414,7 +1105,11 @@ class _SigninViewState extends State<SigninView>
                     shadowColor: Colors.black.withValues(alpha: 0.12),
                     child: InkWell(
                       customBorder: const CircleBorder(),
-                      onTap: _onTopBackTapped,
+                      onTap: () {
+                        setState(() {
+                          _signupStep = _SignupStep.form;
+                        });
+                      },
                       child: const Padding(
                         padding: EdgeInsets.all(10),
                         child: Icon(
@@ -429,7 +1124,7 @@ class _SigninViewState extends State<SigninView>
               ),
             ),
 
-          // 3. Bottom Form Card with Attractive Animated Motion
+          // 3. Bottom Form Card with Smooth Animated Motion
           Positioned.fill(
             child: Align(
               alignment: Alignment.bottomCenter,
@@ -444,8 +1139,8 @@ class _SigninViewState extends State<SigninView>
                       child: Container(
                         margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
+                          horizontal: 20,
+                          vertical: 20,
                         ),
                         width: double.infinity,
                         decoration: BoxDecoration(
@@ -475,30 +1170,9 @@ class _SigninViewState extends State<SigninView>
                             ),
                             switchInCurve: Curves.easeOutCubic,
                             switchOutCurve: Curves.easeInCubic,
-                            transitionBuilder: (child, animation) {
-                              final isOtp =
-                                  child.key == const ValueKey('step_otp');
-                              final slideTween = isOtp
-                                  ? Tween<Offset>(
-                                      begin: const Offset(0.25, 0),
-                                      end: Offset.zero,
-                                    )
-                                  : Tween<Offset>(
-                                      begin: const Offset(-0.25, 0),
-                                      end: Offset.zero,
-                                    );
-
-                              return FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: slideTween.animate(animation),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: _currentStep == _LoginStep.phone
-                                ? _buildPhoneStep(context)
-                                : _buildOtpStep(context),
+                            child: _activeMode == _AuthMode.signIn
+                                ? _buildSignInCard(context)
+                                : _buildSignUpCard(context),
                           ),
                         ),
                       ),
@@ -514,26 +1188,134 @@ class _SigninViewState extends State<SigninView>
   }
 
   // ---------------------------------------------------------------------------
-  // STEP 1: Phone Number Input Card
+  // TAB SWITCHER WIDGET
   // ---------------------------------------------------------------------------
-  Widget _buildPhoneStep(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final isValid10Digits = RegExp(r'^[6-9][0-9]{9}$')
-        .hasMatch(_phoneController.text.trim());
+  Widget _buildTabSwitcher() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.primary5.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (_activeMode != _AuthMode.signIn) {
+                  setState(() {
+                    _activeMode = _AuthMode.signIn;
+                    _emailError = null;
+                    _passwordError = null;
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _activeMode == _AuthMode.signIn
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _activeMode == _AuthMode.signIn
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Sign In',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: _activeMode == _AuthMode.signIn
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                    color: _activeMode == _AuthMode.signIn
+                        ? AppColors.primaryDark
+                        : AppColors.secondaryDark,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (_activeMode != _AuthMode.signUp) {
+                  setState(() {
+                    _activeMode = _AuthMode.signUp;
+                    _signupStep = _SignupStep.form;
+                    _nameError = null;
+                    _signupEmailError = null;
+                    _signupPasswordError = null;
+                    _signupPhoneError = null;
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _activeMode == _AuthMode.signUp
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _activeMode == _AuthMode.signUp
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Sign Up',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: _activeMode == _AuthMode.signUp
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                    color: _activeMode == _AuthMode.signUp
+                        ? AppColors.primaryDark
+                        : AppColors.secondaryDark,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SIGN IN CARD (Email + Password + Social Auth)
+  // ---------------------------------------------------------------------------
+  Widget _buildSignInCard(BuildContext context) {
     final authState = context.watch<AuthCubit>().state;
     final isBusy = _isLoading || authState.status == AuthStatus.loading;
 
     return Column(
-      key: const ValueKey('step_phone'),
+      key: const ValueKey('card_signin'),
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Title & Subtitle
+        _buildTabSwitcher(),
+        const SizedBox(height: 20),
+
         const Text(
           'Welcome Back',
           style: TextStyle(
             fontSize: 22,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: AppColors.primaryDark,
             letterSpacing: -0.3,
           ),
@@ -541,23 +1323,17 @@ class _SigninViewState extends State<SigninView>
         const SizedBox(height: 4),
         const Text(
           'Sign in to your Dr.Hair patient account',
-          textAlign: TextAlign.start,
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.secondaryDark,
-            height: 1.4,
-          ),
+          style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
         ),
+        const SizedBox(height: 20),
 
-        const SizedBox(height: 22),
-
-        // Input Label
+        // Email Field
         Row(
-          children: [
-            const Text(
-              'Mobile Number',
+          children: const [
+            Text(
+              'Email Address',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primaryDark,
               ),
@@ -565,8 +1341,573 @@ class _SigninViewState extends State<SigninView>
           ],
         ),
         const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.primary5.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDark,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'patient@example.com',
+              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
+              prefixIcon: Icon(
+                LucideIcons.mail,
+                size: 18,
+                color: AppColors.secondaryDark,
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+          ),
+        ),
+        if (_emailError != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _emailError!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
 
-        // Phone Input Field with Country Code & 10-digit Restriction
+        const SizedBox(height: 14),
+
+        // Password Field
+        Row(
+          children: const [
+            Text(
+              'Password',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.primary5.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _handlePasswordLogin(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDark,
+            ),
+            decoration: InputDecoration(
+              hintText: '••••••••',
+              hintStyle: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 14,
+              ),
+              prefixIcon: const Icon(
+                LucideIcons.lock,
+                size: 18,
+                color: AppColors.secondaryDark,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                  size: 18,
+                  color: AppColors.secondaryDark,
+                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+          ),
+        ),
+        if (_passwordError != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _passwordError!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+
+        // Forgot Password link
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: isBusy ? null : _showForgotPasswordSheet,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Forgot Password?',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Sign In Button
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ),
+            onPressed: isBusy ? null : _handlePasswordLogin,
+            child: isBusy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        'Sign In',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(LucideIcons.arrowRight, size: 16),
+                    ],
+                  ),
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        // OR CONTINUE WITH Divider
+        Row(
+          children: const [
+            Expanded(child: Divider(color: AppColors.border, thickness: 1)),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'OR CONTINUE WITH',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: AppColors.border, thickness: 1)),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Social Sign In Buttons: Google and Apple
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+                onPressed: isBusy ? null : _handleGoogleSignIn,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 18,
+                      height: 18,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'G',
+                        style: TextStyle(
+                          fontFamily: 'sans-serif',
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          color: Color(0xFF4285F4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Google',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+                onPressed: isBusy ? null : _handleAppleSignIn,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(LucideIcons.apple, size: 18, color: Colors.black),
+                    SizedBox(width: 8),
+                    Text(
+                      'Apple',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // Bottom Switch Link
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Don\'t have an account? ',
+              style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _activeMode = _AuthMode.signUp;
+                  _signupStep = _SignupStep.form;
+                });
+              },
+              child: const Text(
+                'Sign Up',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+        _buildTermsAndPrivacyLinks(),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SIGN UP CARD (Name + Email + Password + Phone OTP verification)
+  // ---------------------------------------------------------------------------
+  Widget _buildSignUpCard(BuildContext context) {
+    if (_signupStep == _SignupStep.otp) {
+      return _buildSignupOtpStep(context);
+    }
+
+    final authState = context.watch<AuthCubit>().state;
+    final isBusy = _isLoading || authState.status == AuthStatus.loading;
+
+    return Column(
+      key: const ValueKey('card_signup'),
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildTabSwitcher(),
+        const SizedBox(height: 20),
+
+        const Text(
+          'Create Patient Chart',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryDark,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Join Dr.Hair for clinically verified hair care',
+          style: TextStyle(fontSize: 12, color: AppColors.secondaryDark),
+        ),
+        const SizedBox(height: 20),
+
+        // Full Name Field
+        Row(
+          children: const [
+            Text(
+              'Full Name',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.primary5.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: TextField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDark,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'e.g. Ramesh Kumar',
+              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
+              prefixIcon: Icon(
+                LucideIcons.user,
+                size: 18,
+                color: AppColors.secondaryDark,
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+          ),
+        ),
+        if (_nameError != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _nameError!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 14),
+
+        // Email Field
+        Row(
+          children: const [
+            Text(
+              'Email Address',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.primary5.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: TextField(
+            controller: _signupEmailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDark,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'patient@example.com',
+              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
+              prefixIcon: Icon(
+                LucideIcons.mail,
+                size: 18,
+                color: AppColors.secondaryDark,
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+          ),
+        ),
+        if (_signupEmailError != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _signupEmailError!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 14),
+
+        // Password Field
+        Row(
+          children: const [
+            Text(
+              'Password',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.primary5.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: TextField(
+            controller: _signupPasswordController,
+            obscureText: _obscureSignupPassword,
+            textInputAction: TextInputAction.next,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDark,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Min 6 characters',
+              hintStyle: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 14,
+              ),
+              prefixIcon: const Icon(
+                LucideIcons.lock,
+                size: 18,
+                color: AppColors.secondaryDark,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureSignupPassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                  size: 18,
+                  color: AppColors.secondaryDark,
+                ),
+                onPressed: () => setState(
+                  () => _obscureSignupPassword = !_obscureSignupPassword,
+                ),
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+          ),
+        ),
+        if (_signupPasswordError != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _signupPasswordError!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 14),
+
+        // Mobile Number Field (Required for Creating Patient Account)
+        Row(
+          children: const [
+            Text(
+              'Mobile Number',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: AppColors.primary5.withValues(alpha: 0.3),
@@ -575,7 +1916,6 @@ class _SigninViewState extends State<SigninView>
           ),
           child: Row(
             children: [
-              // Country Code Pill
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -589,7 +1929,7 @@ class _SigninViewState extends State<SigninView>
                     Text(
                       _countryCode,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primaryDark,
                       ),
@@ -597,7 +1937,6 @@ class _SigninViewState extends State<SigninView>
                   ],
                 ),
               ),
-
               const SizedBox(
                 height: 24,
                 child: VerticalDivider(
@@ -606,22 +1945,18 @@ class _SigninViewState extends State<SigninView>
                   width: 16,
                 ),
               ),
-
-              // 10-Digit Phone Text Field
               Expanded(
                 child: TextField(
-                  controller: _phoneController,
+                  controller: _signupPhoneController,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.telephoneNumber],
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(10),
                   ],
-                  onChanged: _onPhoneChanged,
-                  onSubmitted: (_) => _proceedToOtp(),
+                  onSubmitted: (_) => _proceedToSignupOtp(),
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,
                     color: AppColors.primaryDark,
@@ -629,7 +1964,7 @@ class _SigninViewState extends State<SigninView>
                   decoration: const InputDecoration(
                     hintText: '98765 43210',
                     hintStyle: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
                       color: AppColors.textMuted,
@@ -637,70 +1972,36 @@ class _SigninViewState extends State<SigninView>
                     filled: false,
                     contentPadding: EdgeInsets.symmetric(vertical: 14),
                     border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
                     counterText: '',
                   ),
                 ),
               ),
-
-              AnimatedSwitcher(
-                duration: Duration(milliseconds: reduceMotion ? 0 : 180),
-                transitionBuilder: (child, animation) => ScaleTransition(
-                  scale: animation,
-                  child: FadeTransition(opacity: animation, child: child),
-                ),
-                child: isValid10Digits
-                    ? const Padding(
-                        key: ValueKey('valid_phone'),
-                        padding: EdgeInsets.only(right: 12),
-                        child: Icon(
-                          LucideIcons.circleCheck,
-                          color: AppColors.success,
-                          size: 20,
-                        ),
-                      )
-                    : const SizedBox(key: ValueKey('invalid_phone')),
-              ),
             ],
           ),
         ),
-
-        if (_phoneError != null) ...[
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Row(
-              children: [
-                const Icon(
-                  LucideIcons.alertCircle,
-                  size: 14,
-                  color: AppColors.danger,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _phoneError!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.danger,
-                  ),
-                ),
-              ],
+        if (_signupPhoneError != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _signupPhoneError!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
 
         const SizedBox(height: 20),
 
-        // Send Verification OTP Button
+        // Send OTP & Continue Button
         AppButton(
           size: AppButtonSize.medium,
           height: 48,
           isLoading: isBusy,
-          onPressed: _proceedToOtp,
+          onPressed: _proceedToSignupOtp,
           text: 'Send Verification OTP',
           trailingIcon: const Icon(
             LucideIcons.arrowRight,
@@ -711,75 +2012,63 @@ class _SigninViewState extends State<SigninView>
 
         const SizedBox(height: 18),
 
-        // OR Divider
-        const SizedBox(height: 20),
-
-        // Terms and Privacy Policy Links
-        Center(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            children: [
-              const Text(
-                'By signing in, you agree to our',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-              ),
-              GestureDetector(
-                onTap: () => context.push(RouteNames.terms),
-                child: const Text(
-                  'Terms & Conditions',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                    decoration: TextDecoration.underline,
-                  ),
+        // Bottom Switch Link
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Already have an account? ',
+              style: TextStyle(fontSize: 13, color: AppColors.secondaryDark),
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _activeMode = _AuthMode.signIn;
+                });
+              },
+              child: const Text(
+                'Sign In',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
                 ),
               ),
-              const Text(
-                'and',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-              ),
-              GestureDetector(
-                onTap: () => context.push(RouteNames.privacyPolicy),
-                child: const Text(
-                  'Privacy Policy',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+
+        const SizedBox(height: 16),
+        _buildTermsAndPrivacyLinks(),
       ],
     );
   }
 
   // ---------------------------------------------------------------------------
-  // STEP 2: OTP Verification Card
+  // SIGN UP OTP VERIFICATION STEP
   // ---------------------------------------------------------------------------
-  Widget _buildOtpStep(BuildContext context) {
-    final phoneDisplay = '$_countryCode ${_phoneController.text.trim()}';
+  Widget _buildSignupOtpStep(BuildContext context) {
+    final phoneDisplay = '$_countryCode ${_signupPhoneController.text.trim()}';
     final authState = context.watch<AuthCubit>().state;
     final countdown = authState.resendCountdown;
     final isBusy = _isLoading || authState.status == AuthStatus.loading;
 
     return Column(
-      key: const ValueKey('step_otp'),
+      key: const ValueKey('step_signup_otp'),
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Back / Edit phone row inside card
+        // Change number / back row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             InkWell(
-              onTap: _editPhoneNumber,
+              onTap: () {
+                context.read<AuthCubit?>()?.resetToPhoneStep();
+                setState(() {
+                  _signupStep = _SignupStep.form;
+                });
+              },
               borderRadius: BorderRadius.circular(8),
               child: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -822,7 +2111,7 @@ class _SigninViewState extends State<SigninView>
         Text(
           'We\'ve sent a 6-digit OTP to $phoneDisplay',
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             color: AppColors.secondaryDark,
             height: 1.35,
           ),
@@ -914,18 +2203,16 @@ class _SigninViewState extends State<SigninView>
 
         const SizedBox(height: 16),
 
-        // Verify & Proceed Button with AppButton
         AppButton(
           size: AppButtonSize.large,
           height: 50,
           isLoading: isBusy,
-          onPressed: _verifyOtpAndLogin,
+          onPressed: _submitRegistration,
           text: 'Verify & Proceed',
         ),
 
         const SizedBox(height: 10),
 
-        // Resend code option with 30s countdown from cubit
         if (countdown > 0)
           Center(
             child: Padding(
@@ -954,7 +2241,7 @@ class _SigninViewState extends State<SigninView>
         else
           Center(
             child: TextButton.icon(
-              onPressed: _resendOtp,
+              onPressed: _resendSignupOtp,
               icon: const Icon(
                 LucideIcons.rotateCw,
                 size: 15,
@@ -964,13 +2251,60 @@ class _SigninViewState extends State<SigninView>
                 'Resend OTP',
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
       ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // TERMS AND PRIVACY LINKS
+  // ---------------------------------------------------------------------------
+  Widget _buildTermsAndPrivacyLinks() {
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 4,
+        children: [
+          const Text(
+            'By continuing, you agree to our',
+            style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+          ),
+          GestureDetector(
+            onTap: () => context.push(RouteNames.terms),
+            child: const Text(
+              'Terms & Conditions',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+          const Text(
+            'and',
+            style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+          ),
+          GestureDetector(
+            onTap: () => context.push(RouteNames.privacyPolicy),
+            child: const Text(
+              'Privacy Policy',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

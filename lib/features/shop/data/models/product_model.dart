@@ -1115,28 +1115,52 @@ class ProductItem {
     ),
   ];
 
+  static const empty = ProductItem(
+    id: '',
+    name: '',
+    subtitle: '',
+    category: '',
+    rating: 5.0,
+    reviewsCount: 0,
+    inStock: true,
+    images: [],
+    rootCause: '',
+    benefits: [],
+    ingredients: [],
+    usageSteps: [],
+    clinicalMetrics: [],
+    supplyPlans: [
+      ProductSupplyPlan(
+        title: '1 Month',
+        subtitle: '1 Month Supply',
+        price: 0,
+        mrp: 0,
+      ),
+    ],
+  );
+
   static ProductItem get defaultProduct => demoCatalog.first;
 
   static final Map<String, ProductItem> _cachedProducts = {};
 
   static void cacheProducts(Iterable<ProductItem> items) {
     for (final p in items) {
-      _cachedProducts[p.id] = p;
+      if (p.id.isNotEmpty) {
+        _cachedProducts[p.id] = p;
+      }
     }
   }
 
   static ProductItem? findById(String? id) {
     if (id == null || id.isEmpty) return null;
-    if (_cachedProducts.containsKey(id)) {
-      return _cachedProducts[id];
-    }
-    for (final p in demoCatalog) {
-      if (p.id == id) return p;
-    }
-    return null;
+    return _cachedProducts[id];
   }
 
   static List<ProductItem> getSuggestedProducts(String currentProductId) {
+    final cached = _cachedProducts.values
+        .where((p) => p.id.isNotEmpty && p.id != currentProductId)
+        .toList();
+    if (cached.isNotEmpty) return cached;
     return demoCatalog.where((p) => p.id != currentProductId).toList();
   }
 }

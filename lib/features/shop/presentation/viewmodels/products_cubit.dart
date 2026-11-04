@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/models/product_model.dart';
 import '../../data/repositories/product_repository_impl.dart';
 import '../../domain/repositories/product_repository.dart';
 import 'products_state.dart';
@@ -33,6 +34,7 @@ class ProductsCubit extends Cubit<ProductsState> {
         rootCause: _rootCauseForIndex(state.selectedCategoryIndex),
         query: state.searchQuery,
       );
+      ProductItem.cacheProducts(result.items);
       emit(state.copyWith(products: result.items, isLoading: false));
     } catch (e) {
       emit(

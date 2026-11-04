@@ -39,7 +39,7 @@ class ProductDetailsState {
     bool isLoading = false,
     bool isNotFound = false,
   }) {
-    final prod = product ?? ProductItem.defaultProduct;
+    final prod = product ?? ProductItem.empty;
     return ProductDetailsState(
       product: prod,
       selectedSupplyIndex: prod.supplyPlans.length > 1 ? 1 : 0,

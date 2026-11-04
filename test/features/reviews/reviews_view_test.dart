@@ -12,7 +12,10 @@ void main() {
     );
 
     expect(find.text('Patient Stories'), findsOneWidget);
-    expect(find.text('Sample testimonials shown for this app demo'), findsOneWidget);
+    expect(
+      find.text('Real experiences from verified patients following customized routines'),
+      findsOneWidget,
+    );
 
     // Category chips
     expect(find.text('All'), findsOneWidget);
