@@ -682,10 +682,11 @@ class _HairTestContent extends StatelessWidget {
                 boxShadow: hasPhoto
                     ? [
                         BoxShadow(
-                          color: (analysis?.isNotHair == true
-                                  ? const Color(0xFFDC2626)
-                                  : AppColors.primary)
-                              .withValues(alpha: 0.12),
+                          color:
+                              (analysis?.isNotHair == true
+                                      ? const Color(0xFFDC2626)
+                                      : AppColors.primary)
+                                  .withValues(alpha: 0.12),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -786,12 +787,16 @@ class _HairTestContent extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.primary100.withValues(alpha: 0.4),
+                                color: AppColors.primary100.withValues(
+                                  alpha: 0.4,
+                                ),
                                 shape: BoxShape.circle,
                               ),
-                              child:
-                                  Icon(icon, color: AppColors.primary, size: 28),
+                              child: Icon(
+                                icon,
+                                color: AppColors.primary,
+                                size: 28,
+                              ),
                             ),
                             const SizedBox(height: 10),
                             Text(
@@ -864,7 +869,7 @@ class _HairTestContent extends StatelessWidget {
 
     if (analysis.isHair) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
           color: const Color(0xFF16A34A),
           borderRadius: BorderRadius.circular(20),
@@ -876,21 +881,7 @@ class _HairTestContent extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(LucideIcons.check, size: 12, color: Colors.white),
-            const SizedBox(width: 4),
-            Text(
-              'Hair Detected (${(analysis.confidence * 100).toInt()}%)',
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
+        child: const Icon(LucideIcons.check, size: 12, color: Colors.white),
       );
     }
 
@@ -1005,14 +996,14 @@ class _HairTestContent extends StatelessWidget {
             const Icon(
               LucideIcons.checkCircle2,
               color: Color(0xFF16A34A),
-              size: 15,
+              size: 14,
             ),
             const SizedBox(width: 7),
             Expanded(
               child: Text(
                 analysis.message,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF15803D),
                   height: 1.35,
@@ -1530,7 +1521,7 @@ class _HairTestContent extends StatelessWidget {
                   Text(
                     'Not sure',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       color: selected
                           ? AppColors.primary

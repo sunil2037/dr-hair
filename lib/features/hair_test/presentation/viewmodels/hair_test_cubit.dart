@@ -368,6 +368,7 @@ class HairTestCubit extends Cubit<HairTestState> {
       );
 
       final uploadedUrls = <String, String>{};
+      final uploadedPublicIds = <String, String>{};
       if (state.photos.isNotEmpty) {
         try {
           final uploader = _mediaUploadApi ?? MediaUploadApi(dio: _dio);
@@ -395,6 +396,10 @@ class HairTestCubit extends Cubit<HairTestState> {
               if (url != null && url.isNotEmpty) {
                 uploadedUrls[fileKeys[i]] = url;
               }
+              final publicId = (uploadResult[i]['public_id'] ?? uploadResult[i]['asset_id'])?.toString();
+              if (publicId != null && publicId.isNotEmpty) {
+                uploadedPublicIds[fileKeys[i]] = publicId;
+              }
             }
           }
         } catch (uploadError) {
@@ -413,7 +418,6 @@ class HairTestCubit extends Cubit<HairTestState> {
             ? null
             : DioClient(
                 baseUrl: ApiEndpoints.backendBaseUrl,
-                enableDebugLogging: false,
               );
         final dioToUse = _dio ?? client!.dio;
         final response = await dioToUse.post<Map<String, dynamic>>(
@@ -441,17 +445,25 @@ class HairTestCubit extends Cubit<HairTestState> {
               'current_medications': state.currentMedications.trim(),
             if (uploadedUrls['Front Hairline'] != null)
               'photo_front_url': uploadedUrls['Front Hairline'],
+            if (uploadedPublicIds['Front Hairline'] != null)
+              'photo_front_id': uploadedPublicIds['Front Hairline'],
             if (uploadedUrls['Crown / Top'] != null)
               'photo_top_url': uploadedUrls['Crown / Top'],
+            if (uploadedPublicIds['Crown / Top'] != null)
+              'photo_top_id': uploadedPublicIds['Crown / Top'],
             if (uploadedUrls['Side Profile / Temples'] != null)
               'photo_left_url': uploadedUrls['Side Profile / Temples'],
+            if (uploadedPublicIds['Side Profile / Temples'] != null)
+              'photo_left_id': uploadedPublicIds['Side Profile / Temples'],
           }),
           options: Options(
             contentType: Headers.multipartFormDataContentType,
             headers: {'Authorization': 'Bearer $sessionToken'},
           ),
         );
-        final referenceNo = response.data?['reference_no']?.toString();
+        final referenceNo = response.data?['reference_no']?.toString() ??
+            response.data?['data']?['reference_no']?.toString() ??
+            response.data?['data']?['test']?['reference_no']?.toString();
         emit(
           state.copyWith(
             referenceNo: referenceNo,
@@ -462,6 +474,20 @@ class HairTestCubit extends Cubit<HairTestState> {
             clearErrorMessage: true,
           ),
         );
+      } on DioException catch (dioErr) {
+        final serverMessage = dioErr.response?.data is Map
+            ? (dioErr.response?.data['message'] ??
+                    dioErr.response?.data['error']?['message'])
+                ?.toString()
+            : null;
+        emit(
+          state.copyWith(
+            isSubmitting: false,
+            errorMessage: serverMessage ??
+                'Assessment could not be sent to the clinic. Check your connection and try again.',
+          ),
+        );
+        return;
       } catch (_) {
         emit(
           state.copyWith(

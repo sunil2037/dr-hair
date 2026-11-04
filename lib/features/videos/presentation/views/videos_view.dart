@@ -325,11 +325,9 @@ class _VideosContentState extends State<_VideosContent>
   }
 
   Widget _buildTopOverlay(BuildContext context, VideosState state) {
-    final double topPadding = MediaQuery.of(context).padding.top;
-
     return Container(
       padding: EdgeInsets.only(
-        top: topPadding + 10,
+        top: kToolbarHeight + 40,
         left: 16,
         right: 16,
         bottom: 12,
@@ -349,86 +347,6 @@ class _VideosContentState extends State<_VideosContent>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header Row: Patient Video Stories + 100% Verified Outcomes
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(
-                child: Text(
-                  'Patient Video Stories',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.3,
-                    shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: AppColors.success.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          LucideIcons.badgeCheck,
-                          color: AppColors.success,
-                          size: 12,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Educational & Stories',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      _cubit.refresh();
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        LucideIcons.refreshCw,
-                        color: Colors.white,
-                        size: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
           // Horizontal Category Filter Pills
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
