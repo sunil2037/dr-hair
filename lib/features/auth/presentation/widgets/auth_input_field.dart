@@ -102,7 +102,8 @@ class AuthInputField extends StatelessWidget {
                 color: AppColors.textMuted,
                 fontSize: 14,
               ),
-              prefixIcon: prefixWidget ??
+              prefixIcon:
+                  prefixWidget ??
                   (prefixIcon != null
                       ? Icon(
                           prefixIcon,
@@ -110,8 +111,11 @@ class AuthInputField extends StatelessWidget {
                           color: AppColors.secondaryDark,
                         )
                       : null),
+              filled: false,
               suffixIcon: suffixIcon,
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,

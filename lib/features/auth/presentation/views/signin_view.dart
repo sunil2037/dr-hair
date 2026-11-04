@@ -1533,7 +1533,7 @@ class _SigninViewState extends State<SigninView>
   }
 
   // ---------------------------------------------------------------------------
-  // SIGN UP CARD (Direct inline form without reusable components)
+  // SIGN UP CARD (Using reusable AuthInputField components)
   // ---------------------------------------------------------------------------
   Widget _buildSignUpCard(BuildContext context) {
     if (_signupStep == _SignupStep.otp) {
@@ -1564,304 +1564,103 @@ class _SigninViewState extends State<SigninView>
         ),
         const SizedBox(height: 20),
 
-        // Full Name Field (Direct Inline)
-        Row(
-          children: const [
-            Text(
-              'Full Name',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ],
+        // Full Name Field (Reusable Component)
+        AuthInputField(
+          label: 'Full Name',
+          controller: _nameController,
+          hintText: 'e.g. Ramesh Kumar',
+          prefixIcon: LucideIcons.user,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          errorText: _nameError,
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.primary5.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: TextField(
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.next,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryDark,
-            ),
-            decoration: const InputDecoration(
-              hintText: 'e.g. Ramesh Kumar',
-              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
-              prefixIcon: Icon(
-                LucideIcons.user,
-                size: 18,
-                color: AppColors.secondaryDark,
-              ),
-              border: InputBorder.none,
-              errorBorder: InputBorder.none,
-              disabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-            ),
-          ),
-        ),
-        if (_nameError != null) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _nameError!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
 
         const SizedBox(height: 14),
 
-        // Email Address Field (Direct Inline)
-        Row(
-          children: const [
-            Text(
-              'Email Address',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ],
+        // Email Address Field (Reusable Component)
+        AuthInputField(
+          label: 'Email Address',
+          controller: _signupEmailController,
+          hintText: 'patient@example.com',
+          prefixIcon: LucideIcons.mail,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          errorText: _signupEmailError,
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.primary5.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: TextField(
-            controller: _signupEmailController,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryDark,
-            ),
-            decoration: const InputDecoration(
-              hintText: 'patient@example.com',
-              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
-              prefixIcon: Icon(
-                LucideIcons.mail,
-                size: 18,
-                color: AppColors.secondaryDark,
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-            ),
-          ),
-        ),
-        if (_signupEmailError != null) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _signupEmailError!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
 
         const SizedBox(height: 14),
 
-        // Password Field (Direct Inline)
-        Row(
-          children: const [
-            Text(
-              'Password',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
+        // Password Field (Reusable Component)
+        AuthInputField(
+          label: 'Password',
+          controller: _signupPasswordController,
+          hintText: 'Min 6 characters',
+          prefixIcon: LucideIcons.lock,
+          obscureText: _obscureSignupPassword,
+          textInputAction: TextInputAction.next,
+          errorText: _signupPasswordError,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureSignupPassword ? LucideIcons.eyeOff : LucideIcons.eye,
+              size: 18,
+              color: AppColors.secondaryDark,
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.primary5.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: TextField(
-            controller: _signupPasswordController,
-            obscureText: _obscureSignupPassword,
-            textInputAction: TextInputAction.next,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryDark,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Min 6 characters',
-              hintStyle: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 14,
-              ),
-              prefixIcon: const Icon(
-                LucideIcons.lock,
-                size: 18,
-                color: AppColors.secondaryDark,
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureSignupPassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                  size: 18,
-                  color: AppColors.secondaryDark,
-                ),
-                onPressed: () => setState(
-                  () => _obscureSignupPassword = !_obscureSignupPassword,
-                ),
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
+            onPressed: () => setState(
+              () => _obscureSignupPassword = !_obscureSignupPassword,
             ),
           ),
         ),
-        if (_signupPasswordError != null) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _signupPasswordError!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
 
         const SizedBox(height: 14),
 
-        // Mobile Number Field (Direct Inline with Country Pill)
-        Row(
-          children: const [
-            Text(
-              'Mobile Number',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
+        // Mobile Number Field (Reusable Component with Country Pill)
+        AuthInputField(
+          label: 'Mobile Number',
+          controller: _signupPhoneController,
+          hintText: '98765 43210',
+          keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.done,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
           ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.primary5.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: TextField(
-            controller: _signupPhoneController,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.done,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
-            ],
-            onSubmitted: (_) => _proceedToSignupOtp(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryDark,
-            ),
-            decoration: InputDecoration(
-              hintText: '98765 43210',
-              hintStyle: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 14,
-              ),
-              prefixIcon: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 10,
-                ).copyWith(left: 14),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('🇮🇳', style: TextStyle(fontSize: 16)),
-                    const SizedBox(width: 6),
-                    Text(
-                      _countryCode,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const SizedBox(
-                      height: 20,
-                      child: VerticalDivider(
-                        color: AppColors.border,
-                        thickness: 1,
-                        width: 1,
-                      ),
-                    ),
-                  ],
+          onSubmitted: (_) => _proceedToSignupOtp(),
+          errorText: _signupPhoneError,
+          prefixWidget: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 10,
+            ).copyWith(left: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🇮🇳', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 6),
+                Text(
+                  _countryCode,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
+                const SizedBox(width: 8),
+                const SizedBox(
+                  height: 20,
+                  child: VerticalDivider(
+                    color: AppColors.border,
+                    thickness: 1,
+                    width: 1,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        if (_signupPhoneError != null) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _signupPhoneError!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
 
         const SizedBox(height: 20),
 
-        // Send OTP & Continue Button (Direct Inline)
+        // Send OTP & Continue Button
         SizedBox(
           width: double.infinity,
           height: 48,
