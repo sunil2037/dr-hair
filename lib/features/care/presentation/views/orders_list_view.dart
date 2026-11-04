@@ -8,13 +8,8 @@ import '../../../../core/routes/route_names.dart';
 import '../../domain/models/care_models.dart';
 import '../viewmodels/care_cubit.dart';
 import '../viewmodels/care_state.dart';
-import 'order_tracking_view.dart';
 
-enum OrderCategory {
-  pending,
-  confirmed,
-  cancelled,
-}
+enum OrderCategory { pending, confirmed, cancelled }
 
 /// Order List View
 /// Shows categorized patient orders in 3 tabs: Pending, Confirmed, and Cancelled.
@@ -80,8 +75,18 @@ class _OrdersListViewState extends State<OrdersListView>
     try {
       final dt = DateTime.parse(rawDate);
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${dt.day} ${months[dt.month - 1]}, ${dt.year}';
     } catch (_) {
@@ -121,7 +126,7 @@ class _OrdersListViewState extends State<OrdersListView>
         return const Color(0xFFFEF2F2);
       case 'new':
       default:
-        return AppColors.primary50;
+        return AppColors.primary.withValues(alpha: 0.1);
     }
   }
 
@@ -178,7 +183,10 @@ class _OrdersListViewState extends State<OrdersListView>
             backgroundColor: Colors.white,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(LucideIcons.arrowLeft, color: AppColors.primaryDark),
+              icon: const Icon(
+                LucideIcons.arrowLeft,
+                color: AppColors.primaryDark,
+              ),
               onPressed: () => Navigator.of(context).maybePop(),
             ),
             actions: [
@@ -189,7 +197,11 @@ class _OrdersListViewState extends State<OrdersListView>
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(LucideIcons.refreshCw, color: AppColors.primaryDark, size: 20),
+                    : const Icon(
+                        LucideIcons.refreshCw,
+                        color: AppColors.primaryDark,
+                        size: 20,
+                      ),
                 onPressed: _isRefreshing ? null : _loadOrders,
                 tooltip: 'Refresh Orders',
               ),
@@ -198,7 +210,10 @@ class _OrdersListViewState extends State<OrdersListView>
               preferredSize: const Size.fromHeight(56),
               child: Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
@@ -294,8 +309,7 @@ class _OrdersListViewState extends State<OrdersListView>
               _buildOrdersTabList(
                 orders: confirmedOrders,
                 emptyTitle: 'No Confirmed Orders',
-                emptySubtitle:
-                    'Orders that have been dispatched or delivered will appear here.',
+                emptySubtitle: 'Orders that have been dispatched or delivered will appear here.',
                 category: OrderCategory.confirmed,
               ),
               _buildOrdersTabList(
@@ -427,7 +441,7 @@ class _OrdersListViewState extends State<OrdersListView>
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: orders.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        separatorBuilder: (_, _) => const SizedBox(height: 14),
         itemBuilder: (context, index) {
           final order = orders[index];
           return _buildOrderCard(order);
@@ -494,7 +508,10 @@ class _OrdersListViewState extends State<OrdersListView>
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: statusBgColor,
                       borderRadius: BorderRadius.circular(20),
@@ -594,14 +611,21 @@ class _OrdersListViewState extends State<OrdersListView>
                   order.status.toLowerCase() != 'delivered' &&
                   order.status.toLowerCase() != 'cancelled') ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary50.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      const Icon(LucideIcons.clock, size: 13, color: AppColors.primary),
+                      const Icon(
+                        LucideIcons.clock,
+                        size: 13,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Est. Delivery: ${order.estimatedDelivery}',
@@ -644,7 +668,10 @@ class _OrdersListViewState extends State<OrdersListView>
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(10),
@@ -661,7 +688,11 @@ class _OrdersListViewState extends State<OrdersListView>
                           ),
                         ),
                         SizedBox(width: 4),
-                        Icon(LucideIcons.chevronRight, size: 14, color: Colors.white),
+                        Icon(
+                          LucideIcons.chevronRight,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                       ],
                     ),
                   ),

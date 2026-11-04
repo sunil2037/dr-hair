@@ -11,6 +11,7 @@ class AppColors {
   static const Color primary500 = Color(0xFF6F819C);
   static const Color primary200 = Color(0xFFB4BFCD);
   static const Color primary100 = Color(0xFFD6E0FC);
+  static const Color primary50 = Color(0xFFEFF6FF);
   static const Color primary5 = Color(0xFFF0F7FF);
   static const Color secondary = Color(0xFF0D9488); // Teal accent
 
@@ -20,6 +21,18 @@ class AppColors {
   static const Color surfaceMuted = Color(0xFFF0F7FF);
   static const Color card = Color(0xFFD6E0FC);
   static const Color border = Color(0xFFE2E8F0);
+
+  // Neutrals Palette
+  static const Color neutral50 = Color(0xFFF8FAFC);
+  static const Color neutral100 = Color(0xFFF1F5F9);
+  static const Color neutral200 = Color(0xFFE2E8F0);
+  static const Color neutral300 = Color(0xFFCBD5E1);
+  static const Color neutral400 = Color(0xFF94A3B8);
+  static const Color neutral500 = Color(0xFF64748B);
+  static const Color neutral600 = Color(0xFF475569);
+  static const Color neutral700 = Color(0xFF334155);
+  static const Color neutral800 = Color(0xFF1E293B);
+  static const Color neutral900 = Color(0xFF0F172A);
 
   // Text Colors
   static const Color textPrimary = Color(0xFF1A365D);

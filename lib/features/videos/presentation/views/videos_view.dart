@@ -98,10 +98,12 @@ class _VideosContentState extends State<_VideosContent>
     if (videos.isEmpty) return;
 
     final targetId = _targetVideoIdToOpen!;
-    final index = videos.indexWhere((v) =>
-        v.id == targetId ||
-        v.publicId == targetId ||
-        v.youtubeVideoId == targetId);
+    final index = videos.indexWhere(
+      (v) =>
+          v.id == targetId ||
+          v.publicId == targetId ||
+          v.youtubeVideoId == targetId,
+    );
 
     if (index != -1) {
       _targetVideoIdToOpen = null;
@@ -370,7 +372,10 @@ class _VideosContentState extends State<_VideosContent>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(6),
@@ -668,6 +673,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
 
       // Initialize the controller and configure transparent background
       ytController.webViewController.setBackgroundColor(Colors.transparent);
+      // ignore: invalid_use_of_internal_member
       ytController.init();
 
       _playerSubscription = ytController.listen((value) {
@@ -718,8 +724,9 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
       return;
     }
 
-    _progressPollTimer =
-        Timer.periodic(const Duration(milliseconds: 250), (timer) async {
+    _progressPollTimer = Timer.periodic(const Duration(milliseconds: 250), (
+      timer,
+    ) async {
       if (!mounted ||
           _youtubeController == null ||
           !widget.isActive ||
@@ -731,8 +738,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
         final dur = await _youtubeController?.duration;
         if (dur != null && dur > 0 && pos != null) {
           final progress = (pos / dur).clamp(0.0, 1.0);
-          if (mounted &&
-              (progress - _progressController.value).abs() > 0.005) {
+          if (mounted && (progress - _progressController.value).abs() > 0.005) {
             _progressController.value = progress;
           }
         }
@@ -916,11 +922,7 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
             errorWidget: Container(
               color: Colors.black87,
               child: const Center(
-                child: Icon(
-                  LucideIcons.video,
-                  color: Colors.white24,
-                  size: 64,
-                ),
+                child: Icon(LucideIcons.video, color: Colors.white24, size: 64),
               ),
             ),
           ),
@@ -930,7 +932,8 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
         Positioned.fill(
           child: IgnorePointer(
             ignoring: true,
-            child: widget.video.isYouTubeVideo &&
+            child:
+                widget.video.isYouTubeVideo &&
                     _youtubeController != null &&
                     !_isTesting &&
                     !_hasPlaybackError
@@ -953,7 +956,10 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
         ),
 
         // Buffering / Loading Video Placeholder (Zero CircularProgressIndicator)
-        if (widget.isActive && !_isPlayerInitialized && !_isTesting && !_hasPlaybackError)
+        if (widget.isActive &&
+            !_isPlayerInitialized &&
+            !_isTesting &&
+            !_hasPlaybackError)
           Positioned.fill(
             child: IgnorePointer(
               ignoring: true,
@@ -1223,7 +1229,9 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                           fontSize: 16.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.2,
-                          shadows: [Shadow(color: Colors.black87, blurRadius: 4)],
+                          shadows: [
+                            Shadow(color: Colors.black87, blurRadius: 4),
+                          ],
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1286,7 +1294,9 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                 return LinearProgressIndicator(
                   value: _progressController.value,
                   backgroundColor: Colors.white12,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white70),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Colors.white70,
+                  ),
                   minHeight: 2.0,
                 );
               },
