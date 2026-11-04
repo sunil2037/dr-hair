@@ -153,9 +153,9 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> sendSignupOtp(String phone) async {
+  Future<void> sendSignupOtp(String phone, {String? tempToken}) async {
     try {
-      await _remote.sendSignupOtp(phone);
+      await _remote.sendSignupOtp(phone, tempToken: tempToken);
     } on DioException catch (error) {
       throw _mapError(error, fallback: 'Could not send the signup code.');
     }

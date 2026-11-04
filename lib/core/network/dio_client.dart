@@ -63,7 +63,6 @@ class DioClient {
           if (options.extra['silent'] != true) {
             _startLoading();
           }
-          final sensitive = options.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
               '==================== [DIO REQUEST] ====================',
@@ -75,11 +74,7 @@ class DioClient {
               _printYellow('📋 HEADERS: $safeHeaders');
             }
             if (options.data != null) {
-              _printYellow(
-                sensitive
-                    ? '📦 PAYLOAD: [REDACTED]'
-                    : '📦 PAYLOAD: ${options.data}',
-              );
+              _printYellow('📦 PAYLOAD: ${_sanitizePayload(options.data)}');
             }
             _printYellow(
               '=======================================================',
@@ -91,7 +86,6 @@ class DioClient {
           if (response.requestOptions.extra['silent'] != true) {
             _stopLoading();
           }
-          final sensitive = response.requestOptions.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
               '==================== [DIO RESPONSE] ===================',
@@ -99,9 +93,7 @@ class DioClient {
             _printYellow(
               '✅ STATUS: ${response.statusCode} | URL: ${response.requestOptions.uri}',
             );
-            _printYellow(
-              sensitive ? '📄 DATA: [REDACTED]' : '📄 DATA: ${response.data}',
-            );
+            _printYellow('📄 DATA: ${response.data}');
             _printYellow(
               '=======================================================',
             );
@@ -146,7 +138,6 @@ class DioClient {
             );
           }
 
-          final sensitive = err.requestOptions.extra['sensitive'] == true;
           if (enableDebugLogging) {
             _printYellow(
               '==================== [DIO ERROR] ======================',
@@ -155,10 +146,8 @@ class DioClient {
               '⚠️ STATUS: ${err.response?.statusCode ?? 'NETWORK/TIMEOUT'} | URL: ${err.requestOptions.uri}',
             );
             _printYellow('❌ MESSAGE: ${err.message}');
-            if (err.response?.data != null && !sensitive) {
+            if (err.response?.data != null) {
               _printYellow('📄 ERROR DATA: ${err.response?.data}');
-            } else if (err.response?.data != null) {
-              _printYellow('📄 ERROR DATA: [REDACTED]');
             }
             _printYellow(
               '=======================================================',
@@ -168,6 +157,20 @@ class DioClient {
         },
       ),
     );
+  }
+
+  static dynamic _sanitizePayload(dynamic data) {
+    if (data is Map) {
+      final sanitized = Map<dynamic, dynamic>.from(data);
+      for (final key in sanitized.keys.toList()) {
+        final keyLower = key.toString().toLowerCase();
+        if (keyLower.contains('password')) {
+          sanitized[key] = '***';
+        }
+      }
+      return sanitized;
+    }
+    return data;
   }
 
   /// Prints to debug console in Bright Yellow ANSI color (\x1B[33m...\x1B[0m)

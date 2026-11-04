@@ -342,6 +342,9 @@ class _SigninViewState extends State<SigninView>
         }
       });
     } else {
+      setState(() {
+        _signupPhoneError = authCubit.state.errorMessage;
+      });
       AppToast.show(
         context,
         SnackBar(
@@ -609,7 +612,7 @@ class _SigninViewState extends State<SigninView>
                               child: VerticalDivider(
                                 color: AppColors.border,
                                 thickness: 1,
-                                width: 16,
+                                width: 1,
                               ),
                             ),
                             Expanded(
@@ -628,7 +631,15 @@ class _SigninViewState extends State<SigninView>
                                 ),
                                 decoration: const InputDecoration(
                                   hintText: '98765 43210',
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 14,
+                                    horizontal: 8,
+                                  ),
                                   border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
                                   counterText: '',
                                 ),
                               ),
@@ -1794,7 +1805,10 @@ class _SigninViewState extends State<SigninView>
                 size: 18,
                 color: AppColors.secondaryDark,
               ),
-              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
@@ -1972,6 +1986,10 @@ class _SigninViewState extends State<SigninView>
                     filled: false,
                     contentPadding: EdgeInsets.symmetric(vertical: 14),
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
                     counterText: '',
                   ),
                 ),

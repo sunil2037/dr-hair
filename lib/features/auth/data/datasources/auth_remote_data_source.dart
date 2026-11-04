@@ -44,11 +44,16 @@ class AuthRemoteDataSource {
     return _asMap(response.data);
   }
 
-  Future<Map<String, dynamic>> sendSignupOtp(String phone) async {
+  Future<Map<String, dynamic>> sendSignupOtp(
+    String phone, {
+    String? tempToken,
+  }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/auth/send-signup-otp',
-      data: {'phone': phone.trim()},
-      options: Options(extra: const {'sensitive': true}),
+      data: {
+        'phone': phone.trim(),
+        if (tempToken != null && tempToken.isNotEmpty) 'tempToken': tempToken,
+      },
     );
     return _asMap(response.data);
   }

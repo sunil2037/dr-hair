@@ -214,8 +214,9 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<bool> sendSignupOtp(String phone) async {
+  Future<bool> sendSignupOtp(String phone, {String? tempToken}) async {
     final normalized = phone.trim();
+    final effectiveTempToken = tempToken ?? state.tempToken;
     emit(state.copyWith(status: AuthStatus.loading, clearError: true));
     try {
       final repo = repository;
@@ -224,7 +225,7 @@ class AuthCubit extends Cubit<AuthState> {
           'Authentication is not configured.',
         );
       }
-      await repo.sendSignupOtp(normalized);
+      await repo.sendSignupOtp(normalized, tempToken: effectiveTempToken);
 
       _startCountdownTimer();
       emit(

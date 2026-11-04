@@ -64,7 +64,7 @@ abstract interface class AuthRepository {
   });
 
   /// Requests a real 6-digit signup verification OTP for a mobile number
-  Future<void> sendSignupOtp(String phone);
+  Future<void> sendSignupOtp(String phone, {String? tempToken});
 
   /// Registers a new patient with Name, Email, Password, Phone, and verified OTP
   Future<AuthVerification> registerWithPassword({

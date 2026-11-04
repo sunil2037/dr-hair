@@ -81,7 +81,7 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> sendSignupOtp(String phone) async {
+  Future<void> sendSignupOtp(String phone, {String? tempToken}) async {
     requestCount++;
     lastRequestedLogin = phone;
   }
