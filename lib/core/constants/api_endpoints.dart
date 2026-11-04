@@ -133,6 +133,9 @@ class ApiEndpoints {
   // ---------------------------------------------------------------------------
   static const String patientClinicalRecord = '/api/v1/patient/clinical-record';
   static const String patientDietPlan = '/api/v1/patient/diet-plan';
+  static const String patientRoutineSteps = '/api/v1/patient/routine-steps';
+  static String patientRoutineStepByIndex(int index) =>
+      '/api/v1/patient/routine-steps/$index';
   static const String patientProgressCheckins =
       '/api/v1/patient/progress-checkins';
   static String patientProgressCheckinById(String checkInId) =>

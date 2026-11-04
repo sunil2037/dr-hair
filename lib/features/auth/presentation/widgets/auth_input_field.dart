@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
 
-/// Reusable input field widget used across Dr. Hair authentication flows (Sign In & Sign Up).
+/// Reusable, medical-grade input field widget used across Dr. Hair authentication
+/// flows and patient profile management.
 class AuthInputField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -20,6 +22,10 @@ class AuthInputField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final String? errorText;
   final bool enabled;
+  final bool readOnly;
+  final bool requiredField;
+  final bool showOptionalBadge;
+  final String? Function(String?)? validator;
   final FocusNode? focusNode;
   final Iterable<String>? autofillHints;
 
@@ -40,19 +46,49 @@ class AuthInputField extends StatelessWidget {
     this.onChanged,
     this.errorText,
     this.enabled = true,
+    this.readOnly = false,
+    this.requiredField = false,
+    this.showOptionalBadge = false,
+    this.validator,
     this.focusNode,
     this.autofillHints,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasError = errorText != null && errorText!.isNotEmpty;
+    if (validator != null) {
+      return FormField<String>(
+        initialValue: controller.text,
+        validator: validator,
+        builder: (fieldState) {
+          final effectiveError = errorText ?? fieldState.errorText;
+          return _buildField(
+            context,
+            effectiveError: effectiveError,
+            onFieldChanged: (val) {
+              fieldState.didChange(val);
+              onChanged?.call(val);
+            },
+          );
+        },
+      );
+    }
+
+    return _buildField(context, effectiveError: errorText, onFieldChanged: onChanged);
+  }
+
+  Widget _buildField(
+    BuildContext context, {
+    String? effectiveError,
+    ValueChanged<String>? onFieldChanged,
+  }) {
+    final hasError = effectiveError != null && effectiveError.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Field Label
+        // Field Label Row
         Row(
           children: [
             Text(
@@ -63,6 +99,27 @@ class AuthInputField extends StatelessWidget {
                 color: AppColors.primaryDark,
               ),
             ),
+            if (requiredField) ...[
+              const SizedBox(width: 4),
+              const Text(
+                '*',
+                style: TextStyle(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ] else if (showOptionalBadge) ...[
+              const SizedBox(width: 6),
+              const Text(
+                '(Optional)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 8),
@@ -70,9 +127,9 @@ class AuthInputField extends StatelessWidget {
         // Input Container
         Container(
           decoration: BoxDecoration(
-            color: enabled
+            color: (enabled && !readOnly)
                 ? AppColors.primary5.withValues(alpha: 0.3)
-                : AppColors.primary5.withValues(alpha: 0.15),
+                : AppColors.surfaceMuted,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: hasError ? AppColors.danger : AppColors.border,
@@ -83,18 +140,19 @@ class AuthInputField extends StatelessWidget {
             controller: controller,
             focusNode: focusNode,
             enabled: enabled,
+            readOnly: readOnly,
             obscureText: obscureText,
             keyboardType: keyboardType,
             textInputAction: textInputAction,
             textCapitalization: textCapitalization,
             inputFormatters: inputFormatters,
             onSubmitted: onSubmitted,
-            onChanged: onChanged,
+            onChanged: onFieldChanged,
             autofillHints: autofillHints,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryDark,
+              color: readOnly ? AppColors.secondaryDark : AppColors.primaryDark,
             ),
             decoration: InputDecoration(
               hintText: hintText,
@@ -108,11 +166,20 @@ class AuthInputField extends StatelessWidget {
                       ? Icon(
                           prefixIcon,
                           size: 18,
-                          color: AppColors.secondaryDark,
+                          color: readOnly
+                              ? AppColors.textMuted
+                              : AppColors.secondaryDark,
                         )
                       : null),
               filled: false,
-              suffixIcon: suffixIcon,
+              suffixIcon: suffixIcon ??
+                  (readOnly
+                      ? const Icon(
+                          LucideIcons.lock,
+                          color: AppColors.textMuted,
+                          size: 16,
+                        )
+                      : null),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -130,7 +197,7 @@ class AuthInputField extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              errorText!,
+              effectiveError,
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.danger,

@@ -46,4 +46,67 @@ class PatientClinicalApi {
     }
     return uri;
   }
+
+  Future<List<Map<String, dynamic>>> getRoutineSteps(String accessToken) async {
+    final response = await _client.dio.get<Map<String, dynamic>>(
+      ApiEndpoints.patientRoutineSteps,
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    );
+    final data = response.data?['data'];
+    final steps = data is Map ? data['routine_steps'] : null;
+    if (steps is List) {
+      return steps
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> addRoutineStep({
+    required String accessToken,
+    required String title,
+    required String subtitle,
+    required String category,
+    required String timeOfDay,
+  }) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiEndpoints.patientRoutineSteps,
+      data: {
+        'title': title,
+        'subtitle': subtitle,
+        'category': category,
+        'time_of_day': timeOfDay,
+      },
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    );
+    final data = response.data?['data'];
+    final steps = data is Map ? data['routine_steps'] : null;
+    if (steps is List) {
+      return steps
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> deleteRoutineStep({
+    required String accessToken,
+    required int stepIndex,
+  }) async {
+    final response = await _client.dio.delete<Map<String, dynamic>>(
+      ApiEndpoints.patientRoutineStepByIndex(stepIndex),
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    );
+    final data = response.data?['data'];
+    final steps = data is Map ? data['routine_steps'] : null;
+    if (steps is List) {
+      return steps
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    return [];
+  }
 }

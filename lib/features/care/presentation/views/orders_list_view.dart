@@ -183,7 +183,7 @@ class _OrdersListViewState extends State<OrdersListView>
                   shadowColor: Colors.black.withValues(alpha: 0.08),
                   backgroundColor: Colors.white,
                   surfaceTintColor: Colors.white,
-                  expandedHeight: 125.0,
+                  expandedHeight: 180.0,
                   leading: IconButton(
                     icon: const Icon(
                       LucideIcons.arrowLeft,
@@ -196,7 +196,7 @@ class _OrdersListViewState extends State<OrdersListView>
                     duration: const Duration(milliseconds: 200),
                     opacity: innerBoxIsScrolled ? 1.0 : 0.0,
                     child: const Text(
-                      'My Orders',
+                      '',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -239,8 +239,8 @@ class _OrdersListViewState extends State<OrdersListView>
                                 const Text(
                                   'My Orders',
                                   style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
                                     color: AppColors.primaryDark,
                                     letterSpacing: -0.4,
                                   ),
@@ -308,8 +308,7 @@ class _OrdersListViewState extends State<OrdersListView>
                 _buildOrdersTabList(
                   orders: confirmedOrders,
                   emptyTitle: 'No Confirmed Orders',
-                  emptySubtitle:
-                      'Orders that have been dispatched or delivered will appear here.',
+                  emptySubtitle: 'Orders that have been dispatched or delivered will appear here.',
                   category: OrderCategory.confirmed,
                 ),
                 _buildOrdersTabList(
@@ -336,7 +335,7 @@ class _OrdersListViewState extends State<OrdersListView>
     required int cancelledCount,
   }) {
     return Container(
-      height: 48,
+      height: 45,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.primary5.withValues(alpha: 0.55),
@@ -349,10 +348,13 @@ class _OrdersListViewState extends State<OrdersListView>
           return AnimatedBuilder(
             animation: _tabController.animation ?? _tabController,
             builder: (context, _) {
-              final animValue = _tabController.animation?.value ??
+              final animValue =
+                  _tabController.animation?.value ??
                   _tabController.index.toDouble();
-              final leftOffset =
-                  (animValue * tabWidth).clamp(0.0, constraints.maxWidth - tabWidth);
+              final leftOffset = (animValue * tabWidth).clamp(
+                0.0,
+                constraints.maxWidth - tabWidth,
+              );
 
               return Stack(
                 children: [
@@ -420,8 +422,8 @@ class _OrdersListViewState extends State<OrdersListView>
     required int tabIndex,
     required double currentProgress,
   }) {
-    final double selectionAmount =
-        (1.0 - (currentProgress - tabIndex).abs()).clamp(0.0, 1.0);
+    final double selectionAmount = (1.0 - (currentProgress - tabIndex).abs())
+        .clamp(0.0, 1.0);
     final bool isSelected = selectionAmount > 0.5;
 
     return Expanded(
@@ -459,8 +461,10 @@ class _OrdersListViewState extends State<OrdersListView>
               if (count > 0) ...[
                 const SizedBox(width: 5),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Color.lerp(
                       Colors.black.withValues(alpha: 0.05),

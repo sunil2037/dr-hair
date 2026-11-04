@@ -60,35 +60,47 @@ class RemindersView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(LucideIcons.alarmClock, color: AppColors.primary),
+                leading: const Icon(
+                  LucideIcons.alarmClock,
+                  color: AppColors.primary,
+                ),
                 title: const Text('15 Minutes'),
                 onTap: () {
                   context.read<CareCubit>().snoozeReminder(
-                        reminder.id,
-                        duration: const Duration(minutes: 15),
-                      );
+                    reminder.id,
+                    duration: const Duration(minutes: 15),
+                  );
                   Navigator.pop(sheetContext);
-                  AppToast.show(context,
+                  AppToast.show(
+                    context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
-                      content: Text('Snooze preview set for 15 minutes. No alert will be sent in this demo.'),
+                      content: Text(
+                        'Snooze preview set for 15 minutes. No alert will be sent in this demo.',
+                      ),
                     ),
                   );
                 },
               ),
               ListTile(
-                leading: const Icon(LucideIcons.clock, color: AppColors.primary),
+                leading: const Icon(
+                  LucideIcons.clock,
+                  color: AppColors.primary,
+                ),
                 title: const Text('1 Hour'),
                 onTap: () {
                   context.read<CareCubit>().snoozeReminder(
-                        reminder.id,
-                        duration: const Duration(hours: 1),
-                      );
+                    reminder.id,
+                    duration: const Duration(hours: 1),
+                  );
                   Navigator.pop(sheetContext);
-                  AppToast.show(context,
+                  AppToast.show(
+                    context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
-                      content: Text('Snooze preview set for 1 hour. No alert will be sent in this demo.'),
+                      content: Text(
+                        'Snooze preview set for 1 hour. No alert will be sent in this demo.',
+                      ),
                     ),
                   );
                 },
@@ -102,12 +114,18 @@ class RemindersView extends StatelessWidget {
                   final duration = tonight.isAfter(now)
                       ? tonight.difference(now)
                       : const Duration(hours: 3);
-                  context.read<CareCubit>().snoozeReminder(reminder.id, duration: duration);
+                  context.read<CareCubit>().snoozeReminder(
+                    reminder.id,
+                    duration: duration,
+                  );
                   Navigator.pop(sheetContext);
-                  AppToast.show(context,
+                  AppToast.show(
+                    context,
                     const SnackBar(
                       behavior: SnackBarBehavior.floating,
-                      content: Text('Snooze preview set for 8:00 PM. No alert will be sent in this demo.'),
+                      content: Text(
+                        'Snooze preview set for 8:00 PM. No alert will be sent in this demo.',
+                      ),
                     ),
                   );
                 },
@@ -140,7 +158,9 @@ class RemindersView extends StatelessWidget {
             ),
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<CareCubit>().requestNotificationPermission(simulateDenial: false);
+              context.read<CareCubit>().requestNotificationPermission(
+                simulateDenial: false,
+              );
             },
             child: const Text('I Enabled It'),
           ),
@@ -152,20 +172,29 @@ class RemindersView extends StatelessWidget {
   IconData _iconForReminder(CareReminder reminder) {
     final type = reminder.treatmentType.toLowerCase();
     final title = reminder.title.toLowerCase();
-    if (type.contains('oral') || title.contains('supplement') || title.contains('tablet') || title.contains('biotin')) {
+    if (type.contains('oral') ||
+        title.contains('supplement') ||
+        title.contains('tablet') ||
+        title.contains('biotin')) {
       return LucideIcons.pill;
     }
-    if (type.contains('wash') || title.contains('wash') || title.contains('shampoo') || title.contains('cleanser')) {
+    if (type.contains('wash') ||
+        title.contains('wash') ||
+        title.contains('shampoo') ||
+        title.contains('cleanser')) {
       return LucideIcons.sparkles;
     }
-    if (type.contains('photo') || title.contains('photo') || title.contains('check-in')) {
+    if (type.contains('photo') ||
+        title.contains('photo') ||
+        title.contains('check-in')) {
       return LucideIcons.camera;
     }
     if (type.contains('massage') || title.contains('massage')) {
       return LucideIcons.hand;
     }
     if (title.contains('morning')) return LucideIcons.sunMedium;
-    if (title.contains('evening') || title.contains('night')) return LucideIcons.moon;
+    if (title.contains('evening') || title.contains('night'))
+      return LucideIcons.moon;
     return LucideIcons.droplets;
   }
 
@@ -191,19 +220,26 @@ class RemindersView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (state.notificationPermissionStatus == NotificationPermissionStatus.denied)
+              if (state.notificationPermissionStatus ==
+                  NotificationPermissionStatus.denied)
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.danger.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.danger.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(LucideIcons.bellOff, color: AppColors.danger, size: 22),
+                      const Icon(
+                        LucideIcons.bellOff,
+                        color: AppColors.danger,
+                        size: 22,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -228,7 +264,8 @@ class RemindersView extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             GestureDetector(
-                              onTap: () => _showPermissionRecoveryDialog(context),
+                              onTap: () =>
+                                  _showPermissionRecoveryDialog(context),
                               child: const Text(
                                 'How to enable in Settings →',
                                 style: TextStyle(
@@ -246,36 +283,44 @@ class RemindersView extends StatelessWidget {
                 )
               else
                 careCard(
-                backgroundColor: AppColors.primary5,
-                border: Border.all(color: AppColors.primary100),
-                child: const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(LucideIcons.bellRing, color: AppColors.primary, size: 22),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Reminder demo',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Schedules are saved on this device for the demo. This version does not send push notifications or trigger timed alerts.',
-                            style: TextStyle(fontSize: 12, height: 1.4, color: AppColors.secondaryDark),
-                          ),
-                        ],
+                  backgroundColor: AppColors.primary5,
+                  border: Border.all(color: AppColors.primary100),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        LucideIcons.bellRing,
+                        color: AppColors.primary,
+                        size: 22,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Reminder demo',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Schedules are saved on this device for the demo. This version does not send push notifications or trigger timed alerts.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.4,
+                                color: AppColors.secondaryDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
               const SizedBox(height: 8),
 
@@ -288,7 +333,10 @@ class RemindersView extends StatelessWidget {
               if (reminders.isEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 40,
+                    horizontal: 20,
+                  ),
                   margin: const EdgeInsets.only(top: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -303,7 +351,11 @@ class RemindersView extends StatelessWidget {
                           color: AppColors.primary5,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(LucideIcons.calendarClock, size: 36, color: AppColors.primary),
+                        child: const Icon(
+                          LucideIcons.calendarClock,
+                          size: 36,
+                          color: AppColors.primary,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -318,12 +370,17 @@ class RemindersView extends StatelessWidget {
                       const Text(
                         'Add daily or weekly alerts for topicals and supplements to keep your treatment on track.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: AppColors.secondaryDark),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.secondaryDark,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       AppButton(
+                        height: 45,
                         text: 'Add First Reminder',
                         variant: AppButtonVariant.filled,
+                        size: AppButtonSize.medium,
                         onPressed: () => AddReminderBottomSheet.show(context),
                       ),
                     ],
@@ -338,14 +395,14 @@ class RemindersView extends StatelessWidget {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: isCompleted
-                          ? AppColors.background
-                          : Colors.white,
+                      color: isCompleted ? AppColors.background : Colors.white,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: isCompleted
                             ? AppColors.border
-                            : (isEnabled ? AppColors.primary100 : AppColors.border),
+                            : (isEnabled
+                                  ? AppColors.primary100
+                                  : AppColors.border),
                       ),
                       boxShadow: [
                         if (!isCompleted && isEnabled)
@@ -358,7 +415,10 @@ class RemindersView extends StatelessWidget {
                     ),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
-                      onTap: () => AddReminderBottomSheet.show(context, reminderToEdit: rem),
+                      onTap: () => AddReminderBottomSheet.show(
+                        context,
+                        reminderToEdit: rem,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(14),
                         child: Column(
@@ -379,7 +439,9 @@ class RemindersView extends StatelessWidget {
                                   child: Icon(
                                     _iconForReminder(rem),
                                     size: 20,
-                                    color: isEnabled ? AppColors.primary : AppColors.textMuted,
+                                    color: isEnabled
+                                        ? AppColors.primary
+                                        : AppColors.textMuted,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -387,7 +449,8 @@ class RemindersView extends StatelessWidget {
                                 // Title and Subtitle
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
@@ -403,18 +466,27 @@ class RemindersView extends StatelessWidget {
                                                 color: isCompleted
                                                     ? AppColors.textMuted
                                                     : (isEnabled
-                                                        ? AppColors.primaryDark
-                                                        : AppColors.textSecondary),
+                                                          ? AppColors
+                                                                .primaryDark
+                                                          : AppColors
+                                                                .textSecondary),
                                               ),
                                             ),
                                           ),
                                           if (isSnoozed)
                                             Container(
-                                              margin: const EdgeInsets.only(left: 6),
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              margin: const EdgeInsets.only(
+                                                left: 6,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: const Color(0xFFFEF3C7),
-                                                borderRadius: BorderRadius.circular(6),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
                                               ),
                                               child: const Text(
                                                 'Snoozed',
@@ -447,7 +519,10 @@ class RemindersView extends StatelessWidget {
                                     activeTrackColor: AppColors.primary,
                                     onChanged: (val) {
                                       HapticFeedback.lightImpact();
-                                      context.read<CareCubit>().toggleReminder(rem.id, val);
+                                      context.read<CareCubit>().toggleReminder(
+                                        rem.id,
+                                        val,
+                                      );
                                     },
                                   ),
                                 ),
@@ -463,7 +538,10 @@ class RemindersView extends StatelessWidget {
                               children: [
                                 // Time Badge
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.background,
                                     borderRadius: BorderRadius.circular(8),
@@ -472,7 +550,11 @@ class RemindersView extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(LucideIcons.clock, size: 12, color: AppColors.primary),
+                                      const Icon(
+                                        LucideIcons.clock,
+                                        size: 12,
+                                        color: AppColors.primary,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         rem.timeFormatted,
@@ -507,9 +589,14 @@ class RemindersView extends StatelessWidget {
                                 if (isEnabled && !isCompleted)
                                   IconButton(
                                     tooltip: 'Snooze reminder',
-                                    icon: const Icon(LucideIcons.alarmClock, size: 16, color: AppColors.secondaryDark),
+                                    icon: const Icon(
+                                      LucideIcons.alarmClock,
+                                      size: 16,
+                                      color: AppColors.secondaryDark,
+                                    ),
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: () => _showSnoozeOptions(context, rem),
+                                    onPressed: () =>
+                                        _showSnoozeOptions(context, rem),
                                   ),
 
                                 // Done / Undone check action
@@ -521,25 +608,33 @@ class RemindersView extends StatelessWidget {
                                   child: TextButton.icon(
                                     style: TextButton.styleFrom(
                                       visualDensity: VisualDensity.compact,
-                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
                                     ),
                                     onPressed: () {
                                       HapticFeedback.selectionClick();
-                                      context.read<CareCubit>().toggleReminderCompletion(rem.id);
+                                      context
+                                          .read<CareCubit>()
+                                          .toggleReminderCompletion(rem.id);
                                     },
                                     icon: Icon(
                                       isCompleted
                                           ? LucideIcons.circleCheck
                                           : LucideIcons.circle,
                                       size: 15,
-                                      color: isCompleted ? AppColors.success : AppColors.textMuted,
+                                      color: isCompleted
+                                          ? AppColors.success
+                                          : AppColors.textMuted,
                                     ),
                                     label: Text(
                                       isCompleted ? 'Done' : 'Mark Done',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: isCompleted ? AppColors.success : AppColors.textSecondary,
+                                        color: isCompleted
+                                            ? AppColors.success
+                                            : AppColors.textSecondary,
                                       ),
                                     ),
                                   ),

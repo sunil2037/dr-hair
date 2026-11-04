@@ -129,21 +129,48 @@ class CareCubit extends Cubit<CareState> {
         final activePlan = carePlans.first;
         if (activePlan is Map) {
           final steps = activePlan['routine_steps'] as List? ?? [];
+          final completionMap = {
+            for (final t in state.routineTasks) t.title: t.isCompleted
+          };
           serverTasks = steps.asMap().entries.map((entry) {
             final idx = entry.key;
             final step = entry.value;
             if (step is! Map) return null;
+            final tTitle = step['title']?.toString() ?? '';
             return RoutineTask(
               id: 'rt_${idx + 1}',
-              title: step['title']?.toString() ?? '',
+              title: tTitle,
               subtitle: step['subtitle']?.toString() ?? '',
               category: step['category']?.toString() ?? 'Treatment',
               timeOfDay: step['time_of_day']?.toString() ?? 'Daily',
-              isCompleted: false,
+              isCompleted: completionMap[tTitle] ?? false,
             );
           }).whereType<RoutineTask>().where((t) => t.title.isNotEmpty).toList();
         }
       }
+
+      // Also check direct routine-steps endpoint
+      try {
+        final directSteps = await _clinicalApi.getRoutineSteps(token);
+        if (directSteps.isNotEmpty) {
+          final completionMap = {
+            for (final t in state.routineTasks) t.title: t.isCompleted
+          };
+          serverTasks = directSteps.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final step = entry.value;
+            final tTitle = step['title']?.toString() ?? '';
+            return RoutineTask(
+              id: 'rt_${idx + 1}',
+              title: tTitle,
+              subtitle: step['subtitle']?.toString() ?? '',
+              category: step['category']?.toString() ?? 'Lifestyle',
+              timeOfDay: step['time_of_day']?.toString() ?? 'Daily',
+              isCompleted: completionMap[tTitle] ?? false,
+            );
+          }).where((t) => t.title.isNotEmpty).toList();
+        }
+      } catch (_) {}
 
       List<ProgressCheckIn>? serverCheckIns;
       try {
@@ -497,12 +524,12 @@ class CareCubit extends Cubit<CareState> {
     _recordRoutineCompletionIfDone(updated);
   }
 
-  void addCustomRoutineTask({
+  Future<bool> addCustomRoutineTask({
     required String title,
     required String subtitle,
     required String category,
     required String timeOfDay,
-  }) {
+  }) async {
     final newTask = RoutineTask(
       id: 'rt_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
@@ -518,6 +545,64 @@ class CareCubit extends Cubit<CareState> {
     _notificationService?.saveRoutineTasks(updated);
     _saveRoutineDay();
     _recordRoutineCompletionIfDone(updated);
+
+    if (_sessionToken != null && _sessionToken!.isNotEmpty) {
+      try {
+        final serverSteps = await _clinicalApi.addRoutineStep(
+          accessToken: _sessionToken!,
+          title: title,
+          subtitle: subtitle,
+          category: category,
+          timeOfDay: timeOfDay,
+        );
+        if (serverSteps.isNotEmpty && !isClosed) {
+          final completionMap = {
+            for (final t in state.routineTasks) t.title: t.isCompleted
+          };
+          final refreshed = serverSteps.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final s = entry.value;
+            final tTitle = s['title']?.toString() ?? '';
+            return RoutineTask(
+              id: 'rt_${idx + 1}',
+              title: tTitle,
+              subtitle: s['subtitle']?.toString() ?? '',
+              category: s['category']?.toString() ?? 'Lifestyle',
+              timeOfDay: s['time_of_day']?.toString() ?? 'Daily',
+              isCompleted: completionMap[tTitle] ?? false,
+            );
+          }).where((t) => t.title.isNotEmpty).toList();
+
+          emit(state.copyWith(routineTasks: refreshed));
+          _persistRoutineTasks();
+          _notificationService?.saveRoutineTasks(refreshed);
+        }
+      } catch (_) {
+        // Optimistic local update is already saved
+      }
+    }
+    return true;
+  }
+
+  Future<bool> removeRoutineTask(RoutineTask task) async {
+    final index = state.routineTasks.indexOf(task);
+    if (index < 0) return false;
+
+    final updated = List<RoutineTask>.from(state.routineTasks)..removeAt(index);
+    emit(state.copyWith(routineTasks: updated));
+    _persistRoutineTasks();
+    _notificationService?.saveRoutineTasks(updated);
+    _saveRoutineDay();
+
+    if (_sessionToken != null && _sessionToken!.isNotEmpty) {
+      try {
+        await _clinicalApi.deleteRoutineStep(
+          accessToken: _sessionToken!,
+          stepIndex: index,
+        );
+      } catch (_) {}
+    }
+    return true;
   }
 
   void resetTodayRoutine() {

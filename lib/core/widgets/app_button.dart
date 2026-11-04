@@ -103,11 +103,11 @@ class _AppButtonState extends State<AppButton> {
   EdgeInsetsGeometry get _defaultPadding {
     switch (widget.size) {
       case AppButtonSize.small:
-        return const EdgeInsets.symmetric(horizontal: 14, vertical: 8);
+        return const EdgeInsets.symmetric(horizontal: 14, vertical: 5);
       case AppButtonSize.medium:
-        return const EdgeInsets.symmetric(horizontal: 20, vertical: 12);
+        return const EdgeInsets.symmetric(horizontal: 20, vertical: 5);
       case AppButtonSize.large:
-        return const EdgeInsets.symmetric(horizontal: 24, vertical: 15);
+        return const EdgeInsets.symmetric(horizontal: 24, vertical: 5);
     }
   }
 
@@ -194,14 +194,14 @@ class _AppButtonState extends State<AppButton> {
     final Color fgColor = _resolveForegroundColor(context);
     final BorderSide borderSide = _resolveBorderSide(context);
     final BorderRadius effectiveRadius =
-        widget.borderRadius ?? BorderRadius.circular(28);
+        widget.borderRadius ?? BorderRadius.circular(16);
 
     final TextStyle effectiveTextStyle =
         (widget.textStyle ??
                 TextStyle(
                   fontFamily: 'Inter',
                   fontSize: _defaultFontSize,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
                 ))
             .copyWith(color: fgColor);
@@ -216,22 +216,7 @@ class _AppButtonState extends State<AppButton> {
         curve: Curves.easeOutCubic,
         child: Container(
           width: widget.width,
-          decoration: BoxDecoration(
-            borderRadius: effectiveRadius,
-            boxShadow:
-                widget.boxShadow ??
-                (widget.variant == AppButtonVariant.filled &&
-                        !_effectiveDisabled &&
-                        widget.elevation != 0.0
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.22),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null),
-          ),
+          decoration: BoxDecoration(borderRadius: effectiveRadius),
           child: Material(
             color: widget.gradient == null ? bgColor : Colors.transparent,
             elevation: widget.elevation ?? 0.0,

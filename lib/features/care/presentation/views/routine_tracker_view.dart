@@ -215,13 +215,18 @@ class RoutineTrackerView extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
+                    flex: 3,
                     child: TextButton.icon(
                       onPressed: () => context.push(RouteNames.reminders),
                       icon: const Icon(LucideIcons.bell, size: 16),
-                      label: const Text('Set a reminder'),
+                      label: const Text(
+                        'Set a reminder',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ),
                   Expanded(
+                    flex: 4,
                     child: TextButton.icon(
                       onPressed: () => context.push(RouteNames.progress),
                       icon: const Icon(LucideIcons.camera, size: 16),

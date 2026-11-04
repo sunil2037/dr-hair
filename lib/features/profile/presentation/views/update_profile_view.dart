@@ -6,10 +6,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
+import '../../../../core/widgets/custom_paint_dropdown.dart';
 import '../../../../core/widgets/photo_source_bottom_sheet.dart';
 import '../../../auth/presentation/viewmodels/auth_cubit.dart';
+import '../../../auth/presentation/widgets/auth_input_field.dart';
 
 class UpdateProfileView extends StatefulWidget {
   final ImagePicker? imagePicker;
@@ -91,11 +94,10 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
             maxHeight: 1024,
             imageQuality: 85,
           );
-          if (image == null || !mounted) return;
+          if (image == null) return;
           final bytes = await image.readAsBytes();
           if (!mounted) return;
           setState(() {
-            _selectedImageUrl = null;
             _selectedImageBytes = bytes;
             _selectedImageName = image.name;
             _isPhotoRemoved = false;
@@ -136,17 +138,55 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
               const SizedBox(height: 18),
-              const Text('Remove profile photo?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
+              const Text(
+                'Remove profile photo?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
               const SizedBox(height: 8),
-              const Text('Your current profile photo will be permanently deleted from stored media when you save this change. You can upload another photo later.', style: TextStyle(fontSize: 13, height: 1.45, color: AppColors.secondaryDark)),
+              const Text(
+                'Your current profile photo will be permanently deleted from stored media when you save this change. You can upload another photo later.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: AppColors.secondaryDark,
+                ),
+              ),
               const SizedBox(height: 18),
-              Row(children: [
-                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(sheetContext, false), child: const Text('Keep photo'))),
-                const SizedBox(width: 10),
-                Expanded(child: FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.danger), onPressed: () => Navigator.pop(sheetContext, true), child: const Text('Remove photo'))),
-              ]),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      child: const Text('Keep photo'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                      ),
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      child: const Text('Remove photo'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -248,7 +288,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -299,7 +339,7 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Edit Profile',
@@ -323,279 +363,323 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
       body: Skeletonizer(
         enabled: _isSaving,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           child: Form(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // ---------------------------------------------------------------
-              // Avatar & Photo Upload Header
-              // ---------------------------------------------------------------
-              Center(
-                child: Semantics(
-                  label: 'Change profile photo',
-                  button: true,
-                  child: GestureDetector(
-                    onTap: _isSaving ? null : _pickProfilePhoto,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 108,
-                          height: 108,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.primary,
-                              width: 3,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.18),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: _buildAvatarImage(),
-                        ),
-                        Positioned(
-                          bottom: 2,
-                          right: 2,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ---------------------------------------------------------------
+                // Avatar & Photo Upload Header
+                // ---------------------------------------------------------------
+                Center(
+                  child: Semantics(
+                    label: 'Change profile photo',
+                    button: true,
+                    child: GestureDetector(
+                      onTap: _isSaving ? null : _pickProfilePhoto,
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: 108,
+                            height: 108,
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2.5),
+                              border: Border.all(
+                                color: AppColors.primary,
+                                width: 3,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.18,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              LucideIcons.camera,
-                              color: Colors.white,
-                              size: 15,
+                            child: _buildAvatarImage(),
+                          ),
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                LucideIcons.camera,
+                                color: Colors.white,
+                                size: 15,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              TextButton.icon(
-                onPressed: _isSaving ? null : _pickProfilePhoto,
-                icon: const Icon(LucideIcons.image, size: 16),
-                label: const Text(
-                  'Change Profile Photo',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
 
-              // ---------------------------------------------------------------
-              // Card 1: Personal Information
-              // ---------------------------------------------------------------
-              _buildSectionCard(
-                title: 'Personal Details',
-                icon: LucideIcons.userRound,
-                children: [
-                  _buildInputField(
-                    label: 'Full Name',
-                    controller: _nameController,
-                    icon: LucideIcons.userRound,
-                    hintText: 'Enter your full name (e.g. Rahul Sharma)',
-                    textCapitalization: TextCapitalization.words,
-                    keyboardType: TextInputType.name,
-                    customValidator: (value) {
-                      final input = value?.trim() ?? '';
-                      if (input.isEmpty) return 'This field is required';
-                      if (input.length < 2) return 'Enter at least 2 characters';
-                      if (input.length > 50) return 'Name cannot exceed 50 characters';
-                      if (RegExp(r'[0-9]').hasMatch(input)) {
-                        return 'Name should not contain numbers';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  _buildInputField(
-                    label: 'Age (optional)',
-                    controller: _ageController,
-                    icon: LucideIcons.calendarDays,
-                    hintText: 'e.g. 28',
-                    keyboardType: TextInputType.number,
-                    requiredField: false,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
-                    customValidator: (value) {
-                      final input = value?.trim() ?? '';
-                      if (input.isEmpty) return null;
-                      final age = int.tryParse(input);
-                      if (age == null || age < 1 || age > 120) {
-                        return 'Enter a whole number from 1 to 120';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  _buildGenderField(),
-                ],
-              ),
+                const SizedBox(height: 30),
 
-              // ---------------------------------------------------------------
-              // Card 2: Verified Contact Information
-              // ---------------------------------------------------------------
-              _buildSectionCard(
-                title: 'Contact Information',
-                icon: LucideIcons.shieldCheck,
-                badge: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(LucideIcons.check, size: 12, color: AppColors.secondary),
-                      SizedBox(width: 4),
-                      Text(
-                        'Verified',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.secondary,
+                // ---------------------------------------------------------------
+                // Card 1: Personal Information
+                // ---------------------------------------------------------------
+                _buildSectionCard(
+                  title: 'Personal Details',
+                  icon: LucideIcons.userRound,
+                  children: [
+                    AuthInputField(
+                      label: 'Full Name',
+                      controller: _nameController,
+                      prefixIcon: LucideIcons.userRound,
+                      hintText: 'Enter your full name (e.g. Rahul Sharma)',
+                      textCapitalization: TextCapitalization.words,
+                      keyboardType: TextInputType.name,
+                      requiredField: true,
+                      validator: (value) {
+                        final input = value?.trim() ?? '';
+                        if (input.isEmpty) return 'This field is required';
+                        if (input.length < 2) {
+                          return 'Enter at least 2 characters';
+                        }
+                        if (input.length > 50) {
+                          return 'Name cannot exceed 50 characters';
+                        }
+                        if (RegExp(r'[0-9]').hasMatch(input)) {
+                          return 'Name should not contain numbers';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    AuthInputField(
+                      label: 'Age',
+                      controller: _ageController,
+                      prefixIcon: LucideIcons.calendarDays,
+                      hintText: 'e.g. 28',
+                      keyboardType: TextInputType.number,
+                      requiredField: false,
+                      showOptionalBadge: true,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(3),
+                      ],
+                      validator: (value) {
+                        final input = value?.trim() ?? '';
+                        if (input.isEmpty) return null;
+                        final age = int.tryParse(input);
+                        if (age == null || age < 1 || age > 120) {
+                          return 'Enter a whole number from 1 to 120';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    CustomPaintDropdownField<String>(
+                      label: 'Gender',
+                      value: _gender,
+                      prefixIcon: LucideIcons.usersRound,
+                      hintText: 'Select your gender',
+                      requiredField: false,
+                      showOptionalBadge: true,
+                      items: const [
+                        CustomPaintDropdownItem(
+                          value: 'Male',
+                          label: 'Male',
+                          subtitle: 'Biological male or masculine',
+                          icon: LucideIcons.user,
                         ),
-                      ),
-                    ],
-                  ),
+                        CustomPaintDropdownItem(
+                          value: 'Female',
+                          label: 'Female',
+                          subtitle: 'Biological female or feminine',
+                          icon: LucideIcons.userRound,
+                        ),
+                        CustomPaintDropdownItem(
+                          value: 'Non-binary',
+                          label: 'Non-binary',
+                          subtitle: 'Non-binary or gender non-conforming',
+                          icon: LucideIcons.sparkles,
+                        ),
+                        CustomPaintDropdownItem(
+                          value: 'Prefer not to say',
+                          label: 'Prefer not to say',
+                          subtitle: 'Keep this private',
+                          icon: LucideIcons.shieldCheck,
+                        ),
+                      ],
+                      onChanged: _isSaving
+                          ? null
+                          : (value) => setState(() => _gender = value),
+                    ),
+                  ],
                 ),
-                children: [
-                  _buildInputField(
-                    label: 'Email Address',
-                    controller: _emailController,
-                    icon: LucideIcons.mail,
-                    hintText: 'e.g. name@example.com',
-                    keyboardType: TextInputType.emailAddress,
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 18),
-                  _buildInputField(
-                    label: 'Phone Number',
-                    controller: _phoneController,
-                    icon: LucideIcons.phone,
-                    hintText: 'e.g. +91 98765 43210',
-                    keyboardType: TextInputType.phone,
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
+
+                // ---------------------------------------------------------------
+                // Card 2: Verified Contact Information
+                // ---------------------------------------------------------------
+                _buildSectionCard(
+                  title: 'Contact Information',
+                  icon: LucideIcons.shieldCheck,
+                  badge: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary5,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                      ),
+                      color: AppColors.secondary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          LucideIcons.info,
-                          size: 15,
-                          color: AppColors.primary,
+                          LucideIcons.check,
+                          size: 12,
+                          color: AppColors.secondary,
                         ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'To change your email or phone, the new contact must be verified first.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              height: 1.4,
-                              color: AppColors.secondaryDark,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Verified',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.secondary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                  children: [
+                    AuthInputField(
+                      label: 'Email Address',
+                      controller: _emailController,
+                      prefixIcon: LucideIcons.mail,
+                      hintText: 'e.g. name@example.com',
+                      keyboardType: TextInputType.emailAddress,
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 18),
+                    AuthInputField(
+                      label: 'Phone Number',
+                      controller: _phoneController,
+                      prefixIcon: LucideIcons.phone,
+                      hintText: 'e.g. +91 98765 43210',
+                      keyboardType: TextInputType.phone,
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary5,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            LucideIcons.info,
+                            size: 15,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'To change your email or phone, the new contact must be verified first.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.4,
+                                color: AppColors.secondaryDark,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
 
-              // ---------------------------------------------------------------
-              // Card 3: Additional Location & Profession
-              // ---------------------------------------------------------------
-              _buildSectionCard(
-                title: 'Additional Details',
-                icon: LucideIcons.mapPin,
-                children: [
-                  _buildInputField(
-                    label: 'City (optional)',
-                    controller: _cityController,
-                    icon: LucideIcons.mapPin,
-                    hintText: 'e.g. Mumbai, New Delhi, Bengaluru',
-                    textCapitalization: TextCapitalization.words,
-                    requiredField: false,
-                    customValidator: (value) {
-                      final input = value?.trim() ?? '';
-                      if (input.isEmpty) return null;
-                      if (input.length < 2) return 'Enter at least 2 characters';
-                      if (input.length > 60) return 'City cannot exceed 60 characters';
-                      if (RegExp(r'[0-9]').hasMatch(input)) {
-                        return 'City should not contain numbers';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  _buildInputField(
-                    label: 'Occupation (optional)',
-                    controller: _occupationController,
-                    icon: LucideIcons.briefcaseBusiness,
-                    hintText: 'e.g. Software Engineer, Teacher, Doctor',
-                    textCapitalization: TextCapitalization.words,
-                    requiredField: false,
-                    customValidator: (value) {
-                      final input = value?.trim() ?? '';
-                      if (input.isEmpty) return null;
-                      if (input.length < 2) return 'Enter at least 2 characters';
-                      if (input.length > 60) {
-                        return 'Occupation cannot exceed 60 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ],
+                // ---------------------------------------------------------------
+                // Card 3: Additional Location & Profession
+                // ---------------------------------------------------------------
+                _buildSectionCard(
+                  title: 'Additional Details',
+                  icon: LucideIcons.mapPin,
+                  children: [
+                    AuthInputField(
+                      label: 'City',
+                      controller: _cityController,
+                      prefixIcon: LucideIcons.mapPin,
+                      hintText: 'e.g. Mumbai, New Delhi, Bengaluru',
+                      textCapitalization: TextCapitalization.words,
+                      requiredField: false,
+                      showOptionalBadge: true,
+                      validator: (value) {
+                        final input = value?.trim() ?? '';
+                        if (input.isEmpty) return null;
+                        if (input.length < 2) {
+                          return 'Enter at least 2 characters';
+                        }
+                        if (input.length > 60) {
+                          return 'City cannot exceed 60 characters';
+                        }
+                        if (RegExp(r'[0-9]').hasMatch(input)) {
+                          return 'City should not contain numbers';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    AuthInputField(
+                      label: 'Occupation',
+                      controller: _occupationController,
+                      prefixIcon: LucideIcons.briefcaseBusiness,
+                      hintText: 'e.g. Software Engineer, Teacher, Doctor',
+                      textCapitalization: TextCapitalization.words,
+                      requiredField: false,
+                      showOptionalBadge: true,
+                      validator: (value) {
+                        final input = value?.trim() ?? '';
+                        if (input.isEmpty) return null;
+                        if (input.length < 2) {
+                          return 'Enter at least 2 characters';
+                        }
+                        if (input.length > 60) {
+                          return 'Occupation cannot exceed 60 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
       // -----------------------------------------------------------------------
-      // Sticky Bottom Action Bar with Save Changes Button
+      // Sticky Bottom Action Bar with Custom AppButton
       // -----------------------------------------------------------------------
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -613,281 +697,15 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           ],
         ),
         child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
+          child: AppButton(
+            text: 'Save Changes',
+            isLoading: _isSaving,
+            onPressed: _isSaving ? null : _saveProfile,
+            borderRadius: BorderRadius.circular(28),
             height: 52,
-            child: ElevatedButton(
-              onPressed: _isSaving ? null : _saveProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: AppColors.primary.withValues(
-                  alpha: 0.5,
-                ),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-              ),
-              child: _isSaving
-                  ? Skeletonizer(
-                      enabled: true,
-                      child: Container(
-                        width: 140,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(LucideIcons.check, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'Save Changes',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildGenderField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Row(
-          children: [
-            Text(
-              'Gender',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
-            SizedBox(width: 6),
-            Text(
-              '(Optional)',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: _gender,
-          icon: const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.primary),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryDark,
-          ),
-          decoration: InputDecoration(
-            hintText: 'Select your gender',
-            hintStyle: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-            ),
-            prefixIcon: const Icon(
-              LucideIcons.usersRound,
-              color: AppColors.primary,
-              size: 19,
-            ),
-            filled: true,
-            fillColor: AppColors.primary5,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.8,
-              ),
-            ),
-          ),
-          items: _genderOptions
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(value),
-                ),
-              )
-              .toList(),
-          onChanged: _isSaving
-              ? null
-              : (value) => setState(() => _gender = value),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInputField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    required String hintText,
-    TextInputType keyboardType = TextInputType.text,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-    List<TextInputFormatter>? inputFormatters,
-    bool readOnly = false,
-    bool requiredField = true,
-    String? Function(String?)? customValidator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
-            if (requiredField) ...[
-              const SizedBox(width: 4),
-              const Text(
-                '*',
-                style: TextStyle(
-                  color: AppColors.danger,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ] else ...[
-              const SizedBox(width: 6),
-              const Text(
-                '(Optional)',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          textCapitalization: textCapitalization,
-          inputFormatters: inputFormatters,
-          readOnly: readOnly,
-          enabled: true,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: readOnly ? AppColors.secondaryDark : AppColors.primaryDark,
-          ),
-          validator: customValidator ??
-              (value) {
-                final input = value?.trim() ?? '';
-                if (readOnly) return null;
-                if (requiredField && input.isEmpty) {
-                  return 'This field is required';
-                }
-                if (label == 'Full Name' && input.length < 2) {
-                  return 'Enter at least 2 characters';
-                }
-                if (label == 'Age (optional)' && input.isNotEmpty) {
-                  final age = int.tryParse(input);
-                  if (age == null || age < 1 || age > 120) {
-                    return 'Enter a whole number from 1 to 120';
-                  }
-                }
-                return null;
-              },
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-            ),
-            prefixIcon: Icon(
-              icon,
-              color: readOnly ? AppColors.textMuted : AppColors.primary,
-              size: 19,
-            ),
-            suffixIcon: readOnly
-                ? const Icon(
-                    LucideIcons.lock,
-                    color: AppColors.textMuted,
-                    size: 16,
-                  )
-                : null,
-            filled: true,
-            fillColor: readOnly ? AppColors.surfaceMuted : AppColors.primary5,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.8,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.danger,
-                width: 1.2,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.danger,
-                width: 1.8,
-              ),
-            ),
-            errorStyle: const TextStyle(
-              color: AppColors.danger,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
