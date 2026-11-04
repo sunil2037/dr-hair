@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -614,7 +615,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> clearSession() async {
     final token = await _sessionStore.readToken();
     if (token != null && token.isNotEmpty) {
-      await _remote.logout(token).catchError((_) {});
+      unawaited(_remote.logout(token).catchError((_) {}));
     }
     await _sessionStore.clear();
   }

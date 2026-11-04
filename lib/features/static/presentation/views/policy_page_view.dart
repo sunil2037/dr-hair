@@ -21,11 +21,21 @@ class PolicyPageView extends StatefulWidget {
 
 class _PolicyPageViewState extends State<PolicyPageView> {
   late PolicyType _currentType;
+  PolicyDocument? _remotePolicy;
 
   @override
   void initState() {
     super.initState();
     _currentType = widget.initialType;
+    _loadRemotePolicy();
+  }
+
+  void _loadRemotePolicy() {
+    PolicyRepository.fetchPolicy(_currentType).then((doc) {
+      if (mounted) {
+        setState(() => _remotePolicy = doc);
+      }
+    });
   }
 
   @override
@@ -33,12 +43,13 @@ class _PolicyPageViewState extends State<PolicyPageView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialType != widget.initialType) {
       _currentType = widget.initialType;
+      _loadRemotePolicy();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final policy = PolicyRepository.getPolicy(_currentType);
+    final policy = _remotePolicy ?? PolicyRepository.getPolicy(_currentType);
 
     return Scaffold(
       backgroundColor: AppColors.background,

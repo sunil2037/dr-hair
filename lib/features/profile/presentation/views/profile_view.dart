@@ -206,32 +206,6 @@ class ProfileView extends StatelessWidget {
     }
   }
 
-  Future<void> _resetDemoData(BuildContext context) async {
-    final confirmed = await _showDeleteWarningSheet(
-      context,
-      title: 'Reset demo data?',
-      message: 'This clears saved assessment answers and progress, resets your profile and cart, and restores the sample care records. This cannot be undone.',
-      confirmLabel: 'Reset demo',
-    );
-    if (confirmed != true || !context.mounted) return;
-
-    final hairCubit = context.read<HairTestCubit?>();
-    final careCubit = context.read<CareCubit?>();
-    final cartCubit = context.read<CartCubit?>();
-    final authCubit = context.read<AuthCubit?>();
-
-    await AppLocalCache.instance.clearAll();
-    await hairCubit?.clearSavedAssessment();
-    await careCubit?.resetForDemo();
-    cartCubit?.clear();
-    await authCubit?.signOut();
-    PaintingBinding.instance.imageCache.clear();
-    PaintingBinding.instance.imageCache.clearLiveImages();
-
-    if (!context.mounted) return;
-    context.go(RouteNames.signin);
-  }
-
   Future<bool?> _showDeleteWarningSheet(
     BuildContext context, {
     required String title,
@@ -424,7 +398,7 @@ class ProfileView extends StatelessWidget {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 110),
+      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 60),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -540,7 +514,7 @@ class ProfileView extends StatelessWidget {
           const SizedBox(height: 22),
           _buildSectionHeader(
             title: 'PREFERENCES',
-            subtitle: 'Notification toggles and account security',
+            subtitle: 'Notification toggles, policies, and account security',
           ),
           const SizedBox(height: 10),
           _buildGroupedCard([
@@ -549,81 +523,28 @@ class ProfileView extends StatelessWidget {
               iconColor: const Color(0xFF0F766E),
               iconBgColor: const Color(0xFFF0FDFA),
               title: 'Settings & preferences',
-              subtitle: 'Push alerts, account info, and deletion',
+              subtitle: 'Alerts, account info, policies, and deletion',
               onTap: () => context.push(RouteNames.settings),
-              showDivider: false,
-            ),
-          ]),
-          const SizedBox(height: 22),
-          _buildSectionHeader(
-            title: 'LEGAL & POLICIES',
-            subtitle: 'Terms, DPDP privacy notices, and refund terms',
-          ),
-          const SizedBox(height: 10),
-          _buildGroupedCard([
-            _ProfileMenuTile(
-              icon: LucideIcons.shieldCheck,
-              iconColor: const Color(0xFF0D9488),
-              iconBgColor: const Color(0xFFF0FDFA),
-              title: 'Privacy Policy',
-              subtitle: 'DPDP Act notice & data protections',
-              onTap: () => context.push(RouteNames.privacyPolicy),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.fileText,
-              iconColor: const Color(0xFF4F46E5),
-              iconBgColor: const Color(0xFFEEF2FF),
-              title: 'Terms & Conditions',
-              subtitle: 'Service rules & medical disclaimer',
-              onTap: () => context.push(RouteNames.terms),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.rotateCcw,
-              iconColor: const Color(0xFF0284C7),
-              iconBgColor: const Color(0xFFF0F9FF),
-              title: 'Returns & Refunds',
-              subtitle: 'Hygiene seal rules & transit damage claims',
-              onTap: () => context.push(RouteNames.returnsRefunds),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.ban,
-              iconColor: const Color(0xFFD97706),
-              iconBgColor: const Color(0xFFFFFBEB),
-              title: 'Cancellation Policy',
-              subtitle: 'Order cancellation timelines',
-              onTap: () => context.push(RouteNames.cancellationPolicy),
-              showDivider: true,
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.shieldCheck,
-              iconColor: const Color(0xFF475569),
-              iconBgColor: const Color(0xFFF1F5F9),
-              title: 'Manage my data',
-              subtitle: 'Export or delete care data saved on this device',
-              onTap: () => _showDataControls(context),
               showDivider: false,
             ),
           ]),
           const SizedBox(height: 24),
           _buildSignOutButton(context),
-          if (!kReleaseMode) ...[
-            const SizedBox(height: 10),
-            _buildDebugResetButton(context),
-          ],
-          const SizedBox(height: 40),
+
+          const SizedBox(height: 60),
           const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Dr.Hair · Hair care, made personal',
-                  style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 10, color: AppColors.textMuted),
                 ),
-                SizedBox(height: 6),
+                SizedBox(height: 4),
                 Text(
                   'App Version ${AppStrings.appVersion}',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textMuted,
                     letterSpacing: 0.2,
@@ -679,25 +600,6 @@ class ProfileView extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDebugResetButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => _resetDemoData(context),
-        icon: const Icon(LucideIcons.rotateCcw, size: 16),
-        label: const Text('Reset demo data'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.secondaryDark,
-          side: const BorderSide(color: AppColors.border),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),

@@ -75,4 +75,37 @@ class PolicyDocument {
     this.pendingApprovalNotice,
     required this.sections,
   });
+
+  factory PolicyDocument.fromJson(Map<String, dynamic> json, {PolicyType? fallbackType}) {
+    final typeStr = json['type']?.toString() ?? json['slug']?.toString() ?? '';
+    final resolvedType = fallbackType ??
+        PolicyType.values.firstWhere(
+          (t) =>
+              t.slug.toLowerCase() == typeStr.toLowerCase() ||
+              t.name.toLowerCase() == typeStr.toLowerCase(),
+          orElse: () => PolicyType.privacyPolicy,
+        );
+
+    final rawSections = json['sections'] as List<dynamic>? ?? [];
+    final sections = rawSections
+        .whereType<Map<String, dynamic>>()
+        .map((s) => PolicySection(
+              title: s['title']?.toString() ?? '',
+              content: s['content']?.toString() ?? '',
+              bulletPoints: (s['bullet_points'] as List<dynamic>? ?? s['bulletPoints'] as List<dynamic>? ?? [])
+                  .map((e) => e.toString())
+                  .toList(),
+            ))
+        .toList();
+
+    return PolicyDocument(
+      type: resolvedType,
+      title: json['title']?.toString() ?? resolvedType.title,
+      lastUpdated: json['last_updated']?.toString() ?? json['effective_date']?.toString() ?? 'October 2026',
+      summary: json['summary']?.toString() ?? '',
+      hasPendingLegalApproval: json['has_pending_approval'] == true,
+      pendingApprovalNotice: json['pending_approval_notice']?.toString(),
+      sections: sections,
+    );
+  }
 }

@@ -1,14 +1,45 @@
+import 'package:dio/dio.dart';
+
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/network/dio_client.dart';
 import '../domain/policy_models.dart';
 
 /// Centralized repository for all application policies, terms, and regulatory disclosures.
+/// Serves static offline policies with transparent remote API updates.
 class PolicyRepository {
   PolicyRepository._();
+
+  static final Dio _dio = DioClient(baseUrl: ApiEndpoints.backendBaseUrl).dio;
+  static final Map<PolicyType, PolicyDocument> _memoryCache = {};
 
   static const String currentEffectiveDate = 'October 2026';
   static const String pendingApprovalDefaultNotice =
       'Policy details pending business and legal approval. The parameters below represent current draft operational standards and require formal corporate sign-off before commercial release.';
 
+  /// Fetches fresh policy details from backend API with instant local fallback
+  static Future<PolicyDocument> fetchPolicy(PolicyType type) async {
+    try {
+      final slug = type == PolicyType.termsAndConditions
+          ? 'terms-conditions'
+          : (type == PolicyType.returnsAndRefunds ? 'refund-policy' : type.slug);
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/content/policies/$slug',
+        options: Options(extra: const {'silent': true}),
+      );
+      final data = response.data?['data'];
+      if (data is Map<String, dynamic>) {
+        final doc = PolicyDocument.fromJson(data, fallbackType: type);
+        _memoryCache[type] = doc;
+        return doc;
+      }
+    } catch (_) {}
+    return getPolicy(type);
+  }
+
   static PolicyDocument getPolicy(PolicyType type) {
+    if (_memoryCache.containsKey(type)) {
+      return _memoryCache[type]!;
+    }
     switch (type) {
       case PolicyType.privacyPolicy:
         return _privacyPolicy;

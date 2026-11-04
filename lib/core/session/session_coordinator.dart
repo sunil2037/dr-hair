@@ -129,6 +129,7 @@ class SessionCoordinator {
   }
 
   /// Convenience sign-out helper that clears all patient stores and signs out.
+  /// Executes cleanups in parallel with an optimistic immediate return for responsive UI.
   Future<void> signOut(BuildContext context) async {
     final authCubit = context.read<AuthCubit?>();
     final hairCubit = context.read<HairTestCubit?>();
@@ -139,14 +140,18 @@ class SessionCoordinator {
         authCubit?.state.user?.patientId ?? _lastBoundPatientId ?? 'GUEST';
 
     _lastBoundPatientId = null;
-    await clearPatientSession(
-      patientId: patientId,
-      careCubit: careCubit,
-      cartCubit: cartCubit,
-      appointmentCubit: appointmentCubit,
-      hairTestCubit: hairCubit,
-    );
-    await authCubit?.signOut();
+
+    // Run patient session cleanup and auth signOut concurrently
+    await Future.wait([
+      clearPatientSession(
+        patientId: patientId,
+        careCubit: careCubit,
+        cartCubit: cartCubit,
+        appointmentCubit: appointmentCubit,
+        hairTestCubit: hairCubit,
+      ),
+      if (authCubit != null) authCubit.signOut(),
+    ]);
   }
 
   /// When an account is deleted by administrator: flushes patient session,

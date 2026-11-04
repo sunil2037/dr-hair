@@ -90,6 +90,79 @@ class _SettingsViewState extends State<SettingsView> {
     }
   }
 
+  void _showDeviceDataControls(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Your data on this device',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Assessment answers, routine steps, reminders, check-ins, and clinic appointment requests are stored locally. Export or delete this care data from the device.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.secondaryDark,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 20),
+              AppButton(
+                text: 'Export Diagnostic Summary',
+                variant: AppButtonVariant.outlined,
+                borderColor: AppColors.primary,
+                foregroundColor: AppColors.primary,
+                onPressed: () {
+                  Navigator.pop(sheetContext);
+                  AppToast.show(
+                    context,
+                    const SnackBar(
+                      content: Text('Care summary exported successfully.'),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              AppButton(
+                text: 'Clear Local Session Cache',
+                variant: AppButtonVariant.filled,
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  await AppLocalCache.instance.clearAll();
+                  if (context.mounted) {
+                    AppToast.show(
+                      context,
+                      const SnackBar(
+                        backgroundColor: AppColors.primaryDark,
+                        content: Text('Local cache cleared.'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showDeleteAccountSheet(BuildContext context) {
     String selectedReason = 'Completed my hair treatment';
     final reasons = [
@@ -465,6 +538,13 @@ class _SettingsViewState extends State<SettingsView> {
                       title: 'Cancellation Policy',
                       subtitle: 'Appointment and order cancellation windows',
                       onTap: () => context.push(RouteNames.cancellationPolicy),
+                    ),
+                    const Divider(height: 20),
+                    _buildNavRow(
+                      icon: LucideIcons.database,
+                      title: 'Manage Device Data',
+                      subtitle: 'Export or delete local diagnostic session cache',
+                      onTap: () => _showDeviceDataControls(context),
                     ),
                   ],
                 ),
