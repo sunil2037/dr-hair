@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -12,6 +13,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../viewmodels/auth_cubit.dart';
 import '../viewmodels/auth_state.dart';
+import '../widgets/auth_input_field.dart';
 
 enum _AuthMode { signIn, signUp }
 
@@ -563,101 +565,47 @@ class _SigninViewState extends State<SigninView>
                     const SizedBox(height: 18),
 
                     if (!otpSent) ...[
-                      const Text(
-                        'Mobile Number',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.primary5.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.border,
-                            width: 1.0,
+                      AuthInputField(
+                        label: 'Mobile Number',
+                        controller: phoneCtrl,
+                        hintText: '98765 43210',
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(10),
+                        ],
+                        errorText: phoneErr,
+                        prefixWidget: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    '🇮🇳',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _countryCode,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primaryDark,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 24,
-                              child: VerticalDivider(
-                                color: AppColors.border,
-                                thickness: 1,
-                                width: 1,
-                              ),
-                            ),
-                            Expanded(
-                              child: TextField(
-                                controller: phoneCtrl,
-                                keyboardType: TextInputType.phone,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(10),
-                                ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🇮🇳', style: TextStyle(fontSize: 16)),
+                              const SizedBox(width: 6),
+                              Text(
+                                _countryCode,
                                 style: const TextStyle(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w700,
                                   color: AppColors.primaryDark,
                                 ),
-                                decoration: const InputDecoration(
-                                  hintText: '98765 43210',
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 8,
-                                  ),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  errorBorder: InputBorder.none,
-                                  disabledBorder: InputBorder.none,
-                                  counterText: '',
+                              ),
+                              const SizedBox(width: 8),
+                              const SizedBox(
+                                height: 20,
+                                child: VerticalDivider(
+                                  color: AppColors.border,
+                                  thickness: 1,
+                                  width: 1,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (phoneErr != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          phoneErr!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.w600,
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                       const SizedBox(height: 20),
                       AppButton(
                         text: 'Send Verification OTP',
@@ -682,6 +630,11 @@ class _SigninViewState extends State<SigninView>
                             setSheetState(() => otpSent = true);
                           } else {
                             if (sheetContext.mounted) {
+                              setSheetState(() {
+                                phoneErr =
+                                    cubit.state.errorMessage ??
+                                    'Could not send OTP.';
+                              });
                               AppToast.show(
                                 sheetContext,
                                 SnackBar(
@@ -705,47 +658,60 @@ class _SigninViewState extends State<SigninView>
                         ),
                       ),
                       const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(6, (i) {
-                          return SizedBox(
-                            width: 44,
-                            height: 44,
-                            child: TextField(
-                              controller: otpCtrls[i],
-                              focusNode: otpNodes[i],
-                              textAlign: TextAlign.center,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(1),
-                              ],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primaryDark,
-                              ),
-                              decoration: InputDecoration(
-                                counterText: '',
-                                filled: true,
-                                fillColor: AppColors.primary5,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(6, (index) {
+                            return SizedBox(
+                              width: 44,
+                              height: 48,
+                              child: TextField(
+                                controller: otpCtrls[index],
+                                focusNode: otpNodes[index],
+                                textAlign: TextAlign.center,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(1),
+                                ],
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryDark,
+                                ),
+                                decoration: InputDecoration(
+                                  counterText: '',
+                                  contentPadding: EdgeInsets.zero,
+                                  filled: true,
+                                  fillColor: AppColors.primary5.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.border,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 2,
+                                    ),
                                   ),
                                 ),
+                                onChanged: (val) {
+                                  if (val.isNotEmpty && index < 5) {
+                                    otpNodes[index + 1].requestFocus();
+                                  } else if (val.isEmpty && index > 0) {
+                                    otpNodes[index - 1].requestFocus();
+                                  }
+                                },
                               ),
-                              onChanged: (val) {
-                                if (val.isNotEmpty && i < 5) {
-                                  otpNodes[i + 1].requestFocus();
-                                } else if (val.isEmpty && i > 0) {
-                                  otpNodes[i - 1].requestFocus();
-                                }
-                              },
-                            ),
-                          );
-                        }),
+                            );
+                          }),
+                        ),
                       ),
                       const SizedBox(height: 20),
                       AppButton(
@@ -802,6 +768,7 @@ class _SigninViewState extends State<SigninView>
     final newPassCtrl = TextEditingController();
     bool otpSent = false;
     bool isResetBusy = false;
+    bool obscureNewPass = true;
     String? errText;
 
     showModalBottomSheet<void>(
@@ -859,45 +826,14 @@ class _SigninViewState extends State<SigninView>
                     const SizedBox(height: 18),
 
                     if (!otpSent) ...[
-                      const Text(
-                        'Registered Email or Mobile Number',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
+                      AuthInputField(
+                        label: 'Registered Email or Mobile Number',
                         controller: loginCtrl,
-                        decoration: InputDecoration(
-                          hintText: 'e.g. user@gmail.com or 9876543210',
-                          prefixIcon: const Icon(
-                            LucideIcons.mail,
-                            size: 18,
-                            color: AppColors.secondaryDark,
-                          ),
-                          filled: true,
-                          fillColor: AppColors.primary5.withValues(alpha: 0.3),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
-                            ),
-                          ),
-                        ),
+                        hintText: 'e.g. user@gmail.com or 9876543210',
+                        prefixIcon: LucideIcons.mail,
+                        keyboardType: TextInputType.emailAddress,
+                        errorText: errText,
                       ),
-                      if (errText != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          errText!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 20),
                       AppButton(
                         text: 'Send Reset OTP',
@@ -930,80 +866,38 @@ class _SigninViewState extends State<SigninView>
                         },
                       ),
                     ] else ...[
-                      const Text(
-                        '6-Digit Reset Code',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
+                      AuthInputField(
+                        label: '6-Digit Reset Code',
                         controller: otpCtrl,
+                        hintText: '123456',
+                        prefixIcon: LucideIcons.keyRound,
                         keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(6),
                         ],
-                        decoration: InputDecoration(
-                          hintText: '123456',
-                          prefixIcon: const Icon(
-                            LucideIcons.keyRound,
-                            size: 18,
-                            color: AppColors.secondaryDark,
-                          ),
-                          filled: true,
-                          fillColor: AppColors.primary5.withValues(alpha: 0.3),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
-                            ),
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 14),
-                      const Text(
-                        'New Password (min 6 characters)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
+                      AuthInputField(
+                        label: 'New Password (min 6 characters)',
                         controller: newPassCtrl,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: '••••••••',
-                          prefixIcon: const Icon(
-                            LucideIcons.lock,
+                        hintText: '••••••••',
+                        prefixIcon: LucideIcons.lock,
+                        obscureText: obscureNewPass,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureNewPass
+                                ? LucideIcons.eyeOff
+                                : LucideIcons.eye,
                             size: 18,
                             color: AppColors.secondaryDark,
                           ),
-                          filled: true,
-                          fillColor: AppColors.primary5.withValues(alpha: 0.3),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
-                            ),
+                          onPressed: () => setSheetState(
+                            () => obscureNewPass = !obscureNewPass,
                           ),
                         ),
+                        errorText: errText,
                       ),
-                      if (errText != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          errText!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 20),
                       AppButton(
                         text: 'Set New Password',
@@ -1170,21 +1064,79 @@ class _SigninViewState extends State<SigninView>
                             ),
                           ],
                         ),
-                        child: AnimatedSize(
-                          duration: Duration(
-                            milliseconds: reduceMotion ? 0 : 300,
-                          ),
-                          curve: Curves.easeOutCubic,
-                          child: AnimatedSwitcher(
-                            duration: Duration(
-                              milliseconds: reduceMotion ? 0 : 320,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Top Sliding Tab Bar
+                            if (_signupStep != _SignupStep.otp) ...[
+                              _buildSlidingTabBar(),
+                              const SizedBox(height: 20),
+                            ],
+
+                            // Content Form with Smooth Slide & Fade Motion
+                            AnimatedSize(
+                              duration: Duration(
+                                milliseconds: reduceMotion ? 0 : 300,
+                              ),
+                              curve: Curves.easeOutCubic,
+                              child: AnimatedSwitcher(
+                                duration: Duration(
+                                  milliseconds: reduceMotion ? 0 : 320,
+                                ),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                layoutBuilder:
+                                    (
+                                      Widget? currentChild,
+                                      List<Widget> previousChildren,
+                                    ) {
+                                      return Stack(
+                                        alignment: Alignment.topCenter,
+                                        children: <Widget>[
+                                          ...previousChildren,
+                                          ?currentChild,
+                                        ],
+                                      );
+                                    },
+                                transitionBuilder:
+                                    (
+                                      Widget child,
+                                      Animation<double> animation,
+                                    ) {
+                                      final isSignIn =
+                                          child.key ==
+                                          const ValueKey('card_signin');
+                                      final inFromRight = !isSignIn;
+                                      final beginOffset = inFromRight
+                                          ? const Offset(0.28, 0.0)
+                                          : const Offset(-0.28, 0.0);
+
+                                      return SlideTransition(
+                                        position:
+                                            Tween<Offset>(
+                                              begin: beginOffset,
+                                              end: Offset.zero,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: animation,
+                                                curve: Curves.easeOutCubic,
+                                              ),
+                                            ),
+                                        child: FadeTransition(
+                                          opacity: CurvedAnimation(
+                                            parent: animation,
+                                            curve: Curves.easeInOut,
+                                          ),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                child: _activeMode == _AuthMode.signIn
+                                    ? _buildSignInCard(context)
+                                    : _buildSignUpCard(context),
+                              ),
                             ),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            child: _activeMode == _AuthMode.signIn
-                                ? _buildSignInCard(context)
-                                : _buildSignUpCard(context),
-                          ),
+                          ],
                         ),
                       ),
                     ),
@@ -1199,116 +1151,131 @@ class _SigninViewState extends State<SigninView>
   }
 
   // ---------------------------------------------------------------------------
-  // TAB SWITCHER WIDGET
+  // SLIDING TAB BAR (Physical sliding indicator between Sign In and Sign Up)
   // ---------------------------------------------------------------------------
-  Widget _buildTabSwitcher() {
+  Widget _buildSlidingTabBar() {
+    final isSignIn = _activeMode == _AuthMode.signIn;
+
     return Container(
+      height: 46,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.primary5.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (_activeMode != _AuthMode.signIn) {
-                  setState(() {
-                    _activeMode = _AuthMode.signIn;
-                    _emailError = null;
-                    _passwordError = null;
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _activeMode == _AuthMode.signIn
-                      ? Colors.white
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: _activeMode == _AuthMode.signIn
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Sign In',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: _activeMode == _AuthMode.signIn
-                        ? FontWeight.w800
-                        : FontWeight.w600,
-                    color: _activeMode == _AuthMode.signIn
-                        ? AppColors.primaryDark
-                        : AppColors.secondaryDark,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tabWidth = constraints.maxWidth / 2;
+          return Stack(
+            children: [
+              // Sliding active pill indicator
+              AnimatedAlign(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeInOutCubic,
+                alignment: isSignIn
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
+                child: Container(
+                  width: tabWidth,
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (_activeMode != _AuthMode.signUp) {
-                  setState(() {
-                    _activeMode = _AuthMode.signUp;
-                    _signupStep = _SignupStep.form;
-                    _nameError = null;
-                    _signupEmailError = null;
-                    _signupPasswordError = null;
-                    _signupPhoneError = null;
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _activeMode == _AuthMode.signUp
-                      ? Colors.white
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: _activeMode == _AuthMode.signUp
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+
+              // Interactive Tab Labels
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (_activeMode != _AuthMode.signIn) {
+                          setState(() {
+                            _activeMode = _AuthMode.signIn;
+                            _emailError = null;
+                            _passwordError = null;
+                          });
+                        }
+                      },
+                      child: Center(
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: isSignIn
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                            color: isSignIn
+                                ? AppColors.primaryDark
+                                : AppColors.secondaryDark,
+                            fontFamily: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.fontFamily,
                           ),
-                        ]
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Sign Up',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: _activeMode == _AuthMode.signUp
-                        ? FontWeight.w800
-                        : FontWeight.w600,
-                    color: _activeMode == _AuthMode.signUp
-                        ? AppColors.primaryDark
-                        : AppColors.secondaryDark,
+                          child: const Text('Sign In'),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (_activeMode != _AuthMode.signUp) {
+                          setState(() {
+                            _activeMode = _AuthMode.signUp;
+                            _signupStep = _SignupStep.form;
+                            _nameError = null;
+                            _signupEmailError = null;
+                            _signupPasswordError = null;
+                            _signupPhoneError = null;
+                          });
+                        }
+                      },
+                      child: Center(
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: !isSignIn
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                            color: !isSignIn
+                                ? AppColors.primaryDark
+                                : AppColors.secondaryDark,
+                            fontFamily: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.fontFamily,
+                          ),
+                          child: const Text('Sign Up'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
   // ---------------------------------------------------------------------------
-  // SIGN IN CARD (Email + Password + Social Auth)
+  // SIGN IN CARD (Direct inline form + Social Auth)
   // ---------------------------------------------------------------------------
   Widget _buildSignInCard(BuildContext context) {
     final authState = context.watch<AuthCubit>().state;
@@ -1319,9 +1286,6 @@ class _SigninViewState extends State<SigninView>
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildTabSwitcher(),
-        const SizedBox(height: 20),
-
         const Text(
           'Welcome Back',
           style: TextStyle(
@@ -1338,140 +1302,38 @@ class _SigninViewState extends State<SigninView>
         ),
         const SizedBox(height: 20),
 
-        // Email Field
-        Row(
-          children: const [
-            Text(
-              'Email Address',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ],
+        // Email Address Field
+        AuthInputField(
+          label: 'Email Address',
+          controller: _emailController,
+          hintText: 'patient@example.com',
+          prefixIcon: LucideIcons.mail,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          errorText: _emailError,
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.primary5.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: TextField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryDark,
-            ),
-            decoration: const InputDecoration(
-              hintText: 'patient@example.com',
-              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
-              prefixIcon: Icon(
-                LucideIcons.mail,
-                size: 18,
-                color: AppColors.secondaryDark,
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-            ),
-          ),
-        ),
-        if (_emailError != null) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _emailError!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-
         const SizedBox(height: 14),
 
         // Password Field
-        Row(
-          children: const [
-            Text(
-              'Password',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
+        AuthInputField(
+          label: 'Password',
+          controller: _passwordController,
+          hintText: '••••••••',
+          prefixIcon: LucideIcons.lock,
+          obscureText: _obscurePassword,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _handlePasswordLogin(),
+          errorText: _passwordError,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+              size: 18,
+              color: AppColors.secondaryDark,
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.primary5.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: TextField(
-            controller: _passwordController,
-            obscureText: _obscurePassword,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _handlePasswordLogin(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryDark,
-            ),
-            decoration: InputDecoration(
-              hintText: '••••••••',
-              hintStyle: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 14,
-              ),
-              prefixIcon: const Icon(
-                LucideIcons.lock,
-                size: 18,
-                color: AppColors.secondaryDark,
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                  size: 18,
-                  color: AppColors.secondaryDark,
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-            ),
+            onPressed: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
           ),
         ),
-        if (_passwordError != null) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _passwordError!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
 
         // Forgot Password link
         Align(
@@ -1560,36 +1422,29 @@ class _SigninViewState extends State<SigninView>
 
         const SizedBox(height: 16),
 
-        // Social Sign In Buttons: Google and Apple
+        // Direct Inline Social Sign-In Buttons
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   side: const BorderSide(color: AppColors.border),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                   backgroundColor: Colors.white,
+                  elevation: 0,
                 ),
                 onPressed: isBusy ? null : _handleGoogleSignIn,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
+                    SvgPicture.asset(
+                      'assets/icons/google.svg',
                       width: 18,
                       height: 18,
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'G',
-                        style: TextStyle(
-                          fontFamily: 'sans-serif',
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14,
-                          color: Color(0xFF4285F4),
-                        ),
-                      ),
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(width: 8),
                     const Text(
@@ -1608,20 +1463,26 @@ class _SigninViewState extends State<SigninView>
             Expanded(
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   side: const BorderSide(color: AppColors.border),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                   backgroundColor: Colors.white,
+                  elevation: 0,
                 ),
                 onPressed: isBusy ? null : _handleAppleSignIn,
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(LucideIcons.apple, size: 18, color: Colors.black),
-                    SizedBox(width: 8),
-                    Text(
+                    SvgPicture.asset(
+                      'assets/icons/apple.svg',
+                      width: 18,
+                      height: 18,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
                       'Apple',
                       style: TextStyle(
                         fontSize: 14,
@@ -1672,7 +1533,7 @@ class _SigninViewState extends State<SigninView>
   }
 
   // ---------------------------------------------------------------------------
-  // SIGN UP CARD (Name + Email + Password + Phone OTP verification)
+  // SIGN UP CARD (Direct inline form without reusable components)
   // ---------------------------------------------------------------------------
   Widget _buildSignUpCard(BuildContext context) {
     if (_signupStep == _SignupStep.otp) {
@@ -1687,9 +1548,6 @@ class _SigninViewState extends State<SigninView>
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildTabSwitcher(),
-        const SizedBox(height: 20),
-
         const Text(
           'Create Patient Chart',
           style: TextStyle(
@@ -1706,7 +1564,7 @@ class _SigninViewState extends State<SigninView>
         ),
         const SizedBox(height: 20),
 
-        // Full Name Field
+        // Full Name Field (Direct Inline)
         Row(
           children: const [
             Text(
@@ -1744,6 +1602,9 @@ class _SigninViewState extends State<SigninView>
                 color: AppColors.secondaryDark,
               ),
               border: InputBorder.none,
+              errorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
@@ -1768,7 +1629,7 @@ class _SigninViewState extends State<SigninView>
 
         const SizedBox(height: 14),
 
-        // Email Field
+        // Email Address Field (Direct Inline)
         Row(
           children: const [
             Text(
@@ -1805,10 +1666,7 @@ class _SigninViewState extends State<SigninView>
                 size: 18,
                 color: AppColors.secondaryDark,
               ),
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              disabledBorder: InputBorder.none,
+              border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
@@ -1833,7 +1691,7 @@ class _SigninViewState extends State<SigninView>
 
         const SizedBox(height: 14),
 
-        // Password Field
+        // Password Field (Direct Inline)
         Row(
           children: const [
             Text(
@@ -1908,7 +1766,7 @@ class _SigninViewState extends State<SigninView>
 
         const SizedBox(height: 14),
 
-        // Mobile Number Field (Required for Creating Patient Account)
+        // Mobile Number Field (Direct Inline with Country Pill)
         Row(
           children: const [
             Text(
@@ -1926,11 +1784,29 @@ class _SigninViewState extends State<SigninView>
           decoration: BoxDecoration(
             color: AppColors.primary5.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 1.0),
+            border: Border.all(color: AppColors.border),
           ),
-          child: Row(
-            children: [
-              Padding(
+          child: TextField(
+            controller: _signupPhoneController,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            onSubmitted: (_) => _proceedToSignupOtp(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDark,
+            ),
+            decoration: InputDecoration(
+              hintText: '98765 43210',
+              hintStyle: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 14,
+              ),
+              prefixIcon: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 10,
@@ -1948,53 +1824,24 @@ class _SigninViewState extends State<SigninView>
                         color: AppColors.primaryDark,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(
-                height: 24,
-                child: VerticalDivider(
-                  color: AppColors.border,
-                  thickness: 1,
-                  width: 16,
-                ),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _signupPhoneController,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.done,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(10),
-                  ],
-                  onSubmitted: (_) => _proceedToSignupOtp(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: AppColors.primaryDark,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '98765 43210',
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                      color: AppColors.textMuted,
+                    const SizedBox(width: 8),
+                    const SizedBox(
+                      height: 20,
+                      child: VerticalDivider(
+                        color: AppColors.border,
+                        thickness: 1,
+                        width: 1,
+                      ),
                     ),
-                    filled: false,
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    counterText: '',
-                  ),
+                  ],
                 ),
               ),
-            ],
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
           ),
         ),
         if (_signupPhoneError != null) ...[
@@ -2014,17 +1861,43 @@ class _SigninViewState extends State<SigninView>
 
         const SizedBox(height: 20),
 
-        // Send OTP & Continue Button
-        AppButton(
-          size: AppButtonSize.medium,
+        // Send OTP & Continue Button (Direct Inline)
+        SizedBox(
+          width: double.infinity,
           height: 48,
-          isLoading: isBusy,
-          onPressed: _proceedToSignupOtp,
-          text: 'Send Verification OTP',
-          trailingIcon: const Icon(
-            LucideIcons.arrowRight,
-            size: 16,
-            color: AppColors.card,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ),
+            onPressed: isBusy ? null : _proceedToSignupOtp,
+            child: isBusy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        'Send Verification OTP',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(LucideIcons.arrowRight, size: 16),
+                    ],
+                  ),
           ),
         ),
 
@@ -2280,7 +2153,7 @@ class _SigninViewState extends State<SigninView>
   }
 
   // ---------------------------------------------------------------------------
-  // TERMS AND PRIVACY LINKS
+  // TERMS AND PRIVACY LINKS (Direct Inline)
   // ---------------------------------------------------------------------------
   Widget _buildTermsAndPrivacyLinks() {
     return Center(
