@@ -338,6 +338,20 @@ class _ProductsContentState extends State<_ProductsContent>
                           // 1. Cart Button with badge
                           _buildCartButton(context),
 
+                          // 2. Search icon button on the right of Cart button
+                          IconButton(
+                            key: const ValueKey('appbar-search-button'),
+                            tooltip: 'Search products',
+                            icon: const Icon(
+                              LucideIcons.search,
+                              color: AppColors.primaryDark,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              _searchFocusNode.requestFocus();
+                            },
+                          ),
+
                           const SizedBox(width: 8),
                         ],
                         bottom: PreferredSize(
