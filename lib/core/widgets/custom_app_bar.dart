@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../features/shop/presentation/viewmodels/notifications_cubit.dart';
+import '../../features/shop/presentation/viewmodels/notifications_state.dart';
 import '../constants/app_colors.dart';
 import '../routes/route_names.dart';
 
@@ -171,18 +174,76 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     splashRadius: 20,
                   ),
                 if (showNotifications)
-                  IconButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      context.push(RouteNames.notifications);
+                  BlocBuilder<NotificationsCubit, NotificationsState>(
+                    builder: (context, notifState) {
+                      final unread = notifState.unreadCount;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              context.push(RouteNames.notifications);
+                            },
+                            icon: Icon(
+                              LucideIcons.bell,
+                              color: isDark ? Colors.white : AppColors.primary,
+                              size: 22,
+                            ),
+                            tooltip: 'Notifications',
+                            splashRadius: 22,
+                          ),
+                          if (unread > 0)
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: IgnorePointer(
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: unread > 9 ? 4.5 : 5,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.danger,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? AppColors.primaryDark
+                                          : Colors.white,
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.danger.withValues(
+                                          alpha: 0.45,
+                                        ),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      unread > 99 ? '99+' : '$unread',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                        height: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
                     },
-                    icon: Icon(
-                      LucideIcons.bell,
-                      color: isDark ? Colors.white : AppColors.primary,
-                      size: 22,
-                    ),
-                    tooltip: 'Notifications',
-                    splashRadius: 22,
                   ),
 
                 if (extraActions != null) ...?extraActions,

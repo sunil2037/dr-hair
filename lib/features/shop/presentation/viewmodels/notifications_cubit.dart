@@ -62,4 +62,47 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
     await _repository.markAllAsRead();
   }
+
+  /// Immediately incorporates a real-time foreground push notification into the active
+  /// state and bumps the unread badge count without waiting for full list reload.
+  void onForegroundNotificationReceived({
+    required String title,
+    required String body,
+    String? id,
+    String? type,
+    Map<String, dynamic>? data,
+  }) {
+    final notificationId =
+        id ?? 'fcm_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Guard against duplicates
+    if (state.notifications.any((n) => n.id == notificationId)) {
+      return;
+    }
+
+    final newItem = NotificationItemModel(
+      id: notificationId,
+      title: title,
+      body: body,
+      type: type ?? (data?['type']?.toString() ?? 'general'),
+      destination: NotificationItemModel.fromJson({
+        'type': data?['type'] ?? type ?? 'general',
+        'screen': data?['screen'],
+        'entity_id': data?['entity_id'] ?? data?['entityId'],
+      }).destination,
+      data: data ?? const {},
+      isRead: false,
+      createdAt: DateTime.now(),
+    );
+
+    emit(state.copyWith(
+      notifications: [newItem, ...state.notifications],
+      unreadCount: state.unreadCount + 1,
+    ));
+  }
+
+  /// Resets notifications state on patient logout.
+  void reset() {
+    emit(NotificationsState.initial());
+  }
 }

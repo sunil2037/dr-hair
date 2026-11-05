@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'core/constants/app_colors.dart';
 import 'core/constants/app_strings.dart';
 import 'core/notifications/firebase_push_service.dart';
 import 'core/routes/app_router.dart';
@@ -21,6 +23,7 @@ import 'features/care/presentation/viewmodels/care_cubit.dart';
 import 'features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'features/shop/data/datasources/cart_remote_data_source.dart';
 import 'features/shop/presentation/viewmodels/cart_cubit.dart';
+import 'features/shop/presentation/viewmodels/notifications_cubit.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -63,10 +66,12 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   StreamSubscription<RemoteMessage>? _tapSubscription;
   StreamSubscription<RemoteMessage>? _foregroundSubscription;
+  late final NotificationsCubit _notificationsCubit;
 
   @override
   void initState() {
     super.initState();
+    _notificationsCubit = NotificationsCubit()..loadNotifications();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initPushNotifications();
     });
@@ -93,56 +98,116 @@ class _MyAppState extends State<MyApp> {
       _navigateFromMessage(message);
     });
 
-    // Handle incoming notification when app is in foreground
+    // Handle incoming notification when app is in foreground (real-time in-app banner & badge update)
     _foregroundSubscription = FirebasePushService.foregroundMessages.listen((
       message,
     ) {
       final notif = message.notification;
-      if (notif != null && mounted) {
+      if (notif != null) {
         final title = notif.title ?? '';
         final body = notif.body ?? '';
-        final location = FirebasePushService.resolveMessageLocation(message);
-        MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF1E293B),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title.isNotEmpty)
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      fontSize: 13,
-                    ),
-                  ),
-                if (body.isNotEmpty)
-                  Text(
-                    body,
-                    style: const TextStyle(
-                      color: Color(0xFFCBD5E1),
-                      fontSize: 12,
-                    ),
-                  ),
-              ],
-            ),
-            action: location != null && location.isNotEmpty
-                ? SnackBarAction(
-                    label: 'VIEW',
-                    textColor: const Color(0xFF5EEAD4),
-                    onPressed: () => _navigateFromMessage(message),
-                  )
-                : null,
-          ),
+
+        // 1. Immediately bump the real-time unread badge count & prepend to active list
+        _notificationsCubit.onForegroundNotificationReceived(
+          title: title,
+          body: body,
+          id: message.messageId,
+          data: message.data,
+        );
+
+        // 2. Tactile haptic feedback
+        HapticFeedback.mediumImpact();
+
+        // 3. Show floating in-app notification banner
+        _showInAppNotificationBanner(
+          title: title,
+          body: body,
+          message: message,
         );
       }
     });
+  }
+
+  void _showInAppNotificationBanner({
+    required String title,
+    required String body,
+    required RemoteMessage message,
+  }) {
+    final location = FirebasePushService.resolveMessageLocation(message);
+
+    MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF0F172A),
+        elevation: 8,
+        margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF334155), width: 1.0),
+        ),
+        duration: const Duration(seconds: 4),
+        content: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Icon(
+                  LucideIcons.bellRing,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title.isNotEmpty)
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                    ),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      body,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 11.5,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+        action: location != null && location.isNotEmpty
+            ? SnackBarAction(
+                label: 'VIEW',
+                textColor: const Color(0xFF38BDF8),
+                onPressed: () => _navigateFromMessage(message),
+              )
+            : null,
+      ),
+    );
   }
 
   void _navigateFromMessage(RemoteMessage message) {
@@ -156,6 +221,7 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     _tapSubscription?.cancel();
     _foregroundSubscription?.cancel();
+    _notificationsCubit.close();
     super.dispose();
   }
 
@@ -195,6 +261,7 @@ class _MyAppState extends State<MyApp> {
           create: (_) => ClinicAppointmentCubit()..load(),
         ),
         BlocProvider<CareCubit>(create: (_) => CareCubit()),
+        BlocProvider<NotificationsCubit>.value(value: _notificationsCubit),
         BlocProvider<HairTestCubit>(
           create: (_) => HairTestCubit()..loadSavedState(),
         ),

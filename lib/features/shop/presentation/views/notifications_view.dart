@@ -24,10 +24,18 @@ class NotificationsView extends StatelessWidget {
         child: const _NotificationsContent(),
       );
     }
-    return BlocProvider<NotificationsCubit>(
-      create: (_) => NotificationsCubit()..loadNotifications(),
-      child: const _NotificationsContent(),
-    );
+    try {
+      final existing = context.read<NotificationsCubit>();
+      return BlocProvider<NotificationsCubit>.value(
+        value: existing..loadNotifications(),
+        child: const _NotificationsContent(),
+      );
+    } catch (_) {
+      return BlocProvider<NotificationsCubit>(
+        create: (_) => NotificationsCubit()..loadNotifications(),
+        child: const _NotificationsContent(),
+      );
+    }
   }
 }
 
