@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../auth/presentation/viewmodels/auth_cubit.dart';
 import '../viewmodels/care_cubit.dart';
 
 class _RoutinePreset {
@@ -113,7 +114,7 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
     },
     {
       'name': 'Lifestyle',
-      'label': 'Lifestyle & Scalp',
+      'label': 'Lifestyle',
       'icon': LucideIcons.sparkles,
       'color': Color(0xFFEA580C),
       'bg': Color(0xFFFFF7ED),
@@ -121,10 +122,30 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
   ];
 
   static const List<Map<String, dynamic>> _timesOfDay = [
-    {'name': 'Morning', 'label': 'Morning', 'icon': LucideIcons.sun, 'time': '8:00 AM'},
-    {'name': 'Afternoon', 'label': 'Afternoon', 'icon': LucideIcons.sunMedium, 'time': '1:00 PM'},
-    {'name': 'Evening', 'label': 'Evening', 'icon': LucideIcons.sunset, 'time': '6:30 PM'},
-    {'name': 'Night', 'label': 'Night', 'icon': LucideIcons.moon, 'time': '10:00 PM'},
+    {
+      'name': 'Morning',
+      'label': 'Morning',
+      'icon': LucideIcons.sun,
+      'time': '8:00 AM',
+    },
+    {
+      'name': 'Afternoon',
+      'label': 'Afternoon',
+      'icon': LucideIcons.sunMedium,
+      'time': '1:00 PM',
+    },
+    {
+      'name': 'Evening',
+      'label': 'Evening',
+      'icon': LucideIcons.sunset,
+      'time': '6:30 PM',
+    },
+    {
+      'name': 'Night',
+      'label': 'Night',
+      'icon': LucideIcons.moon,
+      'time': '10:00 PM',
+    },
   ];
 
   @override
@@ -169,12 +190,16 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
           ? 'As prescribed'
           : _subtitleController.text.trim();
 
+      final auth = context.read<AuthCubit?>()?.state;
+      final token = auth?.sessionToken;
+
       await context.read<CareCubit>().addCustomRoutineTask(
-            title: title,
-            subtitle: subtitle,
-            category: _category,
-            timeOfDay: _timeOfDay,
-          );
+        title: title,
+        subtitle: subtitle,
+        category: _category,
+        timeOfDay: _timeOfDay,
+        sessionToken: token,
+      );
 
       if (mounted) {
         AppToast.show(
@@ -246,94 +271,74 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
             Flexible(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                padding: const EdgeInsets.fromLTRB(0, 8, 0, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header Bar with Icon Badge & Close Button
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary5,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: const Icon(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
                             LucideIcons.sparkles,
                             color: AppColors.primary,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Add Routine Step',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryDark,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              SizedBox(height: 3),
-                              Text(
-                                'Add a personalized habit or medicine to your daily care routine.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.neutral600,
-                                  height: 1.35,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            LucideIcons.x,
                             size: 20,
-                            color: AppColors.neutral500,
                           ),
-                          onPressed: () => Navigator.of(context).pop(),
-                          tooltip: 'Close',
-                        ),
-                      ],
+                          const SizedBox(width: 14),
+                          Text(
+                            'Add Routine Step',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 18),
 
                     // Quick Preset Chips Section
-                    Row(
-                      children: const [
-                        Icon(LucideIcons.zap, size: 14, color: AppColors.primary),
-                        SizedBox(width: 6),
-                        Text(
-                          'POPULAR HABITS & PRESETS',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryDark,
-                            letterSpacing: 0.6,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            LucideIcons.zap,
+                            size: 14,
+                            color: AppColors.primary,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 6),
+                          Text(
+                            'POPULAR HABITS & PRESETS',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 38,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         physics: const BouncingScrollPhysics(),
                         itemCount: _presets.length,
-                        separatorBuilder: (context, index) => const SizedBox(width: 8),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final preset = _presets[index];
-                          final isCurrent = _titleController.text.trim() == preset.title;
+                          final isCurrent =
+                              _titleController.text.trim() == preset.title;
 
                           return InkWell(
                             onTap: () => _applyPreset(preset),
@@ -387,281 +392,308 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
                     const SizedBox(height: 20),
 
                     // Category Selection
-                    const Text(
-                      'CATEGORY',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDark,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: _categories.map((cat) {
-                        final isSelected = _category == cat['name'];
-                        final color = cat['color'] as Color;
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'CATEGORY',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: _categories.map((cat) {
+                              final isSelected = _category == cat['name'];
+                              final color = cat['color'] as Color;
 
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: InkWell(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() => _category = cat['name'] as String);
-                              },
-                              borderRadius: BorderRadius.circular(14),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? color.withValues(alpha: 0.1)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: isSelected ? color : AppColors.neutral200,
-                                    width: isSelected ? 1.8 : 1.0,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      cat['icon'] as IconData,
-                                      size: 18,
-                                      color: isSelected
-                                          ? color
-                                          : AppColors.neutral600,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      cat['label'] as String,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: isSelected
-                                            ? FontWeight.w800
-                                            : FontWeight.w600,
+                              return Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      setState(
+                                        () => _category = cat['name'] as String,
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
                                         color: isSelected
-                                            ? color
-                                            : AppColors.neutral700,
+                                            ? color.withValues(alpha: 0.1)
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? color
+                                              : AppColors.neutral200,
+                                          width: isSelected ? 1.8 : 1.0,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            cat['icon'] as IconData,
+                                            size: 18,
+                                            color: isSelected
+                                                ? color
+                                                : AppColors.neutral600,
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            cat['label'] as String,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w600,
+                                              color: isSelected
+                                                  ? color
+                                                  : AppColors.neutral700,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Time of Day Selector
+                          const Text(
+                            'TIME OF DAY',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: _timesOfDay.map((tod) {
+                              final isSelected = _timeOfDay == tod['name'];
+
+                              return Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 6.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      setState(
+                                        () =>
+                                            _timeOfDay = tod['name'] as String,
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                        horizontal: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppColors.primary
+                                            : AppColors.neutral100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.neutral200,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            tod['icon'] as IconData,
+                                            size: 16,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : AppColors.neutral600,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            tod['label'] as String,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w600,
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : AppColors.neutral800,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Title Text Field
+                          const Text(
+                            'CARE STEP TITLE',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _titleController,
+                            focusNode: _titleFocus,
+                            textCapitalization: TextCapitalization.sentences,
+                            maxLength: 100,
+                            decoration: InputDecoration(
+                              hintText: 'e.g. Scalp Dermarolling (0.5mm)',
+                              hintStyle: const TextStyle(
+                                fontSize: 13.5,
+                                color: AppColors.neutral400,
+                              ),
+                              counterText: '',
+                              prefixIcon: const Icon(
+                                LucideIcons.penLine,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              suffixIcon: _titleController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(LucideIcons.x, size: 16),
+                                      onPressed: () {
+                                        _titleController.clear();
+                                        setState(() {});
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: AppColors.neutral50,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppColors.border,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppColors.border,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 1.5,
                                 ),
                               ),
                             ),
+                            onChanged: (_) => setState(() {}),
                           ),
-                        );
-                      }).toList(),
-                    ),
 
-                    const SizedBox(height: 20),
+                          const SizedBox(height: 16),
 
-                    // Time of Day Selector
-                    const Text(
-                      'TIME OF DAY',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDark,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: _timesOfDay.map((tod) {
-                        final isSelected = _timeOfDay == tod['name'];
-
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 6.0),
-                            child: InkWell(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() => _timeOfDay = tod['name'] as String);
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 4,
+                          // Subtitle / Dosage Text Field
+                          const Text(
+                            'INSTRUCTIONS / DOSAGE (OPTIONAL)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _subtitleController,
+                            textCapitalization: TextCapitalization.sentences,
+                            maxLength: 200,
+                            decoration: InputDecoration(
+                              hintText: 'e.g. 5 minutes before serum or 1ml with dropper',
+                              hintStyle: const TextStyle(
+                                fontSize: 13.5,
+                                color: AppColors.neutral400,
+                              ),
+                              counterText: '',
+                              prefixIcon: const Icon(
+                                LucideIcons.fileText,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              suffixIcon: _subtitleController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(LucideIcons.x, size: 16),
+                                      onPressed: () {
+                                        _subtitleController.clear();
+                                        setState(() {});
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: AppColors.neutral50,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppColors.border,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.neutral100,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.neutral200,
-                                  ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppColors.border,
                                 ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      tod['icon'] as IconData,
-                                      size: 16,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : AppColors.neutral600,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      tod['label'] as String,
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: isSelected
-                                            ? FontWeight.w800
-                                            : FontWeight.w600,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : AppColors.neutral800,
-                                      ),
-                                    ),
-                                  ],
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 1.5,
                                 ),
                               ),
                             ),
+                            onChanged: (_) => setState(() {}),
                           ),
-                        );
-                      }).toList(),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Title Text Field
-                    const Text(
-                      'CARE STEP TITLE',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDark,
-                        letterSpacing: 0.6,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _titleController,
-                      focusNode: _titleFocus,
-                      textCapitalization: TextCapitalization.sentences,
-                      maxLength: 100,
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Scalp Dermarolling (0.5mm)',
-                        hintStyle: const TextStyle(
-                          fontSize: 13.5,
-                          color: AppColors.neutral400,
-                        ),
-                        counterText: '',
-                        prefixIcon: const Icon(
-                          LucideIcons.penLine,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                        suffixIcon: _titleController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(LucideIcons.x, size: 16),
-                                onPressed: () {
-                                  _titleController.clear();
-                                  setState(() {});
-                                },
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: AppColors.neutral50,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Subtitle / Dosage Text Field
-                    const Text(
-                      'INSTRUCTIONS / DOSAGE (OPTIONAL)',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDark,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _subtitleController,
-                      textCapitalization: TextCapitalization.sentences,
-                      maxLength: 200,
-                      decoration: InputDecoration(
-                        hintText: 'e.g. 5 minutes before serum or 1ml with dropper',
-                        hintStyle: const TextStyle(
-                          fontSize: 13.5,
-                          color: AppColors.neutral400,
-                        ),
-                        counterText: '',
-                        prefixIcon: const Icon(
-                          LucideIcons.fileText,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                        suffixIcon: _subtitleController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(LucideIcons.x, size: 16),
-                                onPressed: () {
-                                  _subtitleController.clear();
-                                  setState(() {});
-                                },
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: AppColors.neutral50,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                      onChanged: (_) => setState(() {}),
                     ),
                   ],
                 ),
@@ -685,7 +717,9 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
                   Expanded(
                     flex: 1,
                     child: OutlinedButton(
-                      onPressed: _isSaving ? null : () => Navigator.pop(context),
+                      onPressed: _isSaving
+                          ? null
+                          : () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.neutral700,
                         side: const BorderSide(color: AppColors.neutral300),

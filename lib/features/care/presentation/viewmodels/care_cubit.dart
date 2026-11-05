@@ -529,6 +529,7 @@ class CareCubit extends Cubit<CareState> {
     required String subtitle,
     required String category,
     required String timeOfDay,
+    String? sessionToken,
   }) async {
     final newTask = RoutineTask(
       id: 'rt_${DateTime.now().millisecondsSinceEpoch}',
@@ -546,10 +547,11 @@ class CareCubit extends Cubit<CareState> {
     _saveRoutineDay();
     _recordRoutineCompletionIfDone(updated);
 
-    if (_sessionToken != null && _sessionToken!.isNotEmpty) {
+    final token = sessionToken ?? _sessionToken;
+    if (token != null && token.isNotEmpty) {
       try {
         final serverSteps = await _clinicalApi.addRoutineStep(
-          accessToken: _sessionToken!,
+          accessToken: token,
           title: title,
           subtitle: subtitle,
           category: category,
@@ -584,7 +586,10 @@ class CareCubit extends Cubit<CareState> {
     return true;
   }
 
-  Future<bool> removeRoutineTask(RoutineTask task) async {
+  Future<bool> removeRoutineTask(
+    RoutineTask task, {
+    String? sessionToken,
+  }) async {
     final index = state.routineTasks.indexOf(task);
     if (index < 0) return false;
 
@@ -594,10 +599,11 @@ class CareCubit extends Cubit<CareState> {
     _notificationService?.saveRoutineTasks(updated);
     _saveRoutineDay();
 
-    if (_sessionToken != null && _sessionToken!.isNotEmpty) {
+    final token = sessionToken ?? _sessionToken;
+    if (token != null && token.isNotEmpty) {
       try {
         await _clinicalApi.deleteRoutineStep(
-          accessToken: _sessionToken!,
+          accessToken: token,
           stepIndex: index,
         );
       } catch (_) {}

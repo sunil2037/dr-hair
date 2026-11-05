@@ -11,7 +11,7 @@ class PatientClinicalApi {
           client ??
           DioClient(
             baseUrl: ApiEndpoints.backendBaseUrl,
-            enableDebugLogging: false,
+            enableDebugLogging: true,
           );
 
   Future<Map<String, dynamic>> getClinicalRecord(String accessToken) async {
