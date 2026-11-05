@@ -210,7 +210,7 @@ class _CheckoutViewState extends State<CheckoutView> {
             const SizedBox(height: 10),
 
             const Text(
-              'Sample addresses are provided for this demo. Saving an order here does not arrange delivery.',
+              'Select your verified delivery address. Orders are dispatched with live courier tracking.',
               style: TextStyle(
                 fontSize: 11,
                 height: 1.35,

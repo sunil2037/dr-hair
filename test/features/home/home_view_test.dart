@@ -5,6 +5,7 @@ import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:dr_hair/features/home/presentation/views/home_view.dart';
 import 'package:dr_hair/core/theme/app_theme.dart';
+import 'package:dr_hair/features/shop/data/models/category_model.dart';
 import 'package:dr_hair/features/shop/data/models/product_model.dart';
 import 'package:dr_hair/features/shop/domain/repositories/product_repository.dart';
 import 'package:dr_hair/features/videos/domain/models/video_story_model.dart';
@@ -30,6 +31,11 @@ class _FakeHomeProductRepository implements ProductRepository {
       if (product.id == id) return product;
     }
     return null;
+  }
+
+  @override
+  Future<List<CategoryItem>> getCategories({String? type}) async {
+    return CategoryItem.defaultProductCategories();
   }
 }
 

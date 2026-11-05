@@ -136,6 +136,51 @@ class CartRemoteDataSource {
     }
   }
 
+  Future<({bool success, String? message, int discount, int total})>
+  applyCoupon(String code) async {
+    try {
+      final headers = await _buildHeaders();
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiEndpoints.cartCoupon,
+        data: {'code': code.trim().toUpperCase()},
+        options: Options(headers: headers, extra: const {'silent': true}),
+      );
+      final data = response.data?['data'];
+      if (data is Map<String, dynamic>) {
+        final discount = (data['discount'] as num?)?.toInt() ?? 0;
+        final total = (data['total'] as num?)?.toInt() ?? 0;
+        final message = response.data?['message']?.toString();
+        return (
+          success: true,
+          message: message,
+          discount: discount,
+          total: total,
+        );
+      }
+    } on DioException catch (dioErr) {
+      final resMsg = dioErr.response?.data?['message']?.toString();
+      return (
+        success: false,
+        message: resMsg ?? 'Invalid or expired coupon code.',
+        discount: 0,
+        total: 0,
+      );
+    } catch (_) {
+      return (
+        success: false,
+        message: 'Could not apply coupon. Please check connection.',
+        discount: 0,
+        total: 0,
+      );
+    }
+    return (
+      success: false,
+      message: 'Invalid coupon code.',
+      discount: 0,
+      total: 0,
+    );
+  }
+
   Future<Map<String, dynamic>?> applyReward(String code) async {
     try {
       final headers = await _buildHeaders();

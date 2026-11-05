@@ -1,7 +1,9 @@
+import '../../data/models/category_model.dart';
 import '../../data/models/product_model.dart';
 
 class ProductsState {
   final List<ProductItem> products;
+  final List<CategoryItem> categories;
   final bool isLoading;
   final String? errorMessage;
   final int selectedCategoryIndex;
@@ -9,14 +11,16 @@ class ProductsState {
 
   const ProductsState({
     this.products = const [],
+    this.categories = const [],
     this.isLoading = false,
     this.errorMessage,
     this.selectedCategoryIndex = 0,
     this.searchQuery = '',
   });
 
-  factory ProductsState.initial() => const ProductsState(
-    products: [],
+  factory ProductsState.initial() => ProductsState(
+    products: const [],
+    categories: CategoryItem.defaultProductCategories(),
     isLoading: true,
     selectedCategoryIndex: 0,
     searchQuery: '',
@@ -102,7 +106,10 @@ class ProductsState {
     return list;
   }
 
-  static String _tabIdForIndex(int index) {
+  String _tabIdForIndex(int index) {
+    if (categories.isNotEmpty && index >= 0 && index < categories.length) {
+      return categories[index].id.toLowerCase();
+    }
     const ids = [
       'all',
       'hair',
@@ -119,6 +126,7 @@ class ProductsState {
 
   ProductsState copyWith({
     List<ProductItem>? products,
+    List<CategoryItem>? categories,
     bool? isLoading,
     String? errorMessage,
     int? selectedCategoryIndex,
@@ -126,6 +134,7 @@ class ProductsState {
   }) {
     return ProductsState(
       products: products ?? this.products,
+      categories: categories ?? this.categories,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       selectedCategoryIndex:

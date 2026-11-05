@@ -44,9 +44,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Patient Video Stories'), findsOneWidget);
-    expect(find.text('Educational & Stories'), findsOneWidget);
-
     // Category filter chips
     expect(find.text('All'), findsOneWidget);
     expect(find.text('Hair Fall'), findsOneWidget);

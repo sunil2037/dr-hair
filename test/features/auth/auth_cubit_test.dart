@@ -70,7 +70,7 @@ void main() {
       await cubit.verifyOtp(otp: '123456', phoneNumber: '9876543210');
       expect(cubit.state.isAuthenticated, isTrue);
 
-      cubit.signOut();
+      await cubit.signOut();
       expect(cubit.state.status, AuthStatus.unauthenticated);
       expect(cubit.state.user, isNull);
       expect(cubit.state.isAuthenticated, isFalse);

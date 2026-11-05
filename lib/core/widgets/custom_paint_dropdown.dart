@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -45,10 +44,6 @@ class _DropdownBubblePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final bodyTop = arrowHeight;
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, bodyTop, size.width, size.height - bodyTop),
-      Radius.circular(borderRadius),
-    );
 
     final path = Path();
     // Clamp arrow position so it stays comfortably within the rounded corners
@@ -141,10 +136,7 @@ class _DropdownChevronPainter extends CustomPainter {
   final double progress; // 0.0 = pointing down, 1.0 = pointing up
   final Color color;
 
-  _DropdownChevronPainter({
-    required this.progress,
-    required this.color,
-  });
+  _DropdownChevronPainter({required this.progress, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -211,7 +203,8 @@ class CustomPaintDropdownField<T> extends StatefulWidget {
       _CustomPaintDropdownFieldState<T>();
 }
 
-class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T>>
+class _CustomPaintDropdownFieldState<T>
+    extends State<CustomPaintDropdownField<T>>
     with SingleTickerProviderStateMixin {
   final LayerLink _layerLink = LayerLink();
   final GlobalKey _fieldKey = GlobalKey();
@@ -305,7 +298,8 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
   }
 
   OverlayEntry _createOverlayEntry() {
-    final renderBox = _fieldKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _fieldKey.currentContext?.findRenderObject() as RenderBox?;
     final size = renderBox?.size ?? const Size(300, 52);
     final fieldWidth = size.width;
 
@@ -361,7 +355,7 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
                             padding: EdgeInsets.zero,
                             shrinkWrap: true,
                             itemCount: widget.items.length,
-                            separatorBuilder: (_, __) => Divider(
+                            separatorBuilder: (context, index) => Divider(
                               height: 1,
                               thickness: 1,
                               indent: 12,
@@ -376,7 +370,9 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
                                 onTap: () => _selectItem(item),
                                 borderRadius: BorderRadius.circular(12),
                                 splashColor: AppColors.primary5,
-                                highlightColor: AppColors.primary5.withValues(alpha: 0.5),
+                                highlightColor: AppColors.primary5.withValues(
+                                  alpha: 0.5,
+                                ),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 14,
@@ -396,9 +392,15 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
                                           height: 32,
                                           decoration: BoxDecoration(
                                             color: isSelected
-                                                ? AppColors.primary.withValues(alpha: 0.12)
-                                                : AppColors.primary5.withValues(alpha: 0.6),
-                                            borderRadius: BorderRadius.circular(8),
+                                                ? AppColors.primary.withValues(
+                                                    alpha: 0.12,
+                                                  )
+                                                : AppColors.primary5.withValues(
+                                                    alpha: 0.6,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Icon(
                                             item.icon,
@@ -412,7 +414,8 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
                                       ],
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
@@ -538,7 +541,10 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
               borderRadius: BorderRadius.circular(16),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: widget.enabled
                       ? AppColors.primary5.withValues(alpha: 0.3)
@@ -619,4 +625,3 @@ class _CustomPaintDropdownFieldState<T> extends State<CustomPaintDropdownField<T
     );
   }
 }
-

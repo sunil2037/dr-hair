@@ -1,3 +1,4 @@
+import 'package:dr_hair/features/shop/data/models/category_model.dart';
 import 'package:dr_hair/features/shop/data/models/product_model.dart';
 import 'package:dr_hair/features/shop/domain/repositories/product_repository.dart';
 import 'package:dr_hair/features/shop/presentation/viewmodels/cart_cubit.dart';
@@ -33,6 +34,11 @@ class _FakeProductRepo implements ProductRepository {
   @override
   Future<ProductItem?> getProductById(String id) async {
     return items.firstWhere((p) => p.id == id, orElse: () => items.first);
+  }
+
+  @override
+  Future<List<CategoryItem>> getCategories({String? type}) async {
+    return CategoryItem.defaultProductCategories();
   }
 }
 

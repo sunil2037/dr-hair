@@ -77,6 +77,9 @@ class ApiEndpoints {
   // 5. Products & Catalog Endpoints (/api/v1/products)
   // ---------------------------------------------------------------------------
   static const String products = '/api/v1/products';
+  static const String productCategories = '/api/v1/products/categories';
+  static const String categories = '/api/v1/categories';
+  static const String videoCategories = '/api/v1/videos/categories';
   static String productById(String id) =>
       '/api/v1/products/${Uri.encodeComponent(id)}';
 

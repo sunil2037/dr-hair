@@ -27,6 +27,7 @@ class HairTestState {
   final bool isRetesting;
   final bool isPickingImage;
   final String? errorMessage;
+  final List<Map<String, dynamic>> clinicalReports;
 
   const HairTestState({
     this.currentStep = 0,
@@ -54,6 +55,7 @@ class HairTestState {
     this.isRetesting = false,
     this.isPickingImage = false,
     this.errorMessage,
+    this.clinicalReports = const [],
   });
 
   HairTestState copyWith({
@@ -85,6 +87,7 @@ class HairTestState {
     bool? isPickingImage,
     String? errorMessage,
     bool clearErrorMessage = false,
+    List<Map<String, dynamic>>? clinicalReports,
   }) {
     return HairTestState(
       currentStep: currentStep ?? this.currentStep,
@@ -115,6 +118,7 @@ class HairTestState {
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
+      clinicalReports: clinicalReports ?? this.clinicalReports,
     );
   }
 

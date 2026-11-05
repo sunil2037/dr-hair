@@ -435,7 +435,25 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
+                TextButton.icon(
+                  onPressed: _isSaving ? null : _pickProfilePhoto,
+                  icon: const Icon(
+                    LucideIcons.camera,
+                    size: 15,
+                    color: AppColors.primary,
+                  ),
+                  label: const Text(
+                    'Change Profile Photo',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
 
                 // ---------------------------------------------------------------
                 // Card 1: Personal Information
@@ -697,12 +715,15 @@ class _UpdateProfileViewState extends State<UpdateProfileView> {
           ],
         ),
         child: SafeArea(
-          child: AppButton(
-            text: 'Save Changes',
-            isLoading: _isSaving,
-            onPressed: _isSaving ? null : _saveProfile,
-            borderRadius: BorderRadius.circular(28),
-            height: 52,
+          child: Skeletonizer(
+            enabled: _isSaving,
+            child: AppButton(
+              text: _isSaving ? 'Saving Changes...' : 'Save Changes',
+              isLoading: false,
+              onPressed: _isSaving ? null : _saveProfile,
+              borderRadius: BorderRadius.circular(28),
+              height: 52,
+            ),
           ),
         ),
       ),

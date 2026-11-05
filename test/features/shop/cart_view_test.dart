@@ -43,16 +43,8 @@ void main() {
         );
         expect(imageFinder, findsOneWidget);
 
-        // Verify action buttons
+        // Verify action button
         expect(find.text('Explore Treatments'), findsOneWidget);
-        expect(find.text('Reset Demo Cart Items'), findsOneWidget);
-
-        // Reset items restores cart
-        await tester.tap(find.text('Reset Demo Cart Items'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Follicle Booster Serum'), findsOneWidget);
-        expect(find.text('Your Cart is Empty'), findsNothing);
       },
     );
 

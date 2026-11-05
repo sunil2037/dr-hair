@@ -1,5 +1,6 @@
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_remote_data_source.dart';
+import '../models/category_model.dart';
 import '../models/product_model.dart';
 
 class ProductRepositoryImpl implements ProductRepository {
@@ -41,5 +42,10 @@ class ProductRepositoryImpl implements ProductRepository {
     }
 
     return null;
+  }
+
+  @override
+  Future<List<CategoryItem>> getCategories({String? type}) async {
+    return _remoteDataSource.fetchCategories(type: type);
   }
 }

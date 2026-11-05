@@ -330,7 +330,7 @@ class _AddRoutineTaskBottomSheetState extends State<AddRoutineTaskBottomSheet> {
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
                         itemCount: _presets.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        separatorBuilder: (context, index) => const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final preset = _presets[index];
                           final isCurrent = _titleController.text.trim() == preset.title;

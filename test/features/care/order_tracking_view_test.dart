@@ -35,11 +35,13 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Navigate to profile tab
     router.go('/profile');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Find "Orders & delivery"
     final ordersTile = find.text('Orders & delivery');
@@ -48,12 +50,14 @@ void main() {
     // Scroll to it and offset down slightly from under the app bar
     await tester.ensureVisible(ordersTile);
     await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, 80));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Tap it
     await tester.tap(ordersTile);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Orders & Deliveries'), findsOneWidget);
+    expect(find.text('My Orders'), findsOneWidget);
   });
 }

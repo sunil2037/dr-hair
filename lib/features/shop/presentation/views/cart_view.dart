@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
+import '../../data/datasources/cart_remote_data_source.dart';
 import '../../data/models/coupon_model.dart';
 import '../viewmodels/cart_cubit.dart';
 
@@ -253,25 +254,56 @@ class _CartViewState extends State<CartView> {
     HapticFeedback.mediumImpact();
   }
 
-  void _applyCoupon() {
+  Future<void> _applyCoupon() async {
     final code = _couponController.text.trim().toUpperCase();
-    final matchingRules = demoCouponRules.where(
-      (coupon) => coupon.code == code,
-    );
-    if (matchingRules.isEmpty) {
-      setState(() {
-        _appliedCoupon = null;
-        _couponError = 'That coupon code is not available.';
-      });
+    if (code.isEmpty) {
+      setState(() => _couponError = 'Enter a coupon code.');
       return;
     }
-    final coupon = matchingRules.first;
-    final result = coupon.evaluate(subtotal: _subtotal, items: _items);
-    setState(() {
-      _appliedCoupon = result.isValid ? coupon : null;
-      _couponError = result.isValid ? null : result.message;
-    });
-    if (result.isValid) HapticFeedback.lightImpact();
+
+    final remoteRes = await CartRemoteDataSource().applyCoupon(code);
+    if (!mounted) return;
+
+    if (remoteRes.success) {
+      final matchingRules = demoCouponRules.where((c) => c.code == code);
+      final coupon = matchingRules.isNotEmpty
+          ? matchingRules.first
+          : CouponRule(
+              code: code,
+              discountType: CouponDiscountType.fixed,
+              discountValue: remoteRes.discount,
+              appliesTo: 'All products',
+              minimumOrder: 0,
+              uses: 0,
+              maxUses: 999999,
+              expiresOn: DateTime.now().add(const Duration(days: 365)),
+              isActive: true,
+            );
+      setState(() {
+        _appliedCoupon = coupon;
+        _couponError = null;
+      });
+      HapticFeedback.lightImpact();
+      return;
+    }
+
+    final matchingRules = demoCouponRules.where((c) => c.code == code);
+    if (matchingRules.isNotEmpty) {
+      final coupon = matchingRules.first;
+      final result = coupon.evaluate(subtotal: _subtotal, items: _items);
+      setState(() {
+        _appliedCoupon = result.isValid ? coupon : null;
+        _couponError = result.isValid
+            ? null
+            : (remoteRes.message ?? result.message);
+      });
+      if (result.isValid) HapticFeedback.lightImpact();
+    } else {
+      setState(() {
+        _appliedCoupon = null;
+        _couponError = remoteRes.message ?? 'Invalid or expired coupon code.';
+      });
+    }
   }
 
   void _removeCoupon() {
@@ -424,45 +456,6 @@ class _CartViewState extends State<CartView> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Keep the demo reset affordance only in standalone preview mode.
-          if (context.read<CartCubit?>() == null)
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _localItems = [
-                    {
-                      'title': 'Follicle Booster Serum',
-                      'desc': 'Advance Density Complex • 30ml',
-                      'price': 1299,
-                      'quantity': 1,
-                      'image': 'https://images.unsplash.com/photo-1608248597359-5509a5665805?q=80&w=400',
-                    },
-                    {
-                      'title': 'Clinical Scalp Detox Shampoo',
-                      'desc': 'Anti-Microbial Zinc Pyrithione • 200ml',
-                      'price': 749,
-                      'quantity': 1,
-                      'image': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=400',
-                    },
-                  ];
-                });
-                HapticFeedback.lightImpact();
-              },
-              icon: const Icon(
-                LucideIcons.rotateCcw,
-                size: 14,
-                color: AppColors.primary,
-              ),
-              label: const Text(
-                'Reset Demo Cart Items',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
         ],
       ),
     );

@@ -27,13 +27,20 @@ class PolicyRepository {
         options: Options(extra: const {'silent': true}),
       );
       final data = response.data?['data'];
-      if (data is Map<String, dynamic>) {
+      if (data is Map<String, dynamic> &&
+          ((data['sections'] is List && (data['sections'] as List).isNotEmpty) ||
+              (data['summary'] != null &&
+                  data['summary'].toString().trim().isNotEmpty))) {
         final doc = PolicyDocument.fromJson(data, fallbackType: type);
         _memoryCache[type] = doc;
         return doc;
       }
     } catch (_) {}
     return getPolicy(type);
+  }
+
+  static void clearCache() {
+    _memoryCache.clear();
   }
 
   static PolicyDocument getPolicy(PolicyType type) {
@@ -66,9 +73,11 @@ class PolicyRepository {
     type: PolicyType.privacyPolicy,
     title: 'Privacy Policy',
     lastUpdated: currentEffectiveDate,
-    summary: 'This Privacy Notice explains how Dr. Hair collects, uses, protects, and handles your personal data, hair assessment responses, and scalp progression photographs in compliance with India’s Digital Personal Data Protection (DPDP) Act, 2023.',
-    hasPendingLegalApproval: false,
-    pendingApprovalNotice: 'Pending formal legal approval: Final registered corporate entity name, registered office address in Karnataka/Delhi, and official appointment of the Data Protection Officer / Grievance Officer.',
+    summary:
+        'This Privacy Notice explains how Dr. Hair collects, uses, protects, and handles your personal data, hair assessment responses, and scalp progression photographs in compliance with India’s Digital Personal Data Protection (DPDP) Act, 2023.',
+    hasPendingLegalApproval: true,
+    pendingApprovalNotice:
+        'Pending formal legal approval: Final registered corporate entity name, registered office address in Karnataka/Delhi, and official appointment of the Data Protection Officer / Grievance Officer.',
     sections: [
       PolicySection(
         title: '1. Standalone DPDP Notice & Overview',

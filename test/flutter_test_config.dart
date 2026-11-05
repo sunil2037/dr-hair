@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:dr_hair/core/network/dio_client.dart';
 
 class _HermeticTestHttpClientAdapter implements HttpClientAdapter {
@@ -53,6 +54,15 @@ class _HermeticTestHttpClientAdapter implements HttpClientAdapter {
         'data': {
           'items': <dynamic>[],
           'total': 0,
+        },
+      };
+    } else if (path.contains('/api/v1/categories') || path.contains('/categories')) {
+      responseData = {
+        'status': 'success',
+        'data': {
+          'products': <dynamic>[],
+          'videos': <dynamic>[],
+          'services': <dynamic>[],
         },
       };
     } else if (path.contains('/api/v1/videos')) {
@@ -113,6 +123,46 @@ class _HermeticTestHttpClientAdapter implements HttpClientAdapter {
 }
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
+  TestWidgetsFlutterBinding.ensureInitialized();
   DioClient.mockAdapter = _HermeticTestHttpClientAdapter();
+
+  const storageChannel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  final inMemoryStorage = <String, String>{};
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(storageChannel, (MethodCall call) async {
+    if (call.method == 'read') {
+      final key = call.arguments?['key'] as String?;
+      return inMemoryStorage[key];
+    }
+    if (call.method == 'write') {
+      final key = call.arguments?['key'] as String?;
+      final value = call.arguments?['value'] as String?;
+      if (key != null && value != null) inMemoryStorage[key] = value;
+      return null;
+    }
+    if (call.method == 'delete') {
+      final key = call.arguments?['key'] as String?;
+      if (key != null) inMemoryStorage.remove(key);
+      return null;
+    }
+    if (call.method == 'deleteAll') {
+      inMemoryStorage.clear();
+      return null;
+    }
+    if (call.method == 'containsKey') {
+      final key = call.arguments?['key'] as String?;
+      return inMemoryStorage.containsKey(key);
+    }
+    return null;
+  });
+
+  const googleSignInChannel =
+      MethodChannel('plugins.flutter.io/google_sign_in');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(googleSignInChannel, (MethodCall call) async {
+    return null;
+  });
+
   await testMain();
 }

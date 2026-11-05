@@ -136,7 +136,7 @@ class AuthInputField extends StatelessWidget {
               width: hasError ? 1.2 : 1.0,
             ),
           ),
-          child: TextField(
+          child: TextFormField(
             controller: controller,
             focusNode: focusNode,
             enabled: enabled,
@@ -146,7 +146,7 @@ class AuthInputField extends StatelessWidget {
             textInputAction: textInputAction,
             textCapitalization: textCapitalization,
             inputFormatters: inputFormatters,
-            onSubmitted: onSubmitted,
+            onFieldSubmitted: onSubmitted,
             onChanged: onFieldChanged,
             autofillHints: autofillHints,
             style: TextStyle(

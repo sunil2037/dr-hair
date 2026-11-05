@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
@@ -1758,6 +1759,11 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
                 ),
               ),
 
+              if (state.clinicalReports.isNotEmpty) ...[
+                _buildDoctorClinicalReportsSection(context, state.clinicalReports),
+                const SizedBox(height: 24),
+              ],
+
               const SizedBox(height: 24),
               HairDetectionAnalysisWidget(
                 state: state,
@@ -1871,6 +1877,218 @@ class _AssessmentReportViewState extends State<AssessmentReportView> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoctorClinicalReportsSection(
+    BuildContext context,
+    List<Map<String, dynamic>> reports,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF16A34A).withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  LucideIcons.fileCheck2,
+                  color: Color(0xFF16A34A),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Doctor's Clinical Report",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF14532D),
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Verified by Dr. Jai Bansal',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF16A34A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Your scalp assessment has been reviewed by Dr. Jai Bansal. An official clinical diagnosis report is available below.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: Color(0xFF166534),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...reports.map((report) {
+            final String title =
+                report['title']?.toString() ?? 'Clinical Hair & Scalp Report';
+            final String fileName =
+                report['file_name']?.toString() ?? 'report.pdf';
+            final String reportId = report['id']?.toString() ?? '';
+            final num bytes = (report['bytes'] as num?) ?? 1024;
+            final String sizeStr = bytes / 1024 < 1000
+                ? '${(bytes / 1024).toStringAsFixed(0)} KB'
+                : '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFDCFCE7)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.fileText,
+                        size: 18,
+                        color: Color(0xFF16A34A),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        sizeStr,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.secondaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    fileName,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.secondaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF16A34A),
+                            side: const BorderSide(color: Color(0xFF16A34A)),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: const Icon(LucideIcons.download, size: 14),
+                          label: const Text(
+                            'View PDF',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          onPressed: () async {
+                            final cubit = context.read<HairTestCubit?>();
+                            if (cubit != null && reportId.isNotEmpty) {
+                              final uri =
+                                  await cubit.getReportDownloadUri(reportId);
+                              if (uri != null) {
+                                await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Could not open report. Please try again.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: const Icon(LucideIcons.shoppingBag, size: 14),
+                          label: const Text(
+                            'Order Kit',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          onPressed: () {
+                            context.push(RouteNames.products);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

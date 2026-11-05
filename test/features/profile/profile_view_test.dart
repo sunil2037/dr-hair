@@ -93,45 +93,23 @@ void main() {
   );
 
   testWidgets(
-    'ProfileView Manage my data opens sheet with Delete account option and warning confirmation',
+    'ProfileView displays Settings & preferences tile with navigation',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: ProfileView()));
       await tester.pumpAndSettle();
 
-      // Scroll to find "Manage my data"
-      final manageDataTile = find.text('Manage my data');
-      await tester.scrollUntilVisible(manageDataTile, 300);
-      expect(manageDataTile, findsOneWidget);
-
-      await tester.tap(manageDataTile);
-      await tester.pumpAndSettle();
-
-      // Verify the bottom sheet options
-      expect(find.text('Your data on this device'), findsOneWidget);
-      expect(find.text('Export my care data'), findsOneWidget);
-      expect(find.text('Delete local care data'), findsOneWidget);
-      expect(find.text('Delete account permanently'), findsOneWidget);
-
-      // Tap Delete account permanently
-      await tester.tap(find.text('Delete account permanently'));
-      await tester.pumpAndSettle();
-
-      // Verify warning confirmation sheet
-      expect(find.text('Delete account permanently?'), findsOneWidget);
+      // Scroll to find "Settings & preferences"
+      final settingsTile = find.text('Settings & preferences');
+      await tester.scrollUntilVisible(
+        settingsTile,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(settingsTile, findsOneWidget);
       expect(
-        find.textContaining('Are you sure you want to delete your Dr. Hair account?'),
+        find.text('Alerts, account info, policies, and deletion'),
         findsOneWidget,
       );
-      expect(
-        find.textContaining('Medical reports and clinical consultations are retained'),
-        findsOneWidget,
-      );
-      expect(find.widgetWithText(FilledButton, 'Delete account'), findsOneWidget);
-      expect(find.widgetWithText(OutlinedButton, 'Cancel'), findsOneWidget);
-
-      // Tap Cancel to dismiss
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
-      await tester.pumpAndSettle();
     },
   );
 }

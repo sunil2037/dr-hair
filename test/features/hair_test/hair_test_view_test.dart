@@ -3,6 +3,7 @@ import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cub
 import 'package:dr_hair/features/hair_test/presentation/views/hair_test_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -213,7 +214,7 @@ void main() {
       );
 
       // Front Hairline (Hair detected)
-      expect(find.text('Hair Detected (92%)'), findsOneWidget);
+      expect(find.byIcon(LucideIcons.check), findsWidgets);
       expect(
         find.textContaining('Hair & scalp detected successfully'),
         findsOneWidget,

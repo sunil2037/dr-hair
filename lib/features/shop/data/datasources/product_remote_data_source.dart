@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/network/dio_client.dart';
+import '../models/category_model.dart';
 import '../models/product_model.dart';
 
 class ProductRemoteDataSource {
@@ -72,5 +73,35 @@ class ProductRemoteDataSource {
       return ProductItem.fromJson(data);
     }
     return null;
+  }
+
+  Future<List<CategoryItem>> fetchCategories({String? type}) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        type != null ? ApiEndpoints.categories : ApiEndpoints.productCategories,
+        queryParameters: type != null ? {'type': type} : null,
+        options: Options(extra: const {'silent': true}),
+      );
+
+      final data = response.data?['data'];
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(CategoryItem.fromJson)
+            .toList();
+      } else if (data is Map<String, dynamic>) {
+        final list = (type == 'videos'
+                ? data['videos']
+                : type == 'services'
+                    ? data['services']
+                    : (data['products'] ?? data['categories'])) as List<dynamic>? ??
+            [];
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map(CategoryItem.fromJson)
+            .toList();
+      }
+    } catch (_) {}
+    return CategoryItem.defaultProductCategories();
   }
 }

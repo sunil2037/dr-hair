@@ -8,23 +8,11 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/app_destination.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_cached_image.dart';
+import '../../data/models/category_model.dart';
 import '../../data/models/product_model.dart';
 import '../viewmodels/cart_cubit.dart';
 import '../viewmodels/products_cubit.dart';
 import '../viewmodels/products_state.dart';
-
-/// Category Tab Model for clinical root cause navigation
-class _CategoryTabItem {
-  final String id;
-  final String label;
-  final IconData icon;
-
-  const _CategoryTabItem({
-    required this.id,
-    required this.label,
-    required this.icon,
-  });
-}
 
 /// Dedicated Medicines & Products screen using [NestedScrollView] with SliverAppBar,
 /// category TabBar for clinical root causes (Thyroid, Dandruff, Hair, Stress, Gut, PCOS, Hormone),
@@ -66,35 +54,40 @@ class _ProductsContent extends StatefulWidget {
 
 class _ProductsContentState extends State<_ProductsContent>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+  late TabController _tabController;
+  List<CategoryItem> _categories = CategoryItem.defaultProductCategories();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
 
-  static const List<_CategoryTabItem> _categories = [
-    _CategoryTabItem(id: 'all', label: 'All', icon: LucideIcons.layoutGrid),
-    _CategoryTabItem(id: 'hair', label: 'Hair', icon: LucideIcons.sparkles),
-    _CategoryTabItem(
-      id: 'dandruff',
-      label: 'Dandruff',
-      icon: LucideIcons.shieldCheck,
-    ),
-    _CategoryTabItem(id: 'gut', label: 'Gut', icon: LucideIcons.apple),
-    _CategoryTabItem(id: 'stress', label: 'Stress', icon: LucideIcons.brain),
-    _CategoryTabItem(
-      id: 'thyroid',
-      label: 'Thyroid',
-      icon: LucideIcons.activity,
-    ),
-    _CategoryTabItem(id: 'pcos', label: 'PCOS', icon: LucideIcons.flower2),
-    _CategoryTabItem(id: 'hormone', label: 'Hormone', icon: LucideIcons.dna),
-  ];
-
   @override
   void initState() {
     super.initState();
+    final cubitCategories = context.read<ProductsCubit>().state.categories;
+    if (cubitCategories.isNotEmpty) {
+      _categories = cubitCategories;
+    }
     _tabController = TabController(length: _categories.length, vsync: this);
     _tabController.addListener(_handleTabSelection);
+  }
+
+  void _syncCategories(List<CategoryItem> newCategories) {
+    if (newCategories.isEmpty) return;
+    if (newCategories.length != _categories.length) {
+      final oldIndex = _tabController.index;
+      _tabController.removeListener(_handleTabSelection);
+      _tabController.dispose();
+      _categories = newCategories;
+      final safeIndex = oldIndex.clamp(0, newCategories.length - 1);
+      _tabController = TabController(
+        length: newCategories.length,
+        initialIndex: safeIndex,
+        vsync: this,
+      );
+      _tabController.addListener(_handleTabSelection);
+    } else {
+      _categories = newCategories;
+    }
   }
 
   void _handleTabSelection() {
@@ -306,6 +299,9 @@ class _ProductsContentState extends State<_ProductsContent>
           if (state.products.isNotEmpty) {
             ProductItem.cacheProducts(state.products);
           }
+          if (state.categories.isNotEmpty) {
+            _syncCategories(state.categories);
+          }
         },
         builder: (context, state) {
           final catalog = state.products;
@@ -322,6 +318,7 @@ class _ProductsContentState extends State<_ProductsContent>
                         pinned: true,
                         floating: true,
                         snap: false,
+                        centerTitle: true,
                         elevation: innerBoxIsScrolled ? 1 : 0,
                         backgroundColor: Colors.white,
                         surfaceTintColor: Colors.transparent,
@@ -332,7 +329,7 @@ class _ProductsContentState extends State<_ProductsContent>
                             'Medicines & Products',
                             style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.primaryDark,
                             ),
                           ),
@@ -340,19 +337,6 @@ class _ProductsContentState extends State<_ProductsContent>
                         actions: [
                           // 1. Cart Button with badge
                           _buildCartButton(context),
-
-                          // 2. Search Icon on right side of Cart button
-                          IconButton(
-                            key: const ValueKey('appbar-search-button'),
-                            tooltip: 'Search products',
-                            icon: const Icon(
-                              Icons.search_rounded,
-                              color: AppColors.primaryDark,
-                            ),
-                            onPressed: () {
-                              _searchFocusNode.requestFocus();
-                            },
-                          ),
 
                           const SizedBox(width: 8),
                         ],
@@ -454,32 +438,59 @@ class _ProductsContentState extends State<_ProductsContent>
                                 ),
                               ),
                             ),
-                          if (state.isLoading && displayList.isEmpty)
+                          if (state.isLoading && displayList.isEmpty) ...[
                             SliverPadding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                               sliver: SliverToBoxAdapter(
                                 child: Skeletonizer(
                                   enabled: true,
-                                  child: Column(
-                                    children: List.generate(
-                                      3,
-                                      (index) => Container(
-                                        height: 120,
-                                        margin: const EdgeInsets.only(bottom: 12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(16),
-                                        ),
-                                        child: const Center(
-                                          child: Text('Loading clinical item details...'),
-                                        ),
-                                      ),
+                                  effect: _kProductShimmerEffect,
+                                  containersColor: Colors.white,
+                                  child: Container(
+                                    height: 12,
+                                    width: 76,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE9EEF5),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                   ),
                                 ),
                               ),
-                            )
-                          else if (displayList.isEmpty)
+                            ),
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(10, 8, 10, 32),
+                              sliver: SliverGrid(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount:
+                                          MediaQuery.sizeOf(context).width >=
+                                              1000
+                                          ? 4
+                                          : MediaQuery.sizeOf(context).width >=
+                                                640
+                                          ? 3
+                                          : 2,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                      mainAxisExtent:
+                                          MediaQuery.sizeOf(context).width < 360
+                                          ? 254
+                                          : 236,
+                                    ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    return Skeletonizer(
+                                      enabled: true,
+                                      effect: _kProductShimmerEffect,
+                                      containersColor: Colors.white,
+                                      child: const _ProductGridSkeletonCard(),
+                                    );
+                                  },
+                                  childCount: 6,
+                                ),
+                              ),
+                            ),
+                          ] else if (displayList.isEmpty)
                             SliverFillRemaining(
                               hasScrollBody: false,
                               child: state.errorMessage != null
@@ -492,6 +503,8 @@ class _ProductsContentState extends State<_ProductsContent>
                               sliver: SliverToBoxAdapter(
                                 child: Skeletonizer(
                                   enabled: state.isLoading,
+                                  effect: _kProductShimmerEffect,
+                                  containersColor: Colors.white,
                                   child: Text(
                                     '${displayList.length} ${displayList.length == 1 ? 'product' : 'products'}',
                                     style: const TextStyle(
@@ -530,6 +543,8 @@ class _ProductsContentState extends State<_ProductsContent>
                                   final product = displayList[index];
                                   return Skeletonizer(
                                     enabled: state.isLoading,
+                                    effect: _kProductShimmerEffect,
+                                    containersColor: Colors.white,
                                     child: _ProductGridCard(
                                       product: product,
                                       onTap: () => context.push(
@@ -566,7 +581,7 @@ class _ProductsContentState extends State<_ProductsContent>
           child: const Icon(
             LucideIcons.shoppingBag,
             color: AppColors.primaryDark,
-            size: 18,
+            size: 20,
           ),
         ),
         tooltip: 'My Cart',
@@ -586,6 +601,7 @@ class _ProductsContentState extends State<_ProductsContent>
               IconButton(
                 icon: const Icon(
                   LucideIcons.shoppingBag,
+                  size: 20,
                   color: AppColors.primaryDark,
                 ),
                 tooltip: 'My Cart',
@@ -706,7 +722,48 @@ class _ProductsContentState extends State<_ProductsContent>
               children: [
                 Icon(cat.icon, size: 14),
                 const SizedBox(width: 6),
-                Text(cat.label),
+                Text(cat.name),
+                if (cat.badge != null && cat.badge!.isNotEmpty) ...[
+                  const SizedBox(width: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      cat.badge!,
+                      style: const TextStyle(
+                        fontSize: 8.5,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ] else if (cat.itemCount > 0 && cat.id != 'all') ...[
+                  const SizedBox(width: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary5,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${cat.itemCount}',
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           );
@@ -817,6 +874,170 @@ class _ProductsContentState extends State<_ProductsContent>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Light clinical medical shimmer effect matching Dr. Hair theme
+const _kProductShimmerEffect = ShimmerEffect(
+  baseColor: Color(0xFFE9EEF5),
+  highlightColor: Colors.white,
+  duration: Duration(milliseconds: 1400),
+);
+
+/// Skeleton placeholder card designed specifically for the 2-column clinical product grid
+class _ProductGridSkeletonCard extends StatelessWidget {
+  const _ProductGridSkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.sizeOf(context).width < 360;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Image area placeholder with fake badge silhouettes
+          Stack(
+            children: [
+              Container(
+                height: isNarrow ? 92 : 104,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Container(
+                  height: 18,
+                  width: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 6,
+                right: 6,
+                child: Container(
+                  height: 16,
+                  width: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // 2. Title placeholders (2 lines)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 12,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9EEF5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Container(
+                  height: 12,
+                  width: 90,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9EEF5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // 3. Subtitle / ingredients placeholder
+                Container(
+                  height: 9,
+                  width: 65,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9EEF5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // 4. Bottom row: Price & Add button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        height: 9,
+                        width: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE9EEF5),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 15,
+                        width: 56,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE9EEF5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  height: 26,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary5,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 3),
+        ],
       ),
     );
   }

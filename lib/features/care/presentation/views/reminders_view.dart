@@ -192,9 +192,12 @@ class RemindersView extends StatelessWidget {
     if (type.contains('massage') || title.contains('massage')) {
       return LucideIcons.hand;
     }
-    if (title.contains('morning')) return LucideIcons.sunMedium;
-    if (title.contains('evening') || title.contains('night'))
+    if (title.contains('morning')) {
+      return LucideIcons.sunMedium;
+    }
+    if (title.contains('evening') || title.contains('night')) {
       return LucideIcons.moon;
+    }
     return LucideIcons.droplets;
   }
 

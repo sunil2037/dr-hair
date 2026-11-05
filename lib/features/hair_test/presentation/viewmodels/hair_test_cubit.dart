@@ -83,29 +83,37 @@ class HairTestCubit extends Cubit<HairTestState> {
   Future<void> _syncWithBackend(String token) async {
     try {
       final record = await _clinicalApi.getClinicalRecord(token);
+      final rawReports = record['reports'] as List? ?? [];
+      final reports = rawReports
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
       final assessments = record['assessments'] as List? ?? [];
       final submitted = assessments
           .whereType<Map>()
           .where((a) => a['status'] != 'draft')
           .toList();
-      if (submitted.isNotEmpty) {
-        final latest = submitted.first;
-        final refNo = latest['reference_no']?.toString();
-        final stage = latest['hair_loss_stage']?.toString();
+      if (submitted.isNotEmpty || reports.isNotEmpty) {
+        final latest = submitted.isNotEmpty ? submitted.first : null;
+        final refNo = latest?['reference_no']?.toString();
+        final stage = latest?['hair_loss_stage']?.toString();
         if (!isClosed) {
           emit(
             state.copyWith(
-              isCompleted: true,
-              isSubmitted: true,
+              isCompleted: submitted.isNotEmpty ? true : state.isCompleted,
+              isSubmitted: submitted.isNotEmpty ? true : state.isSubmitted,
               referenceNo: refNo,
               stage: stage,
-              name: latest['full_name']?.toString() ?? state.name,
-              age: latest['age']?.toString() ?? state.age,
-              dandruff: latest['dandruff']?.toString() ?? state.dandruff,
+              name: latest?['full_name']?.toString() ?? state.name,
+              age: latest?['age']?.toString() ?? state.age,
+              dandruff: latest?['dandruff']?.toString() ?? state.dandruff,
+              clinicalReports: reports,
             ),
           );
         }
-        await _cache.put(_completedKey, true);
+        if (submitted.isNotEmpty) {
+          await _cache.put(_completedKey, true);
+        }
         if (stage != null) await _cache.put(_stageKey, stage);
         return;
       }
@@ -630,6 +638,26 @@ class HairTestCubit extends Cubit<HairTestState> {
         clearErrorMessage: true,
       ),
     );
+  }
+
+  Future<Uri?> getReportDownloadUri(String reportId) async {
+    final token = _sessionToken;
+    if (token == null || token.isEmpty) return null;
+    try {
+      return await _clinicalApi.getReportDownloadUri(
+        accessToken: token,
+        reportId: reportId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> refreshClinicalReports() async {
+    final token = _sessionToken;
+    if (token != null && token.isNotEmpty) {
+      await _syncWithBackend(token);
+    }
   }
 
   void setPatientInfo({String? name, String? age}) {

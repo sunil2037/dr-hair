@@ -24,7 +24,7 @@ void main() {
       expect(find.text('DELIVERY ADDRESS'), findsOneWidget);
       expect(find.text('Delivery address required'), findsOneWidget);
       expect(find.text('PAYMENT METHOD'), findsOneWidget);
-      expect(find.text('Payment provider connection required to continue'), findsOneWidget);
+      expect(find.text('Pay on Delivery / Pay at Clinic'), findsOneWidget);
       expect(find.text('Items Total'), findsOneWidget);
       expect(find.text('₹0'), findsWidgets);
     });

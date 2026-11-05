@@ -47,6 +47,16 @@ class _AssessmentResultContent extends StatefulWidget {
 class _AssessmentResultContentState extends State<_AssessmentResultContent> {
   bool _previewSample = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<HairTestCubit?>()?.refreshClinicalReports();
+      }
+    });
+  }
+
   static const HairTestState _sampleReportState = HairTestState(
     isCompleted: true,
     name: 'Sahil',
@@ -64,7 +74,10 @@ class _AssessmentResultContentState extends State<_AssessmentResultContent> {
   Widget build(BuildContext context) {
     return BlocBuilder<HairTestCubit, HairTestState>(
       builder: (context, state) {
-        final bool hasReport = state.isCompleted || state.isSubmitted;
+        final bool hasReport =
+            state.isCompleted ||
+            state.isSubmitted ||
+            state.clinicalReports.isNotEmpty;
 
         if (hasReport) {
           return AssessmentReportView(state: state);
