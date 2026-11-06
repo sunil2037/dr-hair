@@ -80,6 +80,7 @@ class ApiEndpoints {
   static const String productCategories = '/api/v1/products/categories';
   static const String categories = '/api/v1/categories';
   static const String videoCategories = '/api/v1/videos/categories';
+  static const String categoryVideos = '/api/v1/categories/videos';
   static String productById(String id) =>
       '/api/v1/products/${Uri.encodeComponent(id)}';
 
@@ -139,6 +140,9 @@ class ApiEndpoints {
   static const String patientRoutineSteps = '/api/v1/patient/routine-steps';
   static String patientRoutineStepByIndex(int index) =>
       '/api/v1/patient/routine-steps/$index';
+  static const String patientReminders = '/api/v1/patient/reminders';
+  static String patientReminderById(String reminderId) =>
+      '/api/v1/patient/reminders/${Uri.encodeComponent(reminderId)}';
   static const String patientProgressCheckins =
       '/api/v1/patient/progress-checkins';
   static String patientProgressCheckinById(String checkInId) =>

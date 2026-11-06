@@ -8,7 +8,7 @@ import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../viewmodels/hair_test_cubit.dart';
 import '../viewmodels/hair_test_state.dart';
-import 'hair_test_view.dart';
+import 'assessment_report_view.dart';
 
 /// Standalone screen dedicated to viewing the Clinical Hair Assessment Result.
 /// Accessible from Profile ("Assessment result") and direct navigation.

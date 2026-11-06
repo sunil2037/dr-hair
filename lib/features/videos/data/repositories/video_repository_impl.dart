@@ -29,4 +29,9 @@ class VideoRepositoryImpl implements VideoRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<List<String>> getVideoCategories() async {
+    return _remoteDataSource.fetchVideoCategories();
+  }
 }

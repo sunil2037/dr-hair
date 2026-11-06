@@ -8,4 +8,6 @@ abstract class VideoRepository {
     String? category,
     String? placement = 'reels',
   });
+
+  Future<List<String>> getVideoCategories();
 }

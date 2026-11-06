@@ -220,6 +220,17 @@ class CareCubit extends Cubit<CareState> {
         }
       } catch (_) {}
 
+      List<CareReminder>? serverReminders;
+      try {
+        final rawReminders = await _clinicalApi.getReminders(token);
+        if (rawReminders.isNotEmpty) {
+          serverReminders = rawReminders
+              .map(CareReminder.fromJson)
+              .where((r) => r.id.isNotEmpty && r.title.isNotEmpty)
+              .toList();
+        }
+      } catch (_) {}
+
       if (isClosed) return;
       emit(
         state.copyWith(
@@ -227,6 +238,7 @@ class CareCubit extends Cubit<CareState> {
               (carePlans.isEmpty ? const [] : state.routineTasks),
           checkIns: serverCheckIns ?? state.checkIns,
           orders: serverOrders ?? state.orders,
+          reminders: serverReminders ?? state.reminders,
         ),
       );
       _persistCheckIns();
@@ -235,6 +247,9 @@ class CareCubit extends Cubit<CareState> {
       }
       if (serverTasks != null) {
         _persistRoutineTasks();
+      }
+      if (serverReminders != null) {
+        _notificationService?.saveReminders(serverReminders);
       }
       await fetchPatientDietPlan(token);
     } catch (_) {}
@@ -657,7 +672,10 @@ class CareCubit extends Cubit<CareState> {
     emit(state.copyWith(notificationPermissionStatus: status));
   }
 
-  void saveReminder(CareReminder reminder) {
+  Future<bool> saveReminder(
+    CareReminder reminder, {
+    String? sessionToken,
+  }) async {
     final existingIndex = state.reminders.indexWhere(
       (r) => r.id == reminder.id,
     );
@@ -675,13 +693,42 @@ class CareCubit extends Cubit<CareState> {
     } else {
       _notificationService?.cancelReminder(reminder.id);
     }
+
+    final token = sessionToken ?? _sessionToken;
+    if (token != null && token.isNotEmpty) {
+      try {
+        await _clinicalApi.saveReminder(
+          accessToken: token,
+          reminderData: reminder.toJson(),
+        );
+      } catch (_) {
+        // Optimistic local update is already saved
+      }
+    }
+    return true;
   }
 
-  void deleteReminder(String id) {
+  Future<bool> deleteReminder(
+    String id, {
+    String? sessionToken,
+  }) async {
     final updated = state.reminders.where((r) => r.id != id).toList();
     emit(state.copyWith(reminders: updated));
     _notificationService?.saveReminders(updated);
     _notificationService?.cancelReminder(id);
+
+    final token = sessionToken ?? _sessionToken;
+    if (token != null && token.isNotEmpty) {
+      try {
+        await _clinicalApi.deleteReminder(
+          accessToken: token,
+          reminderId: id,
+        );
+      } catch (_) {
+        // Optimistic local update is already saved
+      }
+    }
+    return true;
   }
 
   void toggleReminder(String id, bool isEnabled) {

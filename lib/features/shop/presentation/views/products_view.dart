@@ -306,82 +306,74 @@ class _ProductsContentState extends State<_ProductsContent>
         builder: (context, state) {
           final catalog = state.products;
 
-          return NestedScrollView(
-            headerSliverBuilder:
-                (BuildContext context, bool innerBoxIsScrolled) {
-                  return <Widget>[
-                    SliverOverlapAbsorber(
-                      handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                        context,
-                      ),
-                      sliver: SliverAppBar(
-                        pinned: true,
-                        floating: true,
-                        snap: false,
-                        centerTitle: true,
-                        elevation: innerBoxIsScrolled ? 1 : 0,
-                        backgroundColor: Colors.white,
-                        surfaceTintColor: Colors.transparent,
-                        title: const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Medicines & Products',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primaryDark,
+          return RefreshIndicator(
+            color: AppColors.primary,
+            backgroundColor: Colors.white,
+            onRefresh: () async {
+              await context.read<ProductsCubit>().loadProducts(refresh: true);
+            },
+            child: NestedScrollView(
+              headerSliverBuilder:
+                  (BuildContext context, bool innerBoxIsScrolled) {
+                    return <Widget>[
+                      SliverOverlapAbsorber(
+                        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                          context,
+                        ),
+                        sliver: SliverAppBar(
+                          pinned: true,
+                          floating: true,
+                          snap: false,
+                          centerTitle: true,
+                          elevation: innerBoxIsScrolled ? 1 : 0,
+                          backgroundColor: Colors.white,
+                          surfaceTintColor: Colors.transparent,
+                          title: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Medicines & Products',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                          ),
+                          actions: [
+                            // Cart Button with badge
+                            _buildCartButton(context),
+                            const SizedBox(width: 8),
+                          ],
+                          bottom: PreferredSize(
+                            preferredSize: const Size.fromHeight(104),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [_buildSearchBar(), _buildTabBar()],
                             ),
                           ),
                         ),
-                        actions: [
-                          // 1. Cart Button with badge
-                          _buildCartButton(context),
-
-                          // 2. Search icon button on the right of Cart button
-                          IconButton(
-                            key: const ValueKey('appbar-search-button'),
-                            tooltip: 'Search products',
-                            icon: const Icon(
-                              LucideIcons.search,
-                              color: AppColors.primaryDark,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              _searchFocusNode.requestFocus();
-                            },
-                          ),
-
-                          const SizedBox(width: 8),
-                        ],
-                        bottom: PreferredSize(
-                          preferredSize: const Size.fromHeight(104),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [_buildSearchBar(), _buildTabBar()],
-                          ),
-                        ),
                       ),
-                    ),
-                  ];
-                },
-            body: TabBarView(
-              controller: _tabController,
-              children: _categories.map((category) {
-                return SafeArea(
-                  top: false,
-                  bottom: false,
-                  child: Builder(
-                    builder: (BuildContext context) {
-                      final products = _getFilteredProductsForCategory(
-                        category.id,
-                        catalog,
-                      );
-                      final displayList = products;
+                    ];
+                  },
+              body: TabBarView(
+                controller: _tabController,
+                children: _categories.map((category) {
+                  return SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: Builder(
+                      builder: (BuildContext context) {
+                        final products = _getFilteredProductsForCategory(
+                          category.id,
+                          catalog,
+                        );
+                        final displayList = products;
 
-                      return CustomScrollView(
-                        key: PageStorageKey<String>(category.id),
-                        slivers: <Widget>[
+                        return CustomScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          key: PageStorageKey<String>(category.id),
+                          slivers: <Widget>[
                           SliverOverlapInjector(
                             handle:
                                 NestedScrollView.sliverOverlapAbsorberHandleFor(
@@ -488,20 +480,20 @@ class _ProductsContentState extends State<_ProductsContent>
                                       mainAxisSpacing: 8,
                                       mainAxisExtent:
                                           MediaQuery.sizeOf(context).width < 360
-                                          ? 254
-                                          : 236,
+                                          ? 274
+                                          : 242,
                                     ),
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) {
-                                    return Skeletonizer(
-                                      enabled: true,
-                                      effect: _kProductShimmerEffect,
-                                      containersColor: Colors.white,
-                                      child: const _ProductGridSkeletonCard(),
-                                    );
-                                  },
-                                  childCount: 6,
-                                ),
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  return Skeletonizer(
+                                    enabled: true,
+                                    effect: _kProductShimmerEffect,
+                                    containersColor: Colors.white,
+                                    child: const _ProductGridSkeletonCard(),
+                                  );
+                                }, childCount: 6),
                               ),
                             ),
                           ] else if (displayList.isEmpty)
@@ -547,8 +539,8 @@ class _ProductsContentState extends State<_ProductsContent>
                                       mainAxisSpacing: 8,
                                       mainAxisExtent:
                                           MediaQuery.sizeOf(context).width < 360
-                                          ? 254
-                                          : 236,
+                                          ? 274
+                                          : 242,
                                     ),
                                 delegate: SliverChildBuilderDelegate((
                                   context,
@@ -581,11 +573,12 @@ class _ProductsContentState extends State<_ProductsContent>
                 );
               }).toList(),
             ),
-          );
-        },
-      ),
-    );
-  }
+          ),
+        );
+      },
+    ),
+  );
+}
 
   Widget _buildCartButton(BuildContext context) {
     final cartCubit = context.read<CartCubit?>();
@@ -1241,102 +1234,113 @@ class _ProductGridCard extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 8),
-
                   // Product Title
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryDark,
-                      height: 1.2,
-                    ),
-                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDark,
+                              height: 1.2,
+                            ),
+                          ),
 
-                  const SizedBox(height: 2),
+                          const SizedBox(height: 2),
 
-                  // Subtitle / Active key ingredients
-                  Text(
-                    product.subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                          // Subtitle / Active key ingredients
+                          Text(
+                            product.subtitle,
+                            maxLines: isNarrow ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
 
-                  const Spacer(),
+                          const Spacer(),
 
-                  // Price and Add button Row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (mrp != null)
-                              Text(
-                                mrp,
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  decoration: TextDecoration.lineThrough,
-                                  color: AppColors.textMuted,
+                          // Price and Add button Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (mrp != null)
+                                      Text(
+                                        mrp,
+                                        style: const TextStyle(
+                                          fontSize: 10.5,
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          color: AppColors.textMuted,
+                                        ),
+                                      ),
+                                    Text(
+                                      price,
+                                      style: const TextStyle(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            Text(
-                              price,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      InkWell(
-                        onTap: onAddToCart,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary5,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.plus,
-                                size: 12,
-                                color: AppColors.primary,
-                              ),
-                              SizedBox(width: 2),
-                              Text(
-                                'Add',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
+                              InkWell(
+                                onTap: onAddToCart,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary5,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.plus,
+                                        size: 12,
+                                        color: AppColors.primary,
+                                      ),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        'Add',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),

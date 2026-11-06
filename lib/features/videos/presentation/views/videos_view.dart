@@ -528,7 +528,6 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
   Timer? _progressPollTimer;
 
   bool _isPlayerInitialized = false;
-  bool _showPlayPauseOverlay = false;
   bool _showHeartAnimation = false;
   bool _hasPlaybackError = false;
   Offset _heartPosition = Offset.zero;
@@ -720,7 +719,6 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
   void _handleTap() {
     HapticFeedback.lightImpact();
     final willPlay = !widget.video.isPlaying;
-    setState(() => _showPlayPauseOverlay = true);
 
     if (willPlay) {
       _youtubeController?.playVideo();
@@ -731,12 +729,6 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
     }
 
     context.read<VideosCubit>().togglePlayPause(widget.video.id);
-
-    Future.delayed(const Duration(milliseconds: 650), () {
-      if (mounted) {
-        setState(() => _showPlayPauseOverlay = false);
-      }
-    });
   }
 
   void _handleDoubleTap(TapDownDetails details) {
@@ -885,16 +877,11 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
                 child: Skeletonizer(
                   enabled: true,
                   child: Container(
-                    width: 56,
-                    height: 56,
+                    width: 48,
+                    height: 48,
                     decoration: const BoxDecoration(
                       color: Colors.white24,
                       shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      LucideIcons.play,
-                      color: Colors.white70,
-                      size: 28,
                     ),
                   ),
                 ),
@@ -1013,25 +1000,21 @@ class _MinimalReelPlayerState extends State<_MinimalReelPlayer>
         ),
 
         // 4. Center Play/Pause Indicator Overlay (Wrapped in IgnorePointer so it doesn't block taps)
-        if (_showPlayPauseOverlay || !v.isPlaying)
+        if (!v.isPlaying)
           IgnorePointer(
             ignoring: true,
             child: Center(
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _showPlayPauseOverlay || !v.isPlaying ? 1.0 : 0.0,
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    v.isPlaying ? LucideIcons.pause : LucideIcons.play,
-                    color: Colors.white,
-                    size: 36,
-                  ),
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.play,
+                  color: Colors.white,
+                  size: 34,
                 ),
               ),
             ),

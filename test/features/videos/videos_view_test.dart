@@ -4,6 +4,7 @@ import 'package:dr_hair/features/videos/presentation/viewmodels/videos_state.dar
 import 'package:dr_hair/features/videos/presentation/views/videos_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 void main() {
@@ -219,6 +220,47 @@ void main() {
 
     expect(cubit.state.activeIndex, 1);
     expect(find.text('Ananya Mehra'), findsOneWidget);
+    cubit.close();
+  });
+
+  testWidgets(
+      'VideosView renders dynamic categories and exactly one play button when paused',
+      (tester) async {
+    final story = VideoStoryModel.fromJson({
+      'id': 'vid-1',
+      'public_id': 'cloud-1',
+      'author_name': 'Dynamic Author',
+      'author_handle': '@dyn.author',
+      'category': 'PRP Therapy',
+      'tag': 'PRP Therapy',
+      'secure_url': 'https://res.cloudinary.com/demo/video/upload/so_0/sample.mp4',
+      'thumbnail_url': 'https://images.unsplash.com/photo-1',
+    }).copyWith(isPlaying: false);
+
+    final cubit = VideosCubit(
+      initialState: VideosState(
+        videos: [story],
+        filters: const ['All', 'PRP Therapy', 'Scalp Massage', 'Ayurvedic Diet'],
+        isLoading: false,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: VideosView(cubit: cubit),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify top categories are rendered from dynamic filters
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('PRP Therapy'), findsOneWidget);
+    expect(find.text('Scalp Massage'), findsOneWidget);
+    expect(find.text('Ayurvedic Diet'), findsOneWidget);
+
+    // Verify exactly ONE play button is rendered in the center when paused
+    expect(find.byIcon(LucideIcons.play), findsOneWidget);
+
     cubit.close();
   });
 }

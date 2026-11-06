@@ -93,7 +93,7 @@ void main() {
 
   group('ProductsView UI Tests', () {
     testWidgets(
-      'renders title Medicines & Products, cart button, and search icon on right',
+      'renders title Medicines & Products, cart button, visible search bar, and refresh indicator',
       (tester) async {
         final cartCubit = CartCubit();
         await tester.pumpWidget(buildTestableWidget(cartCubit: cartCubit));
@@ -105,18 +105,42 @@ void main() {
         // Check Cart button
         expect(find.byTooltip('My Cart'), findsOneWidget);
 
-        // Check Search icon on right side of Cart button
+        // Verify redundant search icon button in app bar is removed
         expect(
           find.byKey(const ValueKey('appbar-search-button')),
-          findsOneWidget,
+          findsNothing,
         );
 
-        // Verify search icon is positioned to the right of the cart button
-        final cartTopLeft = tester.getTopLeft(find.byTooltip('My Cart'));
-        final searchTopLeft = tester.getTopLeft(
-          find.byKey(const ValueKey('appbar-search-button')),
+        // Verify search bar is visible in bottom of SliverAppBar
+        expect(find.byKey(const ValueKey('product-search')), findsOneWidget);
+
+        // Verify RefreshIndicator is present
+        expect(find.byType(RefreshIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'pull-to-refresh triggers ProductsCubit.loadProducts with refresh: true',
+      (tester) async {
+        final cubit = ProductsCubit(repository: _FakeProductRepo())
+          ..loadProducts();
+        await tester.pumpWidget(buildTestableWidget(cubit: cubit));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RefreshIndicator), findsOneWidget);
+
+        // Pull down to trigger refresh
+        await tester.fling(
+          find.byType(NestedScrollView),
+          const Offset(0, 300),
+          1000,
         );
-        expect(searchTopLeft.dx, greaterThan(cartTopLeft.dx));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(cubit.state.products, isNotEmpty);
+        expect(cubit.state.isLoading, isFalse);
       },
     );
 
@@ -247,8 +271,9 @@ void main() {
         expect(find.text('Medicines & Products'), findsOneWidget);
         expect(
           find.byKey(const ValueKey('appbar-search-button')),
-          findsOneWidget,
+          findsNothing,
         );
+        expect(find.byKey(const ValueKey('product-search')), findsOneWidget);
         expect(find.byTooltip('My Cart'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },

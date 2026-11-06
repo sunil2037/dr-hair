@@ -247,4 +247,16 @@ class _FakeVideoRepository implements VideoRepository {
       );
     }
   }
+
+  @override
+  Future<List<String>> getVideoCategories() async {
+    return const [
+      'All',
+      'Hair Fall',
+      'Regrowth',
+      'Dandruff',
+      'Doctor Advice',
+      'Scalp Care',
+    ];
+  }
 }

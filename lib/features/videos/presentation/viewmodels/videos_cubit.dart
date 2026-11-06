@@ -24,14 +24,28 @@ class VideosCubit extends Cubit<VideosState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     try {
       final category = _categoryForIndex(state.selectedFilterIndex);
-      final result = await _repository.getVideos(
+      final videosFuture = _repository.getVideos(
         page: 1,
         limit: 10,
         category: category,
         placement: 'reels',
       );
+      final categoriesFuture = _repository.getVideoCategories();
+
+      final results = await Future.wait([
+        videosFuture,
+        categoriesFuture,
+      ]);
 
       if (isClosed) return;
+
+      final result = results[0] as ({
+        List<VideoStoryModel> items,
+        bool hasMore,
+        int total,
+        int page
+      });
+      final categories = results[1] as List<String>;
 
       int targetIndex = 0;
       if (initialVideoId != null && initialVideoId.isNotEmpty) {
@@ -52,6 +66,7 @@ class VideosCubit extends Cubit<VideosState> {
 
       emit(state.copyWith(
         videos: updatedVideos,
+        filters: categories.isNotEmpty ? categories : state.filters,
         hasMore: result.hasMore,
         currentPage: result.page,
         isLoading: false,
@@ -64,6 +79,16 @@ class VideosCubit extends Cubit<VideosState> {
         errorMessage: 'Failed to load videos: $e',
       ));
     }
+  }
+
+  Future<void> loadCategories() async {
+    if (isClosed) return;
+    try {
+      final categories = await _repository.getVideoCategories();
+      if (!isClosed && categories.isNotEmpty) {
+        emit(state.copyWith(filters: categories));
+      }
+    } catch (_) {}
   }
 
   Future<void> loadNextChunk() async {

@@ -109,4 +109,47 @@ class PatientClinicalApi {
     }
     return [];
   }
+
+  Future<List<Map<String, dynamic>>> getReminders(String accessToken) async {
+    final response = await _client.dio.get<Map<String, dynamic>>(
+      ApiEndpoints.patientReminders,
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    );
+    final data = response.data?['data'];
+    final reminders = data is Map ? data['reminders'] : null;
+    if (reminders is List) {
+      return reminders
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> saveReminder({
+    required String accessToken,
+    required Map<String, dynamic> reminderData,
+  }) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiEndpoints.patientReminders,
+      data: reminderData,
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    );
+    final data = response.data?['data'];
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    return {};
+  }
+
+  Future<bool> deleteReminder({
+    required String accessToken,
+    required String reminderId,
+  }) async {
+    final response = await _client.dio.delete<Map<String, dynamic>>(
+      ApiEndpoints.patientReminderById(reminderId),
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    );
+    return response.statusCode == 200;
+  }
 }

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:dr_hair/features/care/presentation/viewmodels/care_cubit.dart';
 import 'package:dr_hair/features/hair_test/presentation/viewmodels/hair_test_cubit.dart';
 import 'package:dr_hair/features/home/presentation/views/home_view.dart';
@@ -39,6 +42,27 @@ class _FakeHomeProductRepository implements ProductRepository {
   }
 }
 
+class _PendingProductRepository implements ProductRepository {
+  final Future<({List<ProductItem> items, bool hasMore, int total})> pendingFuture;
+
+  _PendingProductRepository(this.pendingFuture);
+
+  @override
+  Future<({List<ProductItem> items, bool hasMore, int total})> getProducts({
+    String? category,
+    String? rootCause,
+    String? query,
+    int page = 1,
+    int limit = 20,
+  }) => pendingFuture;
+
+  @override
+  Future<ProductItem?> getProductById(String id) async => null;
+
+  @override
+  Future<List<CategoryItem>> getCategories({String? type}) async => [];
+}
+
 class _FakeHomeVideoRepository implements VideoRepository {
   @override
   Future<({List<VideoStoryModel> items, bool hasMore, int total, int page})>
@@ -50,6 +74,11 @@ class _FakeHomeVideoRepository implements VideoRepository {
   }) async {
     final items = VideoTestFixtures.testStories.take(limit).toList();
     return (items: items, hasMore: false, total: items.length, page: 1);
+  }
+
+  @override
+  Future<List<String>> getVideoCategories() async {
+    return const ['All', 'Hair Fall', 'Regrowth', 'Dandruff', 'Doctor Advice'];
   }
 }
 
@@ -167,4 +196,49 @@ void main() {
 
     expect(started, isTrue);
   });
+
+  testWidgets(
+    'HomeView renders Skeletonizer shimmer while products and videos are loading',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final completer = Completer<({List<ProductItem> items, bool hasMore, int total})>();
+
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<CareCubit>(create: (_) => CareCubit()),
+            BlocProvider<HairTestCubit>(create: (_) => HairTestCubit()),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: HomeView(
+                onStartHairTest: () {},
+                productRepository: _PendingProductRepository(completer.future),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Verify Skeletonizer shimmer cards are displayed during loading
+      expect(
+        find.byWidgetPredicate((widget) => widget is Skeletonizer),
+        findsWidgets,
+      );
+
+      // Verify no CircularProgressIndicator is rendered
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      completer.complete((items: <ProductItem>[], hasMore: false, total: 0));
+      await tester.pumpAndSettle();
+    },
+  );
 }

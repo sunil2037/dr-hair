@@ -48,7 +48,7 @@ class _HomeViewState extends State<HomeView>
   late final List<Animation<double>> _sectionOpacity;
   late final List<Animation<Offset>> _sectionPosition;
   Future<List<VideoStoryModel>>? _videoStoriesFuture;
-  late final Future<List<ProductItem>> _productsFuture;
+  Future<List<ProductItem>>? _productsFuture;
   late final Future<List<ContentItem>> _tipsFuture;
   late final Future<List<ContentItem>> _faqsFuture;
   bool _motionConfigured = false;
@@ -60,6 +60,15 @@ class _HomeViewState extends State<HomeView>
               .getVideos(limit: 6, placement: 'home')
               .then((res) => res.items)
               .catchError((_) => const <VideoStoryModel>[]);
+  }
+
+  void _fetchProducts() {
+    _productsFuture = widget.productRepository == null && _isTestExecution
+        ? Future.value(const <ProductItem>[])
+        : (widget.productRepository ?? ProductRepositoryImpl())
+              .getProducts(limit: 6)
+              .then((res) => res.items)
+              .catchError((_) => const <ProductItem>[]);
   }
 
   static const bool _isFlutterTest = bool.fromEnvironment(
@@ -75,11 +84,7 @@ class _HomeViewState extends State<HomeView>
   void initState() {
     super.initState();
     _fetchVideoStories();
-    _productsFuture = widget.productRepository == null && _isTestExecution
-        ? Future.value(const <ProductItem>[])
-        : (widget.productRepository ?? ProductRepositoryImpl())
-              .getProducts(limit: 6)
-              .then((res) => res.items);
+    _fetchProducts();
 
     _tipsFuture = _isTestExecution
         ? Future.value(const <ContentItem>[])
@@ -176,6 +181,7 @@ class _HomeViewState extends State<HomeView>
           color: AppColors.primary,
           onRefresh: () async {
             _fetchVideoStories();
+            _fetchProducts();
             if (mounted) setState(() {});
           },
           child: SingleChildScrollView(
@@ -1062,7 +1068,7 @@ class _HomeViewState extends State<HomeView>
 
             // Clinical Explanation Banner
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(10),
@@ -1283,22 +1289,15 @@ class _HomeViewState extends State<HomeView>
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Skeletonizer(
                   enabled: true,
-                  child: ListView(
+                  effect: _kHomeShimmerEffect,
+                  containersColor: Colors.white,
+                  child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     scrollDirection: Axis.horizontal,
-                    children: [
-                      _buildVideoCard(
-                        image: '',
-                        title: 'Patient Loading',
-                        subtitle: 'Clinical outcome and growth journey',
-                      ),
-                      const SizedBox(width: 16),
-                      _buildVideoCard(
-                        image: '',
-                        title: 'Patient Loading',
-                        subtitle: 'Clinical outcome and growth journey',
-                      ),
-                    ],
+                    itemCount: 4,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 16),
+                    itemBuilder: (context, index) => const _VideoCardSkeleton(),
                   ),
                 );
               }
@@ -1412,7 +1411,7 @@ class _HomeViewState extends State<HomeView>
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  style: const TextStyle(color: Colors.white70, fontSize: 10),
                 ),
               ],
             ),
@@ -1720,7 +1719,7 @@ class _HomeViewState extends State<HomeView>
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: AppColors.secondaryDark,
                           ),
                         ),
@@ -1931,9 +1930,9 @@ class _HomeViewState extends State<HomeView>
 }
 
 class _EssentialProductsSection extends StatelessWidget {
-  final Future<List<ProductItem>> productsFuture;
+  final Future<List<ProductItem>>? productsFuture;
 
-  const _EssentialProductsSection({required this.productsFuture});
+  const _EssentialProductsSection({this.productsFuture});
 
   @override
   Widget build(BuildContext context) {
@@ -1990,12 +1989,25 @@ class _EssentialProductsSection extends StatelessWidget {
 
         // Medicines Horizontal List
         SizedBox(
-          height: 275,
+          height: 260,
           child: FutureBuilder<List<ProductItem>>(
             future: productsFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Skeletonizer(
+                  enabled: true,
+                  effect: _kHomeShimmerEffect,
+                  containersColor: Colors.white,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 3,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 14),
+                    itemBuilder: (context, index) =>
+                        const _MedicineCardSkeleton(),
+                  ),
+                );
               }
               if (snapshot.hasError) {
                 return const Center(
@@ -2028,6 +2040,7 @@ class _EssentialProductsSection extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final item = products[index];
                   return MedicineCard(
+                    width: 200,
                     title: item.name,
                     desc: item.subtitle,
                     price: item.supplyPlans.isEmpty
@@ -2050,6 +2063,164 @@ class _EssentialProductsSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Clinical medical shimmer effect matching Dr. Hair design system
+const _kHomeShimmerEffect = ShimmerEffect(
+  baseColor: Color(0xFFE9EEF5),
+  highlightColor: Colors.white,
+  duration: Duration(milliseconds: 1400),
+);
+
+/// Skeleton placeholder for MedicineCard in the Essential Products section
+class _MedicineCardSkeleton extends StatelessWidget {
+  const _MedicineCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 220,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 140,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE9EEF5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 14,
+                  width: 140,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9EEF5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  height: 11,
+                  width: 175,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9EEF5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      height: 15,
+                      width: 55,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE9EEF5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    Container(
+                      height: 14,
+                      width: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE9EEF5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Skeleton placeholder for Video Stories cards
+class _VideoCardSkeleton extends StatelessWidget {
+  const _VideoCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 170,
+      height: 240,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9EEF5),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.25),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircleAvatar(radius: 16, backgroundColor: Colors.white),
+                const SizedBox(height: 10),
+                Container(
+                  height: 13,
+                  width: 110,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Container(
+                  height: 10,
+                  width: 75,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

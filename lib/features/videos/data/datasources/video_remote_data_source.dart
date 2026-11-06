@@ -66,4 +66,51 @@ class VideoRemoteDataSource {
 
     return (items: <VideoStoryModel>[], hasMore: false, total: 0, page: page);
   }
+
+  Future<List<String>> fetchVideoCategories() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiEndpoints.videoCategories,
+        options: Options(extra: const {'silent': true}),
+      );
+
+      final data = response.data?['data'];
+      final List<dynamic> list;
+      if (data is List) {
+        list = data;
+      } else if (data is Map<String, dynamic> && data['videos'] is List) {
+        list = data['videos'] as List;
+      } else {
+        list = const [];
+      }
+
+      final categories = <String>['All'];
+      for (final item in list) {
+        if (item is Map<String, dynamic>) {
+          final name = (item['name'] as String?)?.trim();
+          if (name != null &&
+              name.isNotEmpty &&
+              name.toLowerCase() != 'all' &&
+              name.toLowerCase() != 'all stories' &&
+              !categories.contains(name)) {
+            categories.add(name);
+          }
+        } else if (item is String) {
+          final name = item.trim();
+          if (name.isNotEmpty &&
+              name.toLowerCase() != 'all' &&
+              name.toLowerCase() != 'all stories' &&
+              !categories.contains(name)) {
+            categories.add(name);
+          }
+        }
+      }
+
+      return categories.length > 1
+          ? categories
+          : const ['All', 'Hair Fall', 'Regrowth', 'Dandruff', 'Doctor Advice'];
+    } catch (_) {
+      return const ['All', 'Hair Fall', 'Regrowth', 'Dandruff', 'Doctor Advice'];
+    }
+  }
 }

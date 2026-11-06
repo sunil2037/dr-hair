@@ -101,7 +101,7 @@ void main() {
   );
 
   testWidgets(
-    'Assessment Report displays AI Scalp & Hair Detection with biomarkers and overlay toggle',
+    'Assessment Report displays Clinical Scalp Photos, Recommended Products, and Clinic Consultation CTA',
     (tester) async {
       final cubit = HairTestCubit();
       cubit.selectGender('Male');
@@ -113,17 +113,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('AI Scalp & Hair Detection'), findsOneWidget);
-      expect(find.text('Follicular Density'), findsOneWidget);
-      expect(find.text('Detected Biomarkers'), findsOneWidget);
-      expect(find.text('AI DETECTION ACTIVE'), findsOneWidget);
-
-      // Toggle AI Detection off
-      await tester.tap(find.bySemanticsLabel('Toggle AI detection overlay'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      expect(find.text('RAW IMAGE'), findsOneWidget);
+      expect(find.text('Clinical Scalp Photos'), findsOneWidget);
+      expect(find.text('Recommended Clinical Products'), findsOneWidget);
+      expect(
+        find.text('Prefer an In-Person Clinical Assessment?'),
+        findsOneWidget,
+      );
+      expect(find.text('Book Consultation (₹500)'), findsOneWidget);
 
       cubit.close();
     },
