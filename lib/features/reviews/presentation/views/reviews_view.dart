@@ -127,57 +127,69 @@ class _ReviewsViewState extends State<ReviewsView> {
                         )
                       : null,
                   flexibleSpace: LayoutBuilder(
-                    builder: (BuildContext context, BoxConstraints constraints) {
-                      final double currentHeight = constraints.biggest.height;
-                      final double t = expandedHeight > collapsedHeight
-                          ? ((currentHeight - collapsedHeight) / (expandedHeight - collapsedHeight)).clamp(0.0, 1.0)
-                          : 0.0;
-                      final bool showExpanded = t > 0.15 && !isDocked;
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final double currentHeight =
+                              constraints.biggest.height;
+                          final double t = expandedHeight > collapsedHeight
+                              ? ((currentHeight - collapsedHeight) /
+                                        (expandedHeight - collapsedHeight))
+                                    .clamp(0.0, 1.0)
+                              : 0.0;
+                          final bool showExpanded = t > 0.15 && !isDocked;
 
-                      return FlexibleSpaceBar(
-                        collapseMode: CollapseMode.parallax,
-                        background: SafeArea(
-                          bottom: false,
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, categoryBarH),
-                            child: Opacity(
-                              opacity: t,
-                              child: showExpanded
-                                  ? ClipRect(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          const Text(
-                                            'Patient Stories',
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.primaryDark,
-                                              letterSpacing: -0.3,
-                                            ),
+                          return FlexibleSpaceBar(
+                            collapseMode: CollapseMode.parallax,
+                            background: SafeArea(
+                              bottom: false,
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  4,
+                                  16,
+                                  categoryBarH,
+                                ),
+                                child: Opacity(
+                                  opacity: t,
+                                  child: showExpanded
+                                      ? ClipRect(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              const Text(
+                                                'Patient Stories',
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.primaryDark,
+                                                  letterSpacing: -0.3,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              const Text(
+                                                'Real experiences from verified patients following customized routines',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color:
+                                                      AppColors.secondaryDark,
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              _buildRatingCard(),
+                                            ],
                                           ),
-                                          const SizedBox(height: 2),
-                                          const Text(
-                                            'Real experiences from verified patients following customized routines',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.secondaryDark,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          _buildRatingCard(),
-                                        ],
-                                      ),
-                                    )
-                                  : const SizedBox.shrink(),
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        },
                   ),
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(categoryBarH),
