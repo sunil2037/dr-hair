@@ -41,9 +41,9 @@ class _ReviewsViewState extends State<ReviewsView> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    // When the user has scrolled past the expanded flexible space,
-    // the category filter bar reaches and docks with the app bar.
-    final bool past = _scrollController.offset >= 115.0;
+    // When the user has scrolled past the compact flexible space,
+    // the category filter bar reaches and docks cleanly with the app bar.
+    final bool past = _scrollController.offset >= 55.0;
     if (past != _isScrolledPastHeader) {
       setState(() => _isScrolledPastHeader = past);
     }
@@ -65,7 +65,10 @@ class _ReviewsViewState extends State<ReviewsView> {
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).padding.top;
-    final double expandedHeight = topPadding + kToolbarHeight + 140.0 + 52.0;
+    const double toolbarH = kToolbarHeight;
+    const double categoryBarH = 46.0;
+    final double collapsedHeight = topPadding + toolbarH + categoryBarH;
+    final double expandedHeight = topPadding + 184.0;
 
     final List<ReviewModel> filteredReviews = _selectedFilterIndex == 0
         ? _reviews
@@ -96,7 +99,9 @@ class _ReviewsViewState extends State<ReviewsView> {
 
             return <Widget>[
               SliverOverlapAbsorber(
-                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
                 sliver: SliverAppBar(
                   pinned: true,
                   floating: false,
@@ -104,10 +109,12 @@ class _ReviewsViewState extends State<ReviewsView> {
                   automaticallyImplyLeading: false,
                   elevation: isDocked ? 0.5 : 0.0,
                   shadowColor: Colors.black.withValues(alpha: 0.08),
-                  backgroundColor:
-                      isDocked ? Colors.white : AppColors.background,
+                  backgroundColor: isDocked
+                      ? Colors.white
+                      : AppColors.background,
                   surfaceTintColor: Colors.transparent,
                   expandedHeight: expandedHeight,
+                  toolbarHeight: toolbarH,
                   title: isDocked
                       ? const Text(
                           'Patient Stories',
@@ -119,63 +126,65 @@ class _ReviewsViewState extends State<ReviewsView> {
                           ),
                         )
                       : null,
-                  flexibleSpace: FlexibleSpaceBar(
-                    collapseMode: CollapseMode.pin,
-                    background: SafeArea(
-                      bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          top: kToolbarHeight,
-                          bottom: 52.0,
-                        ),
-                        child: ClipRect(
-                          child: SingleChildScrollView(
-                            physics: const NeverScrollableScrollPhysics(),
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 6),
-                                  if (!isDocked) ...[
-                                    const Text(
-                                      'Patient Stories',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primaryDark,
-                                        letterSpacing: -0.3,
+                  flexibleSpace: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      final double currentHeight = constraints.biggest.height;
+                      final double t = expandedHeight > collapsedHeight
+                          ? ((currentHeight - collapsedHeight) / (expandedHeight - collapsedHeight)).clamp(0.0, 1.0)
+                          : 0.0;
+                      final bool showExpanded = t > 0.15 && !isDocked;
+
+                      return FlexibleSpaceBar(
+                        collapseMode: CollapseMode.parallax,
+                        background: SafeArea(
+                          bottom: false,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, categoryBarH),
+                            child: Opacity(
+                              opacity: t,
+                              child: showExpanded
+                                  ? ClipRect(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          const Text(
+                                            'Patient Stories',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.primaryDark,
+                                              letterSpacing: -0.3,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          const Text(
+                                            'Real experiences from verified patients following customized routines',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.secondaryDark,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          _buildRatingCard(),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    const Text(
-                                      'Real experiences from verified patients following customized routines',
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        color: AppColors.secondaryDark,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ] else ...[
-                                    const SizedBox(height: 44),
-                                  ],
-                                  const SizedBox(height: 12),
-                                  _buildRatingCard(),
-                                ],
-                              ),
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                   bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(52.0),
+                    preferredSize: const Size.fromHeight(categoryBarH),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeInOut,
-                      height: 52.0,
+                      height: categoryBarH,
                       decoration: BoxDecoration(
                         color: isDocked ? Colors.white : AppColors.background,
                         border: Border(
@@ -200,8 +209,9 @@ class _ReviewsViewState extends State<ReviewsView> {
                       child: CategoryFilterBar(
                         categories: _filters,
                         selectedIndex: _selectedFilterIndex,
-                        unselectedColor:
-                            isDocked ? AppColors.neutral100 : Colors.white,
+                        unselectedColor: isDocked
+                            ? AppColors.neutral100
+                            : Colors.white,
                         onSelected: (index) {
                           setState(() => _selectedFilterIndex = index);
                           _loadReviews();
@@ -221,10 +231,9 @@ class _ReviewsViewState extends State<ReviewsView> {
                 ),
                 slivers: <Widget>[
                   SliverOverlapInjector(
-                    handle:
-                        NestedScrollView.sliverOverlapAbsorberHandleFor(
-                          context,
-                        ),
+                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                      context,
+                    ),
                   ),
                   if (_isLoading && _reviews.isEmpty)
                     const SliverFillRemaining(
@@ -264,49 +273,43 @@ class _ReviewsViewState extends State<ReviewsView> {
 
   Widget _buildRatingCard() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.primary5,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary100),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.primary100),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 6,
+                  blurRadius: 4,
                 ),
               ],
             ),
             child: const Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  LucideIcons.star,
-                  color: AppColors.starGold,
-                  size: 20,
-                ),
-                SizedBox(width: 5),
+                Icon(LucideIcons.star, color: AppColors.starGold, size: 17),
+                SizedBox(width: 4),
                 Text(
                   '4.8',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primaryDark,
                   ),
@@ -314,24 +317,25 @@ class _ReviewsViewState extends State<ReviewsView> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Patient satisfaction rating',
                   style: TextStyle(
-                    fontSize: 14.5,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
                 ),
-                SizedBox(height: 2),
+                SizedBox(height: 1),
                 Text(
                   'Verified outcomes across 12,000+ active care plans',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10.5,
                     color: AppColors.secondaryDark,
                     fontWeight: FontWeight.w500,
                   ),
