@@ -104,10 +104,10 @@ class _MyAppState extends State<MyApp> {
       message,
     ) {
       final notif = message.notification;
-      if (notif != null) {
-        final title = notif.title ?? '';
-        final body = notif.body ?? '';
+      final title = notif?.title ?? (message.data['title'] as String?) ?? '';
+      final body = notif?.body ?? (message.data['body'] as String?) ?? '';
 
+      if (title.isNotEmpty || body.isNotEmpty) {
         // 1. Immediately bump the real-time unread badge count & prepend to active list
         _notificationsCubit.onForegroundNotificationReceived(
           title: title,

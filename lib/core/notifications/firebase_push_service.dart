@@ -90,8 +90,14 @@ class FirebasePushService {
         badge: true,
         sound: true,
       );
+      debugPrint(
+        '🔔 [FCM] Notification authorization status: ${settings.authorizationStatus}',
+      );
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        debugPrint(
+          '⚠️ [FCM] Notification permission was explicitly denied on device.',
+        );
         return null;
       }
 
@@ -108,10 +114,10 @@ class FirebasePushService {
 
       // ignore: deprecated_member_use
       final token = await _messaging.getToken(vapidKey: webVapidKey);
-      debugPrint('FirebasePushService: FCM token obtained: $token');
+      debugPrint('🔔 [FCM] Device token obtained: $token');
       return token;
     } catch (e) {
-      debugPrint('FirebasePushService requestPermission error: $e');
+      debugPrint('⚠️ [FCM] requestPermission error: $e');
       return null;
     }
   }
@@ -123,7 +129,7 @@ class FirebasePushService {
     try {
       final token = await requestPermissionAndGetToken();
       if (token == null || token.trim().isEmpty) {
-        debugPrint('FirebasePushService: could not obtain device token.');
+        debugPrint('⚠️ [FCM] Could not obtain device token.');
         return;
       }
 
@@ -141,7 +147,7 @@ class FirebasePushService {
         options: options,
       );
       debugPrint(
-        'FirebasePushService: Device token synced with backend status: ${response.statusCode}',
+        '🔔 [FCM] Device token synced with backend status: ${response.statusCode}',
       );
 
       // Listen for background token rotations
