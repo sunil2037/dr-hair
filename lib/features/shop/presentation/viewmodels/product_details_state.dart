@@ -40,18 +40,34 @@ class ProductDetailsState {
     bool isNotFound = false,
   }) {
     final prod = product ??
-        (isLoading || isNotFound ? ProductItem.empty : ProductItem.defaultProduct);
+        (isLoading || isNotFound
+            ? ProductItem.empty
+            : ProductItem.defaultProduct);
+    final plans = ProductSupplyPlan.ensureThreePlans(prod.supplyPlans);
     return ProductDetailsState(
       product: prod,
-      selectedSupplyIndex: prod.supplyPlans.length > 1 ? 1 : 0,
+      selectedSupplyIndex: plans.length > 1 ? 1 : 0,
       isLoading: isLoading,
       isNotFound: isNotFound,
     );
   }
 
   List<String> get images => product.images;
-  List<ProductSupplyPlan> get supplyPlans => product.supplyPlans;
-  ProductSupplyPlan get selectedSupplyPlan => supplyPlans[selectedSupplyIndex];
+  List<ProductSupplyPlan> get supplyPlans =>
+      ProductSupplyPlan.ensureThreePlans(product.supplyPlans);
+  ProductSupplyPlan get selectedSupplyPlan {
+    final plans = supplyPlans;
+    if (plans.isEmpty) {
+      return const ProductSupplyPlan(
+        title: '1 Month',
+        subtitle: '30 Days Supply',
+        price: 999,
+        mrp: 1299,
+      );
+    }
+    final index = selectedSupplyIndex.clamp(0, plans.length - 1);
+    return plans[index];
+  }
   int get currentUnitPrice => selectedSupplyPlan.price;
   int get currentUnitMrp => selectedSupplyPlan.mrp;
   int get totalPrice => currentUnitPrice * quantity;

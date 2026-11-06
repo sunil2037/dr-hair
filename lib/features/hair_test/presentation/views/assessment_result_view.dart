@@ -106,11 +106,12 @@ class _AssessmentResultContentState extends State<_AssessmentResultContent> {
                 }
               },
             ),
+            centerTitle: true,
             title: const Text(
               'Assessment Result',
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: AppColors.primaryDark,
               ),
             ),
@@ -168,7 +169,7 @@ class _AssessmentResultContentState extends State<_AssessmentResultContent> {
                         'Complete your hair assessment to review your answers and explore care options.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: AppColors.secondaryDark,
                           height: 1.45,
                         ),
@@ -183,6 +184,7 @@ class _AssessmentResultContentState extends State<_AssessmentResultContent> {
                       ),
                       const SizedBox(height: 12),
                       AppButton(
+                        height: 50,
                         text: 'Preview Sample Report',
                         variant: AppButtonVariant.outlined,
                         borderColor: AppColors.border,

@@ -58,7 +58,7 @@ class CarePageScaffold extends StatelessWidget {
           icon: const Icon(
             LucideIcons.arrowLeft,
             color: AppColors.primary,
-            size: 20,
+            size: 23,
           ),
           onPressed: () {
             HapticFeedback.lightImpact();

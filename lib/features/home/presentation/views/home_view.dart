@@ -22,6 +22,7 @@ import '../../../videos/data/repositories/video_repository_impl.dart';
 import '../../../videos/domain/models/video_story_model.dart';
 import '../../../videos/domain/repositories/video_repository.dart';
 import '../../data/content_api.dart';
+import '../../../app_config/presentation/viewmodels/app_config_cubit.dart';
 import '../viewmodels/home_journey_selector.dart';
 import '../widgets/medicine_card.dart';
 
@@ -174,6 +175,13 @@ class _HomeViewState extends State<HomeView>
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = context.watch<AppConfigCubit?>()?.state;
+    final showShop = appConfig?.isFeatureEnabled('shop') ?? true;
+    final showClinicAppointment =
+        appConfig?.isFeatureEnabled('clinic_appointment') ?? true;
+    final showReviews = appConfig?.isFeatureEnabled('reviews') ?? true;
+    final showVideos = appConfig?.isFeatureEnabled('videos') ?? true;
+
     return BlocBuilder<HairTestCubit, HairTestState>(
       builder: (context, hairState) {
         final completed = hairState.isCompleted && !hairState.isRetesting;
@@ -182,6 +190,7 @@ class _HomeViewState extends State<HomeView>
           onRefresh: () async {
             _fetchVideoStories();
             _fetchProducts();
+            context.read<AppConfigCubit?>()?.loadConfig();
             if (mounted) setState(() {});
           },
           child: SingleChildScrollView(
@@ -203,20 +212,28 @@ class _HomeViewState extends State<HomeView>
                   ),
                 ],
 
-                const SizedBox(height: 20),
-                _revealSection(2, _buildEssentialProducts(context)),
+                if (showShop) ...[
+                  const SizedBox(height: 20),
+                  _revealSection(2, _buildEssentialProducts(context)),
+                ],
 
-                const SizedBox(height: 20),
-                _revealSection(3, _buildClinicAppointmentCard(context)),
+                if (showClinicAppointment) ...[
+                  const SizedBox(height: 20),
+                  _revealSection(3, _buildClinicAppointmentCard(context)),
+                ],
 
                 const SizedBox(height: 20),
                 _revealSection(4, _buildUrgentCareCard()),
 
-                const SizedBox(height: 20),
-                _revealSection(5, _buildReviewsSection(context)),
+                if (showReviews) ...[
+                  const SizedBox(height: 20),
+                  _revealSection(5, _buildReviewsSection(context)),
+                ],
 
-                const SizedBox(height: 20),
-                _revealSection(6, _buildVideoStories(context)),
+                if (showVideos) ...[
+                  const SizedBox(height: 20),
+                  _revealSection(6, _buildVideoStories(context)),
+                ],
 
                 const SizedBox(height: 20),
                 _revealSection(7, _buildExpertTips()),

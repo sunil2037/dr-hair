@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dr_hair/features/app_config/presentation/viewmodels/app_config_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -146,149 +147,184 @@ class ProfileView extends StatelessWidget {
             subtitle: 'The tools for your hair health journey',
           ),
           const SizedBox(height: 10),
-          _buildGroupedCard([
-            _ProfileMenuTile(
-              icon: LucideIcons.clipboardCheck,
-              iconColor: const Color(0xFF0D9488),
-              iconBgColor: const Color(0xFFF0FDFA),
-              title: 'Assessment result',
-              subtitle: 'Review your assessment answers and summary',
-              onTap: () => context.push(RouteNames.assessmentResult),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.calendarDays,
-              iconColor: AppColors.primary,
-              iconBgColor: AppColors.primary5,
-              title: 'Clinic appointments',
-              subtitle: 'Request a physical visit with Dr. Jai Bansal',
-              onTap: () => context.push(RouteNames.clinicAppointment),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.clipboardPlus,
-              iconColor: AppColors.primary,
-              iconBgColor: AppColors.primary5,
-              title: 'Treatment plan',
-              subtitle: 'View your regimen and dosage',
-              onTap: () => _openPersonalizedFeature(
-                context,
-                RouteNames.treatmentDetails,
-              ),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.calendarCheck,
-              iconColor: const Color(0xFF059669),
-              iconBgColor: const Color(0xFFECFDF5),
-              title: 'Daily routine',
-              subtitle: 'Check off today’s care steps',
-              onTap: () =>
-                  _openPersonalizedFeature(context, RouteNames.routine),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.chartNoAxesCombined,
-              iconColor: const Color(0xFF7C3AED),
-              iconBgColor: const Color(0xFFF5F3FF),
-              title: 'Progress journal',
-              subtitle: 'Review your check-ins over time',
-              onTap: () =>
-                  _openPersonalizedFeature(context, RouteNames.progress),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.apple,
-              iconColor: const Color(0xFFEA580C),
-              iconBgColor: const Color(0xFFFFF7ED),
-              title: 'Nutrition guide',
-              subtitle: 'See daily meal ideas',
-              onTap: () =>
-                  _openPersonalizedFeature(context, RouteNames.dietPlan),
-            ),
-            _ProfileMenuTile(
-              icon: LucideIcons.bell,
-              iconColor: const Color(0xFFCA8A04),
-              iconBgColor: const Color(0xFFFEFCE8),
-              title: 'Care reminders',
-              subtitle: 'Manage your reminder preferences',
-              onTap: () =>
-                  _openPersonalizedFeature(context, RouteNames.reminders),
-              showDivider: false,
-            ),
-          ]),
-          const SizedBox(height: 22),
-          _buildSectionHeader(
-            title: 'ORDERS',
-            subtitle: 'Your products and deliveries',
-          ),
-          const SizedBox(height: 10),
-          _buildGroupedCard([
-            _ProfileMenuTile(
-              icon: LucideIcons.packageCheck,
-              iconColor: const Color(0xFF059669),
-              iconBgColor: const Color(0xFFECFDF5),
-              title: 'Orders & delivery',
-              subtitle: 'Check your order status',
-              onTap: () => context.push(RouteNames.orders),
-            ),
-            Builder(
-              builder: (context) {
-                final cart = context.read<CartCubit?>();
-                Widget tile(int itemCount) => _ProfileMenuTile(
-                  icon: LucideIcons.shoppingBag,
-                  iconColor: const Color(0xFF0284C7),
-                  iconBgColor: const Color(0xFFF0F9FF),
-                  title: 'My cart',
-                  subtitle: itemCount == 0
-                      ? 'Your cart is empty'
-                      : '$itemCount ${itemCount == 1 ? 'item' : 'items'} ready to review',
-                  onTap: () => context.push(RouteNames.cart),
-                  showDivider: false,
-                );
-                if (cart == null) return tile(0);
-                return BlocBuilder<CartCubit, CartState>(
-                  builder: (context, state) => tile(state.itemCount),
-                );
-              },
-            ),
-          ]),
-          const SizedBox(height: 22),
-          _buildSectionHeader(
-            title: 'PREFERENCES',
-            subtitle: 'Notification toggles, policies, and account security',
-          ),
-          const SizedBox(height: 10),
-          _buildGroupedCard([
-            _ProfileMenuTile(
-              icon: LucideIcons.settings,
-              iconColor: const Color(0xFF0F766E),
-              iconBgColor: const Color(0xFFF0FDFA),
-              title: 'Settings & preferences',
-              subtitle: 'Alerts, account info, policies, and deletion',
-              onTap: () => context.push(RouteNames.settings),
-              showDivider: false,
-            ),
-          ]),
-          const SizedBox(height: 24),
-          _buildSignOutButton(context),
+          Builder(
+            builder: (context) {
+              final appConfig = context.watch<AppConfigCubit?>()?.state;
+              final showClinicAppointment =
+                  appConfig?.isFeatureEnabled('clinic_appointment') ?? true;
+              final showRoutine =
+                  appConfig?.isFeatureEnabled('routine') ?? true;
+              final showReminders =
+                  appConfig?.isFeatureEnabled('reminders') ?? true;
+              final showAssessment =
+                  appConfig?.isFeatureEnabled('assessment') ?? true;
 
-          const SizedBox(height: 60),
-          const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Dr.Hair · Hair care, made personal',
-                  style: TextStyle(fontSize: 10, color: AppColors.textMuted),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'App Version ${AppStrings.appVersion}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMuted,
-                    letterSpacing: 0.2,
+              return _buildGroupedCard([
+                if (showAssessment)
+                  _ProfileMenuTile(
+                    icon: LucideIcons.clipboardCheck,
+                    iconColor: const Color(0xFF0D9488),
+                    iconBgColor: const Color(0xFFF0FDFA),
+                    title: 'Assessment result',
+                    subtitle: 'Review your assessment answers and summary',
+                    onTap: () => context.push(RouteNames.assessmentResult),
+                  ),
+                if (showClinicAppointment)
+                  _ProfileMenuTile(
+                    icon: LucideIcons.calendarDays,
+                    iconColor: AppColors.primary,
+                    iconBgColor: AppColors.primary5,
+                    title: 'Clinic appointments',
+                    subtitle: 'Request a physical visit with Dr. Jai Bansal',
+                    onTap: () => context.push(RouteNames.clinicAppointment),
+                  ),
+                _ProfileMenuTile(
+                  icon: LucideIcons.clipboardPlus,
+                  iconColor: AppColors.primary,
+                  iconBgColor: AppColors.primary5,
+                  title: 'Treatment plan',
+                  subtitle: 'View your regimen and dosage',
+                  onTap: () => _openPersonalizedFeature(
+                    context,
+                    RouteNames.treatmentDetails,
                   ),
                 ),
-              ],
-            ),
+                if (showRoutine)
+                  _ProfileMenuTile(
+                    icon: LucideIcons.calendarCheck,
+                    iconColor: const Color(0xFF059669),
+                    iconBgColor: const Color(0xFFECFDF5),
+                    title: 'Daily routine',
+                    subtitle: 'Check off today’s care steps',
+                    onTap: () =>
+                        _openPersonalizedFeature(context, RouteNames.routine),
+                  ),
+                _ProfileMenuTile(
+                  icon: LucideIcons.chartNoAxesCombined,
+                  iconColor: const Color(0xFF7C3AED),
+                  iconBgColor: const Color(0xFFF5F3FF),
+                  title: 'Progress journal',
+                  subtitle: 'Review your check-ins over time',
+                  onTap: () =>
+                      _openPersonalizedFeature(context, RouteNames.progress),
+                ),
+                _ProfileMenuTile(
+                  icon: LucideIcons.apple,
+                  iconColor: const Color(0xFFEA580C),
+                  iconBgColor: const Color(0xFFFFF7ED),
+                  title: 'Nutrition guide',
+                  subtitle: 'See daily meal ideas',
+                  onTap: () =>
+                      _openPersonalizedFeature(context, RouteNames.dietPlan),
+                ),
+                if (showReminders)
+                  _ProfileMenuTile(
+                    icon: LucideIcons.bell,
+                    iconColor: const Color(0xFFCA8A04),
+                    iconBgColor: const Color(0xFFFEFCE8),
+                    title: 'Care reminders',
+                    subtitle: 'Manage your reminder preferences',
+                    onTap: () =>
+                        _openPersonalizedFeature(context, RouteNames.reminders),
+                    showDivider: false,
+                  ),
+              ]);
+            },
+          ),
+          Builder(
+            builder: (context) {
+              final appConfig = context.watch<AppConfigCubit?>()?.state;
+              final showShop = appConfig?.isFeatureEnabled('shop') ?? true;
+              if (!showShop) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 22),
+                  _buildSectionHeader(
+                    title: 'ORDERS',
+                    subtitle: 'Your products and deliveries',
+                  ),
+                  const SizedBox(height: 10),
+                  _buildGroupedCard([
+                    _ProfileMenuTile(
+                      icon: LucideIcons.packageCheck,
+                      iconColor: const Color(0xFF059669),
+                      iconBgColor: const Color(0xFFECFDF5),
+                      title: 'Orders & delivery',
+                      subtitle: 'Check your order status',
+                      onTap: () => context.push(RouteNames.orders),
+                    ),
+                    Builder(
+                      builder: (context) {
+                        final cart = context.read<CartCubit?>();
+                        Widget tile(int itemCount) => _ProfileMenuTile(
+                          icon: LucideIcons.shoppingBag,
+                          iconColor: const Color(0xFF0284C7),
+                          iconBgColor: const Color(0xFFF0F9FF),
+                          title: 'My cart',
+                          subtitle: itemCount == 0
+                              ? 'Your cart is empty'
+                              : '$itemCount ${itemCount == 1 ? 'item' : 'items'} ready to review',
+                          onTap: () => context.push(RouteNames.cart),
+                          showDivider: false,
+                        );
+                        if (cart == null) return tile(0);
+                        return BlocBuilder<CartCubit, CartState>(
+                          builder: (context, state) => tile(state.itemCount),
+                        );
+                      },
+                    ),
+                  ]),
+                  const SizedBox(height: 22),
+                  _buildSectionHeader(
+                    title: 'PREFERENCES',
+                    subtitle:
+                        'Notification toggles, policies, and account security',
+                  ),
+                  const SizedBox(height: 10),
+                  _buildGroupedCard([
+                    _ProfileMenuTile(
+                      icon: LucideIcons.settings,
+                      iconColor: const Color(0xFF0F766E),
+                      iconBgColor: const Color(0xFFF0FDFA),
+                      title: 'Settings & preferences',
+                      subtitle: 'Alerts, account info, policies, and deletion',
+                      onTap: () => context.push(RouteNames.settings),
+                      showDivider: false,
+                    ),
+                  ]),
+                  const SizedBox(height: 24),
+                  _buildSignOutButton(context),
+
+                  const SizedBox(height: 60),
+                  const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Dr.Hair · Hair care, made personal',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'App Version ${AppStrings.appVersion}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textMuted,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

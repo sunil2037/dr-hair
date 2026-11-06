@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoDatePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -159,6 +160,49 @@ void main() {
 
       // Verify trash icon exists for editing
       expect(find.byIcon(LucideIcons.trash2), findsOneWidget);
+    });
+
+    testWidgets('tapping custom time opens Cupertino time picker modal', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        createTestApp(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => AddReminderBottomSheet.show(context),
+              child: const Text('Open Sheet'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Sheet'));
+      await tester.pumpAndSettle();
+
+      // Tap on "Pick custom time"
+      await tester.tap(find.text('Pick custom time'));
+      await tester.pumpAndSettle();
+
+      // CupertinoDatePicker should be present
+      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+      expect(find.text('Select Time'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+
+      // Tap Done
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      // Modal closed, back to sheet
+      expect(find.byType(CupertinoDatePicker), findsNothing);
+      expect(find.text('Add Care Reminder'), findsOneWidget);
     });
   });
 }

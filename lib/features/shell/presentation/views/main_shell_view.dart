@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
+import '../../../app_config/presentation/viewmodels/app_config_cubit.dart';
 import '../../../shop/presentation/viewmodels/cart_cubit.dart';
 import '../widgets/shell_bottom_nav_bar.dart';
 
@@ -112,23 +113,34 @@ class _MainShellViewState extends State<MainShellView> {
         builder: (context, isNavHidden, child) {
           final isTestCompleted =
               context.watch<HairTestCubit?>()?.state.isCompleted ?? false;
+          final appConfig = context.watch<AppConfigCubit?>()?.state;
+          final bool isShopEnabled =
+              appConfig?.isFeatureEnabled('shop') ?? true;
+          final bool isAssessmentEnabled =
+              appConfig?.isFeatureEnabled('assessment') ?? true;
 
           return BlocBuilder<CartCubit, CartState>(
             builder: (context, cartState) => RepaintBoundary(
               child: ShellBottomNavBar(
                 currentIndex: widget.navigationShell.currentIndex,
-                cartItemCount: cartState.itemCount,
-                cartSubtotal: cartState.subtotal,
+                cartItemCount: isShopEnabled ? cartState.itemCount : 0,
+                cartSubtotal: isShopEnabled ? cartState.subtotal : null,
                 isTestCompleted: isTestCompleted,
                 isHidden: isNavHidden && !isVideosTab,
                 showBackground: !isVideosTab,
                 onTabSelected: _onTabSelected,
-                onCartPressed: () => context.push(RouteNames.cart),
+                onCartPressed: isShopEnabled
+                    ? () => context.push(RouteNames.cart)
+                    : null,
                 onActionPressed: () {
                   if (isTestCompleted) {
-                    context.push(RouteNames.products);
+                    if (isShopEnabled) {
+                      context.push(RouteNames.products);
+                    }
                   } else {
-                    context.push(RouteNames.hairTest);
+                    if (isAssessmentEnabled) {
+                      context.push(RouteNames.hairTest);
+                    }
                   }
                 },
               ),

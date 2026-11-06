@@ -187,6 +187,12 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
 
         return Skeletonizer(
           enabled: state.isLoading,
+          effect: const ShimmerEffect(
+            baseColor: Color(0xFFF1F5F9),
+            highlightColor: Color(0xFFFFFFFF),
+            duration: Duration(milliseconds: 1100),
+          ),
+          containersColor: Colors.white,
           child: Scaffold(
             backgroundColor: Colors.white,
             body: CustomScrollView(
@@ -288,7 +294,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                     itemBuilder: (context, index) {
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
+                                          horizontal: 16,
                                           vertical: 12,
                                         ),
                                         child: Hero(
@@ -362,11 +368,13 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                     height: 48,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? AppColors.primary
-                                            : AppColors.border,
-                                        width: isSelected ? 2.0 : 1.0,
+                                      border: Border(
+                                        top: BorderSide(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.border,
+                                          width: isSelected ? 2.0 : 1.0,
+                                        ),
                                       ),
                                       color: Colors.white,
                                     ),
@@ -392,7 +400,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                 // Product Info & Selection Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -400,7 +408,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                         Text(
                           product.category.toUpperCase(),
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.1,
                             color: AppColors.primary,
@@ -424,7 +432,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                         Text(
                           product.subtitle,
                           style: const TextStyle(
-                            fontSize: 13.5,
+                            fontSize: 12,
                             color: AppColors.secondaryDark,
                             height: 1.4,
                             fontWeight: FontWeight.w500,
@@ -442,7 +450,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                           child: const Text(
                             'Demo catalog: product details and outcome figures are sample content for presentation. They are not a personal recommendation or a medical diagnosis.',
                             style: TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 10,
                               height: 1.35,
                               color: AppColors.secondaryDark,
                             ),
@@ -477,7 +485,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                   Text(
                                     '${product.rating}',
                                     style: const TextStyle(
-                                      fontSize: 12.5,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.primaryDark,
                                     ),
@@ -486,7 +494,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                   Text(
                                     '(${product.reviewsCount} reviews)',
                                     style: const TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                       color: AppColors.textSecondary,
                                     ),
@@ -517,7 +525,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                   Text(
                                     'In Stock • Ships Free',
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.success,
                                     ),
@@ -568,7 +576,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                               child: Text(
                                 'Save ${state.discountPercentage}%',
                                 style: const TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.success,
                                 ),
@@ -580,7 +588,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                         const Text(
                           'Inclusive of all taxes • Authentic Formulation Guaranteed',
                           style: TextStyle(
-                            fontSize: 11.5,
+                            fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -588,37 +596,71 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                         const SizedBox(height: 24),
 
                         // Supply Plan Selection
-                        const Text(
-                          'Choose Your Regrowth Plan',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Plans Horizontal Row
+                        // Supply Plan Selection Header
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Choose Your Regrowth Plan',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryDark,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary5,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Doctor Recommended',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Plans 3-Card Row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: List.generate(state.supplyPlans.length, (
                             index,
                           ) {
                             final plan = state.supplyPlans[index];
                             final isSelected =
                                 state.selectedSupplyIndex == index;
+                            final badgeText =
+                                plan.badge != null && plan.badge!.isNotEmpty
+                                ? plan.badge!
+                                : index == 0
+                                ? 'Starter'
+                                : index == 1
+                                ? 'Most Popular'
+                                : 'Best Value';
 
                             return Expanded(
                               child: Semantics(
                                 label:
-                                    '${plan.title} plan, ₹${plan.price}. ${plan.badge ?? ''}',
+                                    '${plan.title} plan, ₹${plan.price}, MRP ₹${plan.mrp}. $badgeText. ${isSelected ? 'Selected' : 'Not selected'}',
                                 button: true,
                                 selected: isSelected,
                                 child: GestureDetector(
                                   onTap: () => cubit.selectSupplyPlan(index),
                                   child: AnimatedContainer(
-                                    constraints: const BoxConstraints(
-                                      minHeight: 90,
-                                    ),
                                     duration: const Duration(milliseconds: 180),
                                     margin: EdgeInsets.only(
                                       right:
@@ -627,75 +669,117 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                                           : 0,
                                     ),
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                      horizontal: 8,
+                                      vertical: 10,
+                                      horizontal: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppColors.primary5
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? AppColors.primary
-                                            : AppColors.border,
-                                        width: 1.0,
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border(
+                                        top: BorderSide(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.border,
+                                          width: isSelected ? 2.0 : 1.0,
+                                        ),
                                       ),
+                                      boxShadow: [
+                                        if (isSelected)
+                                          BoxShadow(
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          )
+                                        else
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.02,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                      ],
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        if (plan.badge != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            margin: const EdgeInsets.only(
-                                              bottom: 6,
-                                            ),
-                                            decoration: BoxDecoration(
+                                        // Plan Title (e.g. 1 Month, 2 Months, 3 Months)
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            plan.title,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w800,
                                               color: isSelected
-                                                  ? AppColors.primary
-                                                  : AppColors.primary5,
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
+                                                  ? AppColors.primaryDark
+                                                  : AppColors.textPrimary,
                                             ),
-                                            child: Text(
-                                              plan.badge!,
-                                              style: TextStyle(
-                                                fontSize: 8,
-                                                fontWeight: FontWeight.w800,
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : AppColors.primary,
-                                              ),
+                                          ),
+                                        ),
+
+                                        const SizedBox(height: 8),
+
+                                        // Price
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            '₹${plan.price}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w900,
+                                              color: isSelected
+                                                  ? AppColors.primaryDark
+                                                  : AppColors.textPrimary,
+                                            ),
+                                          ),
+                                        ),
+
+                                        // MRP (Strikethrough)
+                                        if (plan.mrp > plan.price)
+                                          Text(
+                                            '₹${plan.mrp}',
+                                            style: const TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w500,
+                                              color: AppColors.textMuted,
+                                              decoration:
+                                                  TextDecoration.lineThrough,
                                             ),
                                           )
                                         else
-                                          const SizedBox(height: 6),
-                                        Text(
-                                          plan.title,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                            color: isSelected
-                                                ? AppColors.primaryDark
-                                                : AppColors.textPrimary,
+                                          const SizedBox(height: 14),
+                                        const SizedBox(height: 4),
+
+                                        // Monthly Breakdown Chip
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 2,
                                           ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '₹${plan.price}',
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w700,
+                                          decoration: BoxDecoration(
                                             color: isSelected
-                                                ? AppColors.primary
-                                                : AppColors.textSecondary,
+                                                ? AppColors.primary.withValues(
+                                                    alpha: 0.08,
+                                                  )
+                                                : const Color(0xFFF8FAFC),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '₹${plan.monthlyPrice}/mo',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.textSecondary,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -743,64 +827,80 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                             ],
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
 
-                        const SizedBox(height: 28),
-
-                        // Interactive Tabs Header
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: List.generate(_tabs.length, (index) {
-                              final isTabSelected = state.activeTab == index;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Semantics(
-                                  label: '${_tabs[index]} tab',
-                                  selected: isTabSelected,
-                                  button: true,
-                                  child: GestureDetector(
-                                    onTap: () => cubit.selectTab(index),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 180,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isTabSelected
-                                            ? AppColors.primary
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: isTabSelected
-                                              ? AppColors.primary
-                                              : AppColors.border,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        _tabs[index],
-                                        style: TextStyle(
-                                          fontSize: 12.5,
-                                          fontWeight: isTabSelected
-                                              ? FontWeight.w700
-                                              : FontWeight.w600,
-                                          color: isTabSelected
-                                              ? Colors.white
-                                              : AppColors.textPrimary,
-                                        ),
-                                      ),
+                // Interactive Tabs Header (Edge-to-edge scroll with 16px left and right content insets)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 24, bottom: 16),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: List.generate(_tabs.length, (index) {
+                          final isTabSelected = state.activeTab == index;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              right: index < _tabs.length - 1 ? 8 : 0,
+                            ),
+                            child: Semantics(
+                              label: '${_tabs[index]} tab',
+                              selected: isTabSelected,
+                              button: true,
+                              child: GestureDetector(
+                                onTap: () => cubit.selectTab(index),
+                                child: AnimatedContainer(
+                                  duration: const Duration(
+                                    milliseconds: 180,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isTabSelected
+                                        ? AppColors.primary
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isTabSelected
+                                          ? AppColors.primary
+                                          : AppColors.border,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _tabs[index],
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: isTabSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                      color: isTabSelected
+                                          ? Colors.white
+                                          : AppColors.textPrimary,
                                     ),
                                   ),
                                 ),
-                              );
-                            }),
-                          ),
-                        ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                ),
 
-                        const SizedBox(height: 16),
-
+                // Tab Content Body & Suggested Products
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         // Tab Content Body
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),

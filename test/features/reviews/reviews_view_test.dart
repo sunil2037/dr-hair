@@ -10,6 +10,7 @@ void main() {
         home: ReviewsView(),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('Patient Stories'), findsOneWidget);
     expect(

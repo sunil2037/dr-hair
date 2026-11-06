@@ -215,7 +215,7 @@ class RemindersView extends StatelessWidget {
               icon: const Icon(
                 LucideIcons.plus,
                 color: AppColors.primary,
-                size: 20,
+                size: 23,
               ),
               onPressed: () => AddReminderBottomSheet.show(context),
             ),

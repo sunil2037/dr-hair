@@ -42,6 +42,130 @@ class ProductSupplyPlan {
         'mrp': mrp,
         if (badge != null) 'badge': badge,
       };
+
+  int get durationMonths {
+    final lower = title.toLowerCase();
+    if (lower.contains('1') || lower.contains('one')) return 1;
+    if (lower.contains('2') || lower.contains('two')) return 2;
+    if (lower.contains('3') || lower.contains('three')) return 3;
+    if (lower.contains('6') || lower.contains('six')) return 6;
+    return 1;
+  }
+
+  int get monthlyPrice {
+    final months = durationMonths;
+    return months > 0 ? (price / months).round() : price;
+  }
+
+  int get savings => mrp > price ? mrp - price : 0;
+
+  int get discountPercent =>
+      mrp > price ? (((mrp - price) / mrp) * 100).round() : 0;
+
+  /// Guarantees exactly 3 plans (1 Month, 2 Months, 3 Months).
+  /// If admin uploaded only 1 plan (or fewer than 3), computes the remaining
+  /// plans according to the base pricing with clinical package discounts.
+  static List<ProductSupplyPlan> ensureThreePlans(
+    List<ProductSupplyPlan> plans, {
+    int fallbackPrice = 999,
+    int fallbackMrp = 1299,
+  }) {
+    if (plans.length >= 3) {
+      return plans.take(3).toList();
+    }
+
+    if (plans.isEmpty) {
+      final p1 = fallbackPrice > 0 ? fallbackPrice : 999;
+      final m1 = fallbackMrp > p1 ? fallbackMrp : (p1 * 1.3).round();
+      final p2 = (p1 * 2 * 0.90).round();
+      final m2 = m1 * 2;
+      final p3 = (p1 * 3 * 0.82).round();
+      final m3 = m1 * 3;
+
+      return [
+        ProductSupplyPlan(
+          title: '1 Month',
+          subtitle: '30 Days Starter Supply',
+          price: p1,
+          mrp: m1,
+          badge: 'Starter',
+        ),
+        ProductSupplyPlan(
+          title: '2 Months',
+          subtitle: '60 Days Supply (Save 10%)',
+          price: p2,
+          mrp: m2,
+          badge: 'Most Popular',
+        ),
+        ProductSupplyPlan(
+          title: '3 Months',
+          subtitle: '90 Days Protocol (Save 18%)',
+          price: p3,
+          mrp: m3,
+          badge: 'Best Value',
+        ),
+      ];
+    }
+
+    if (plans.length == 1) {
+      final base = plans.first;
+      final p1 = base.price > 0 ? base.price : fallbackPrice;
+      final m1 = base.mrp > p1 ? base.mrp : (p1 * 1.3).round();
+
+      // Calculated 2 Month plan (10% bulk discount on 2 months)
+      final p2 = (p1 * 2 * 0.90).round();
+      final m2 = m1 * 2;
+
+      // Calculated 3 Month plan (18% clinical protocol discount on 3 months)
+      final p3 = (p1 * 3 * 0.82).round();
+      final m3 = m1 * 3;
+
+      return [
+        ProductSupplyPlan(
+          title: base.title.isNotEmpty ? base.title : '1 Month',
+          subtitle: base.subtitle.isNotEmpty
+              ? base.subtitle
+              : '30 Days Starter Supply',
+          price: p1,
+          mrp: m1,
+          badge: base.badge ?? 'Starter',
+        ),
+        ProductSupplyPlan(
+          title: '2 Months',
+          subtitle: '60 Days Supply (Save 10%)',
+          price: p2,
+          mrp: m2,
+          badge: 'Most Popular',
+        ),
+        ProductSupplyPlan(
+          title: '3 Months',
+          subtitle: '90 Days Protocol (Save 18%)',
+          price: p3,
+          mrp: m3,
+          badge: 'Best Value',
+        ),
+      ];
+    }
+
+    // plans.length == 2: add the 3rd plan (3 Months) based on plan 1 pricing
+    final base = plans.first;
+    final p1 = base.price > 0 ? base.price : fallbackPrice;
+    final m1 = base.mrp > p1 ? base.mrp : (p1 * 1.3).round();
+    final p3 = (p1 * 3 * 0.82).round();
+    final m3 = m1 * 3;
+
+    return [
+      plans[0],
+      plans[1],
+      ProductSupplyPlan(
+        title: '3 Months',
+        subtitle: '90 Days Protocol (Save 18%)',
+        price: p3,
+        mrp: m3,
+        badge: 'Best Value',
+      ),
+    ];
+  }
 }
 
 @immutable
@@ -231,6 +355,24 @@ class ProductItem {
         .map(ProductSupplyPlan.fromJson)
         .toList();
 
+    final topPrice = (json['price'] is num)
+        ? (json['price'] as num).toInt()
+        : int.tryParse(json['price']?.toString() ?? '999') ?? 999;
+    final topMrp = (json['compare_at_price'] is num)
+        ? (json['compare_at_price'] as num).toInt()
+        : (json['mrp'] is num)
+            ? (json['mrp'] as num).toInt()
+            : int.tryParse(json['compare_at_price']?.toString() ??
+                    json['mrp']?.toString() ??
+                    '1299') ??
+                topPrice;
+
+    final normalizedPlans = ProductSupplyPlan.ensureThreePlans(
+      supplyPlans,
+      fallbackPrice: topPrice,
+      fallbackMrp: topMrp,
+    );
+
     final rawBenefits = json['benefits'] as List<dynamic>? ?? [];
     final benefits = rawBenefits
         .whereType<Map<String, dynamic>>()
@@ -282,7 +424,7 @@ class ProductItem {
               : int.tryParse(json['reviews_count']?.toString() ?? '0') ?? 0,
       inStock: json['in_stock'] == true || json['inStock'] == true,
       images: images,
-      supplyPlans: supplyPlans,
+      supplyPlans: normalizedPlans,
       benefits: benefits,
       ingredients: ingredients,
       usageSteps: usageSteps,
@@ -329,19 +471,20 @@ class ProductItem {
           subtitle: '30ml Serum Bottle',
           price: 1299,
           mrp: 1699,
+          badge: 'Starter',
         ),
         ProductSupplyPlan(
-          title: '3 Months',
-          subtitle: '60ml + Scalp Roller',
-          price: 2799,
-          mrp: 3899,
+          title: '2 Months',
+          subtitle: '60ml Twin Pack',
+          price: 2339,
+          mrp: 3398,
           badge: 'MOST POPULAR',
         ),
         ProductSupplyPlan(
-          title: '6 Months',
-          subtitle: 'Full Regrowth Protocol',
-          price: 4999,
-          mrp: 7599,
+          title: '3 Months',
+          subtitle: '90ml Regrowth Protocol',
+          price: 3195,
+          mrp: 5097,
           badge: 'BEST VALUE',
         ),
       ],
@@ -430,19 +573,20 @@ class ProductItem {
           subtitle: '60 Veg Capsules',
           price: 999,
           mrp: 1399,
+          badge: 'Starter',
+        ),
+        ProductSupplyPlan(
+          title: '2 Months',
+          subtitle: '120 Veg Capsules',
+          price: 1798,
+          mrp: 2798,
+          badge: 'MOST POPULAR',
         ),
         ProductSupplyPlan(
           title: '3 Months',
           subtitle: '180 Veg Capsules',
-          price: 2499,
-          mrp: 3599,
-          badge: 'MOST POPULAR',
-        ),
-        ProductSupplyPlan(
-          title: '6 Months',
-          subtitle: '360 Veg Capsules',
-          price: 4299,
-          mrp: 6999,
+          price: 2457,
+          mrp: 4197,
           badge: 'BEST VALUE',
         ),
       ],

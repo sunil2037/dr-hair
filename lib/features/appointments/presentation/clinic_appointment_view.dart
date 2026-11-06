@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/route_names.dart';
@@ -23,6 +24,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
   DateTime? _startsAt;
   final TextEditingController _reasonController = TextEditingController();
   String? _replacingId;
+  String? _reschedulingId;
   String? _accessToken;
   bool _didLoadAppointments = false;
   bool _saving = false;
@@ -174,25 +176,41 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                 ),
               ),
               const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(sheetContext, false),
-                      child: const Text('Keep appointment'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.danger,
+              SizedBox(
+                height: 45,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        child: const Text(
+                          'Keep appointment',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                      onPressed: () => Navigator.pop(sheetContext, true),
-                      child: const Text('Cancel visit'),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                        ),
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        child: const Text(
+                          'Cancel visit',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -212,6 +230,60 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
     );
     if (!mounted) return;
     _message(error ?? 'Appointment request cancelled.');
+  }
+
+  Future<void> _rescheduleAppointment(
+    ClinicAppointment request,
+    String patientId,
+  ) async {
+    final initialDate = request.startsAt;
+    final hour = initialDate.hour;
+    final minute = initialDate.minute;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final standardHour = hour % 12 == 0 ? 12 : hour % 12;
+    final initialSlot =
+        '${standardHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
+
+    final picked = await AppointmentDatePickerBottomSheet.show(
+      context,
+      initialDate: initialDate,
+      initialSlot: initialSlot,
+    );
+
+    if (picked == null || !mounted) return;
+
+    if (picked.isAtSameMomentAs(request.startsAt)) {
+      _message('Appointment slot unchanged.');
+      return;
+    }
+
+    final token = _accessToken ?? context.read<AuthCubit>().state.sessionToken;
+    setState(() => _reschedulingId = request.id);
+
+    final error = await context.read<ClinicAppointmentCubit>().reschedule(
+      id: request.id,
+      patientId: patientId,
+      newStartsAt: picked,
+      accessToken: token,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _reschedulingId = null;
+      if (_replacingId == request.id) {
+        _replacingId = null;
+        _startsAt = null;
+        _reasonController.clear();
+      }
+    });
+
+    if (error != null) {
+      _message(error);
+    } else {
+      _message(
+        'Appointment rescheduled to ${_dateLabel(picked)}. Confirmed slot updated.',
+      );
+    }
   }
 
   void _message(String message) => ScaffoldMessenger.of(context)
@@ -354,20 +426,20 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                       color: AppColors.border,
                     ),
                     // Clinic Venue Details
-                    const Row(
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
+                        const Icon(
                           LucideIcons.mapPin,
                           color: AppColors.primary,
                           size: 16,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Dr. Hair Restoration & Trichology Center',
                                 style: TextStyle(
                                   fontSize: 12,
@@ -375,13 +447,46 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                                   color: AppColors.primaryDark,
                                 ),
                               ),
-                              SizedBox(height: 2),
-                              Text(
+                              const SizedBox(height: 2),
+                              const Text(
                                 'Dr. Hair & Cosmodent Clinic, Jaipur, Rajasthan · 302017\nMon - Sat: 10:00 AM - 7:30 PM',
                                 style: TextStyle(
                                   fontSize: 11,
                                   height: 1.35,
                                   color: AppColors.secondaryDark,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              InkWell(
+                                onTap: () async {
+                                  final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=Dr+Hair+Jaipur');
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.navigation,
+                                        size: 13,
+                                        color: AppColors.primary,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Get Directions on Google Maps',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -694,6 +799,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                   return Column(
                     children: requests.map((request) {
                       final isCancelled = request.status == 'Cancelled';
+                      final isRequested = request.status == 'Requested';
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 0,
@@ -738,23 +844,31 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                                     decoration: BoxDecoration(
                                       color: isCancelled
                                           ? const Color(0xFFFEE2E2)
+                                          : isRequested
+                                          ? const Color(0xFFFEF3C7)
                                           : const Color(0xFFF0FDF4),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
                                         color: isCancelled
                                             ? const Color(0xFFFECACA)
+                                            : isRequested
+                                            ? const Color(0xFFFDE68A)
                                             : const Color(0xFFDCFCE7),
                                       ),
                                     ),
                                     child: Text(
                                       isCancelled
                                           ? 'Cancelled'
+                                          : isRequested
+                                          ? 'Slot Requested'
                                           : 'OPD Confirmed',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
                                         color: isCancelled
                                             ? const Color(0xFF991B1B)
+                                            : isRequested
+                                            ? const Color(0xFF92400E)
                                             : const Color(0xFF166534),
                                       ),
                                     ),
@@ -817,7 +931,7 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                                           Text(
                                             'Token: ${request.tokenNumber}',
                                             style: const TextStyle(
-                                              fontSize: 10.5,
+                                              fontSize: 10,
                                               fontWeight: FontWeight.w700,
                                               color: Color(0xFF334155),
                                             ),
@@ -878,21 +992,30 @@ class _ClinicAppointmentViewState extends State<ClinicAppointmentView> {
                                 Row(
                                   children: [
                                     TextButton.icon(
-                                      onPressed: () {
-                                        setState(() {
-                                          _replacingId = request.id;
-                                          _startsAt = request.startsAt;
-                                          _reasonController.text =
-                                              request.reason == 'General hair & scalp consultation'
-                                              ? ''
-                                              : request.reason;
-                                        });
-                                      },
-                                      icon: const Icon(
-                                        LucideIcons.calendarClock,
-                                        size: 14,
+                                      onPressed: _reschedulingId == request.id
+                                          ? null
+                                          : () => _rescheduleAppointment(
+                                              request,
+                                              patientId,
+                                            ),
+                                      icon: _reschedulingId == request.id
+                                          ? const SizedBox(
+                                              width: 14,
+                                              height: 14,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: AppColors.primary,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              LucideIcons.calendarClock,
+                                              size: 14,
+                                            ),
+                                      label: Text(
+                                        _reschedulingId == request.id
+                                            ? 'Rescheduling…'
+                                            : 'Reschedule',
                                       ),
-                                      label: const Text('Reschedule'),
                                     ),
                                     const SizedBox(width: 8),
                                     TextButton.icon(

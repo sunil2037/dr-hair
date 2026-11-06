@@ -18,14 +18,16 @@ import '../../../care/presentation/viewmodels/care_cubit.dart';
 import '../viewmodels/cart_cubit.dart';
 
 class CheckoutView extends StatefulWidget {
-  const CheckoutView({super.key});
+  final List<DeliveryAddress>? initialAddresses;
+
+  const CheckoutView({super.key, this.initialAddresses});
 
   @override
   State<CheckoutView> createState() => _CheckoutViewState();
 }
 
 class _CheckoutViewState extends State<CheckoutView> {
-  List<DeliveryAddress> _addresses = DeliveryAddress.defaultAddresses();
+  List<DeliveryAddress> _addresses = const [];
   DeliveryAddress? _selectedAddress;
   bool _isSubmitting = false;
   late final CommerceRemoteDataSource _commerceDataSource = CommerceRemoteDataSource();
@@ -33,7 +35,15 @@ class _CheckoutViewState extends State<CheckoutView> {
   @override
   void initState() {
     super.initState();
-    _loadAddresses();
+    if (widget.initialAddresses != null && widget.initialAddresses!.isNotEmpty) {
+      _addresses = widget.initialAddresses!;
+      _selectedAddress = _addresses.firstWhere(
+        (a) => a.isDefault,
+        orElse: () => _addresses.first,
+      );
+    } else {
+      _loadAddresses();
+    }
   }
 
   Future<void> _loadAddresses() async {

@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart'
+    show CupertinoDatePicker, CupertinoDatePickerMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -150,10 +152,26 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
   ];
 
   static const List<Map<String, dynamic>> _quickTimeSlots = [
-    {'label': 'Morning', 'time': TimeOfDay(hour: 8, minute: 0), 'icon': LucideIcons.sun},
-    {'label': 'Afternoon', 'time': TimeOfDay(hour: 13, minute: 0), 'icon': LucideIcons.sunMedium},
-    {'label': 'Evening', 'time': TimeOfDay(hour: 18, minute: 30), 'icon': LucideIcons.sunset},
-    {'label': 'Night', 'time': TimeOfDay(hour: 22, minute: 0), 'icon': LucideIcons.moon},
+    {
+      'label': 'Morning',
+      'time': TimeOfDay(hour: 8, minute: 0),
+      'icon': LucideIcons.sun,
+    },
+    {
+      'label': 'Afternoon',
+      'time': TimeOfDay(hour: 13, minute: 0),
+      'icon': LucideIcons.sunMedium,
+    },
+    {
+      'label': 'Evening',
+      'time': TimeOfDay(hour: 18, minute: 30),
+      'icon': LucideIcons.sunset,
+    },
+    {
+      'label': 'Night',
+      'time': TimeOfDay(hour: 22, minute: 0),
+      'icon': LucideIcons.moon,
+    },
   ];
 
   static const Map<int, String> _dayLabels = {
@@ -282,11 +300,13 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
     final frequency = _selectedDays.length == 7
         ? 'Daily'
         : (_selectedDays.length == 5 && _selectedDays.every((d) => d <= 5)
-            ? 'Weekdays'
-            : 'Custom');
+              ? 'Weekdays'
+              : 'Custom');
 
     final reminder = CareReminder(
-      id: widget.reminderToEdit?.id ?? 'rem_${DateTime.now().millisecondsSinceEpoch}',
+      id:
+          widget.reminderToEdit?.id ??
+          'rem_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
       subtitle: '$_treatmentType · ${_selectedDaysSummary()}',
       time: _selectedTime,
@@ -301,7 +321,10 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
       final auth = context.read<AuthCubit?>()?.state;
       final token = auth?.sessionToken;
 
-      await context.read<CareCubit>().saveReminder(reminder, sessionToken: token);
+      await context.read<CareCubit>().saveReminder(
+        reminder,
+        sessionToken: token,
+      );
 
       if (mounted) {
         AppToast.show(
@@ -396,7 +419,9 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                      ),
                       onPressed: () => Navigator.pop(sheetContext, true),
                       child: const Text('Delete reminder'),
                     ),
@@ -418,7 +443,10 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
       final auth = context.read<AuthCubit?>()?.state;
       final token = auth?.sessionToken;
 
-      await context.read<CareCubit>().deleteReminder(reminder.id, sessionToken: token);
+      await context.read<CareCubit>().deleteReminder(
+        reminder.id,
+        sessionToken: token,
+      );
 
       if (mounted) {
         AppToast.show(
@@ -440,6 +468,118 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
         setState(() => _isDeleting = false);
       }
     }
+  }
+
+  Future<void> _showCupertinoTimePicker(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    TimeOfDay tempTime = _selectedTime;
+    final now = DateTime.now();
+    final initialDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Container(
+          height: 310,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 20,
+                offset: Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 4),
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Text(
+                        'Select Time',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _selectedTime = tempTime);
+                          Navigator.pop(sheetContext);
+                        },
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.border),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    initialDateTime: initialDateTime,
+                    use24hFormat: false,
+                    onDateTimeChanged: (DateTime newDateTime) {
+                      tempTime = TimeOfDay(
+                        hour: newDateTime.hour,
+                        minute: newDateTime.minute,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -477,34 +617,32 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary5,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          LucideIcons.bellRing,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary5,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      LucideIcons.bellRing,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _isEditing ? 'Edit Care Reminder' : 'Add Care Reminder',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryDark,
+                        letterSpacing: -0.2,
                       ),
-                      const SizedBox(width: 10),
-                      Text(
-                        _isEditing ? 'Edit Care Reminder' : 'Add Care Reminder',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   if (_isEditing)
                     IconButton(
@@ -522,6 +660,15 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                             ),
                       onPressed: _isDeleting ? null : _confirmDelete,
                     ),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(
+                      LucideIcons.x,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ],
               ),
             ),
@@ -559,11 +706,16 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           itemCount: _clinicalPresets.length,
-                          separatorBuilder: (context, index) => const SizedBox(width: 8),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8),
                           itemBuilder: (context, index) {
                             final preset = _clinicalPresets[index];
                             return ActionChip(
-                              avatar: Icon(preset.icon, size: 14, color: AppColors.primary),
+                              avatar: Icon(
+                                preset.icon,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
                               label: Text(
                                 preset.title.length > 24
                                     ? '${preset.title.substring(0, 22)}...'
@@ -632,20 +784,28 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                           avatar: Icon(
                             icon,
                             size: 14,
-                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
                           ),
                           label: Text(type),
                           selected: isSelected,
                           selectedColor: AppColors.primary5,
                           labelStyle: TextStyle(
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                             side: BorderSide(
-                              color: isSelected ? AppColors.primary : AppColors.border,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
                             ),
                           ),
                           onSelected: (val) {
@@ -669,15 +829,7 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                           ),
                         ),
                         InkWell(
-                          onTap: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: _selectedTime,
-                            );
-                            if (picked != null) {
-                              setState(() => _selectedTime = picked);
-                            }
-                          },
+                          onTap: () => _showCupertinoTimePicker(context),
                           child: const Text(
                             'Pick custom time',
                             style: TextStyle(
@@ -693,18 +845,13 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                     Row(
                       children: [
                         InkWell(
-                          onTap: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: _selectedTime,
-                            );
-                            if (picked != null) {
-                              setState(() => _selectedTime = picked);
-                            }
-                          },
+                          onTap: () => _showCupertinoTimePicker(context),
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 11,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.background,
                               borderRadius: BorderRadius.circular(12),
@@ -746,7 +893,8 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                               children: _quickTimeSlots.map((slot) {
                                 final time = slot['time'] as TimeOfDay;
                                 final label = slot['label'] as String;
-                                final isPicked = _selectedTime.hour == time.hour &&
+                                final isPicked =
+                                    _selectedTime.hour == time.hour &&
                                     _selectedTime.minute == time.minute;
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 6),
@@ -755,18 +903,26 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                                     selected: isPicked,
                                     labelStyle: TextStyle(
                                       fontSize: 11,
-                                      fontWeight: isPicked ? FontWeight.w700 : FontWeight.w500,
-                                      color: isPicked ? AppColors.primary : AppColors.textSecondary,
+                                      fontWeight: isPicked
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isPicked
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary,
                                     ),
                                     selectedColor: AppColors.primary5,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                       side: BorderSide(
-                                        color: isPicked ? AppColors.primary : AppColors.border,
+                                        color: isPicked
+                                            ? AppColors.primary
+                                            : AppColors.border,
                                       ),
                                     ),
                                     onSelected: (val) {
-                                      if (val) setState(() => _selectedTime = time);
+                                      if (val) {
+                                        setState(() => _selectedTime = time);
+                                      }
                                     },
                                   ),
                                 );
@@ -793,7 +949,8 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => _setPresetDays([1, 2, 3, 4, 5, 6, 7]),
+                              onTap: () =>
+                                  _setPresetDays([1, 2, 3, 4, 5, 6, 7]),
                               child: const Text(
                                 'Everyday',
                                 style: TextStyle(
@@ -803,7 +960,10 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                                 ),
                               ),
                             ),
-                            const Text(' · ', style: TextStyle(color: AppColors.textMuted)),
+                            const Text(
+                              ' · ',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
                             GestureDetector(
                               onTap: () => _setPresetDays([1, 2, 3, 4, 5]),
                               child: const Text(
@@ -815,7 +975,10 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                                 ),
                               ),
                             ),
-                            const Text(' · ', style: TextStyle(color: AppColors.textMuted)),
+                            const Text(
+                              ' · ',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
                             GestureDetector(
                               onTap: () => _setPresetDays([1, 3, 5]),
                               child: const Text(
@@ -833,35 +996,55 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                     ),
                     const SizedBox(height: 8),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: List.generate(7, (index) {
                         final dayNumber = index + 1;
                         final isSelected = _selectedDays.contains(dayNumber);
-                        return Semantics(
-                          label:
-                              '${_fullDayLabels[dayNumber]}, ${isSelected ? "selected" : "not selected"}',
-                          button: true,
-                          child: InkWell(
-                            onTap: () => _toggleDay(dayNumber),
-                            borderRadius: BorderRadius.circular(10),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: isSelected ? AppColors.primary : AppColors.background,
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(right: index < 6 ? 6 : 0),
+                            child: Semantics(
+                              label:
+                                  '${_fullDayLabels[dayNumber]}, ${isSelected ? "selected" : "not selected"}',
+                              button: true,
+                              child: InkWell(
+                                onTap: () => _toggleDay(dayNumber),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isSelected ? AppColors.primary : AppColors.border,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                _dayLabels[dayNumber]!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.border,
+                                      width: isSelected ? 1.5 : 1.0,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              blurRadius: 4,
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.20),
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : [],
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    _dayLabels[dayNumber]!,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -878,7 +1061,10 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
                       decoration: InputDecoration(
                         labelText: 'Optional Dosage / Application Notes',
                         hintText: 'e.g. 1ml onto clean dry scalp before bed',
-                        prefixIcon: const Icon(LucideIcons.notepadText, size: 18),
+                        prefixIcon: const Icon(
+                          LucideIcons.notepadText,
+                          size: 18,
+                        ),
                         filled: true,
                         fillColor: AppColors.background,
                         border: OutlineInputBorder(
@@ -891,47 +1077,51 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
 
                     // 7. Active Notification Switch
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.background,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.border),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                _isEnabled ? LucideIcons.bell : LucideIcons.bellOff,
-                                size: 18,
-                                color: _isEnabled ? AppColors.primary : AppColors.textMuted,
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Active Reminder Alert',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primaryDark,
-                                    ),
-                                  ),
-                                  Text(
-                                    _isEnabled
-                                        ? 'Notification alarm scheduled'
-                                        : 'Reminder is paused',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.secondaryDark,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          Icon(
+                            _isEnabled ? LucideIcons.bell : LucideIcons.bellOff,
+                            size: 18,
+                            color: _isEnabled
+                                ? AppColors.primary
+                                : AppColors.textMuted,
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Active Reminder Alert',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _isEnabled
+                                      ? 'Notification alarm scheduled'
+                                      : 'Reminder is paused',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.secondaryDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Switch.adaptive(
                             value: _isEnabled,
                             activeTrackColor: AppColors.primary,
@@ -949,22 +1139,29 @@ class _AddReminderBottomSheetState extends State<AddReminderBottomSheet> {
             ),
             // Fixed Save button with Loading State
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
                   top: BorderSide(color: AppColors.border, width: 0.5),
                 ),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: AppButton(
-                  text: _isEditing ? 'Update Reminder' : 'Save Reminder',
-                  variant: AppButtonVariant.filled,
-                  size: AppButtonSize.large,
-                  isLoading: _isSaving,
-                  icon: const Icon(LucideIcons.check, size: 16, color: Colors.white),
-                  onPressed: _isSaving ? null : _saveReminder,
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    text: _isEditing ? 'Update Reminder' : 'Save Reminder',
+                    variant: AppButtonVariant.filled,
+                    size: AppButtonSize.large,
+                    isLoading: _isSaving,
+                    icon: const Icon(
+                      LucideIcons.check,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                    onPressed: _isSaving ? null : _saveReminder,
+                  ),
                 ),
               ),
             ),

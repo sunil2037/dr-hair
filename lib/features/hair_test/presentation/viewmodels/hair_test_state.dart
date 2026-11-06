@@ -28,6 +28,9 @@ class HairTestState {
   final bool isPickingImage;
   final String? errorMessage;
   final List<Map<String, dynamic>> clinicalReports;
+  final String assessmentStatus;
+  final Map<String, dynamic>? doctorCarePlan;
+  final String? doctorReviewNote;
 
   const HairTestState({
     this.currentStep = 0,
@@ -56,6 +59,9 @@ class HairTestState {
     this.isPickingImage = false,
     this.errorMessage,
     this.clinicalReports = const [],
+    this.assessmentStatus = 'submitted',
+    this.doctorCarePlan,
+    this.doctorReviewNote,
   });
 
   HairTestState copyWith({
@@ -88,6 +94,11 @@ class HairTestState {
     String? errorMessage,
     bool clearErrorMessage = false,
     List<Map<String, dynamic>>? clinicalReports,
+    String? assessmentStatus,
+    Map<String, dynamic>? doctorCarePlan,
+    bool clearDoctorCarePlan = false,
+    String? doctorReviewNote,
+    bool clearDoctorReviewNote = false,
   }) {
     return HairTestState(
       currentStep: currentStep ?? this.currentStep,
@@ -119,6 +130,9 @@ class HairTestState {
           ? null
           : errorMessage ?? this.errorMessage,
       clinicalReports: clinicalReports ?? this.clinicalReports,
+      assessmentStatus: assessmentStatus ?? this.assessmentStatus,
+      doctorCarePlan: clearDoctorCarePlan ? null : doctorCarePlan ?? this.doctorCarePlan,
+      doctorReviewNote: clearDoctorReviewNote ? null : doctorReviewNote ?? this.doctorReviewNote,
     );
   }
 
@@ -138,6 +152,9 @@ class HairTestState {
     return stage ??
         (concern == null || concern.isEmpty ? 'Hair concern summary' : concern);
   }
+
+  /// Title of the stage/concern for reports and summaries.
+  String get stageTitle => assessmentSummary;
 
   /// Cautious explanation of the selected stage, not a medical diagnosis.
   String get stageDescription {

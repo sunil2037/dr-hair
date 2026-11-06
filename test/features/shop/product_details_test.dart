@@ -4,8 +4,87 @@ import 'package:dr_hair/features/shop/presentation/views/product_details_view.da
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 void main() {
+  group('ProductSupplyPlan.ensureThreePlans', () {
+    test('when admin provides 1 plan, dynamically computes 3 plans with pricing', () {
+      final adminPlans = [
+        const ProductSupplyPlan(
+          title: '1 Month',
+          subtitle: 'Starter bottle',
+          price: 1000,
+          mrp: 1500,
+        ),
+      ];
+
+      final plans = ProductSupplyPlan.ensureThreePlans(adminPlans);
+      expect(plans.length, 3);
+
+      // Plan 1
+      expect(plans[0].title, '1 Month');
+      expect(plans[0].price, 1000);
+      expect(plans[0].mrp, 1500);
+
+      // Plan 2 (2 Months at 10% discount)
+      expect(plans[1].title, '2 Months');
+      expect(plans[1].price, 1800); // 1000 * 2 * 0.90
+      expect(plans[1].mrp, 3000); // 1500 * 2
+      expect(plans[1].badge, 'Most Popular');
+      expect(plans[1].monthlyPrice, 900);
+
+      // Plan 3 (3 Months at 18% discount)
+      expect(plans[2].title, '3 Months');
+      expect(plans[2].price, 2460); // 1000 * 3 * 0.82
+      expect(plans[2].mrp, 4500); // 1500 * 3
+      expect(plans[2].badge, 'Best Value');
+      expect(plans[2].monthlyPrice, 820);
+    });
+
+    test('when admin provides 3 plans, preserves all admin plans', () {
+      final adminPlans = [
+        const ProductSupplyPlan(
+          title: 'Trial Pack',
+          subtitle: '15 Days',
+          price: 499,
+          mrp: 699,
+        ),
+        const ProductSupplyPlan(
+          title: 'Full Course',
+          subtitle: '60 Days',
+          price: 1699,
+          mrp: 2499,
+          badge: 'Popular',
+        ),
+        const ProductSupplyPlan(
+          title: 'Annual Protocol',
+          subtitle: '365 Days',
+          price: 7999,
+          mrp: 12999,
+          badge: 'Elite',
+        ),
+      ];
+
+      final plans = ProductSupplyPlan.ensureThreePlans(adminPlans);
+      expect(plans.length, 3);
+      expect(plans[0].title, 'Trial Pack');
+      expect(plans[1].title, 'Full Course');
+      expect(plans[2].title, 'Annual Protocol');
+    });
+
+    test('when admin provides 0 plans, generates sensible defaults', () {
+      final plans = ProductSupplyPlan.ensureThreePlans(
+        [],
+        fallbackPrice: 800,
+        fallbackMrp: 1200,
+      );
+      expect(plans.length, 3);
+      expect(plans[0].title, '1 Month');
+      expect(plans[0].price, 800);
+      expect(plans[1].title, '2 Months');
+      expect(plans[2].title, '3 Months');
+    });
+  });
   group('ProductDetailsCubit', () {
     late ProductDetailsCubit cubit;
 
@@ -20,8 +99,8 @@ void main() {
     test('initial state has default supply plans and values', () {
       expect(cubit.state.quantity, 1);
       expect(cubit.state.selectedSupplyIndex, 1);
-      expect(cubit.state.currentUnitPrice, 2799);
-      expect(cubit.state.totalPrice, 2799);
+      expect(cubit.state.currentUnitPrice, 2339);
+      expect(cubit.state.totalPrice, 2339);
       expect(cubit.state.isFavorite, false);
       expect(cubit.state.activeTab, 0);
       expect(cubit.state.product.name, 'Follicle Booster Serum');
@@ -33,10 +112,10 @@ void main() {
       expect(cubit.state.currentUnitPrice, 1299);
       expect(cubit.state.totalPrice, 1299);
 
-      cubit.selectSupplyPlan(2); // 6 Month plan
+      cubit.selectSupplyPlan(2); // 3 Month plan
       expect(cubit.state.selectedSupplyIndex, 2);
-      expect(cubit.state.currentUnitPrice, 4999);
-      expect(cubit.state.totalPrice, 4999);
+      expect(cubit.state.currentUnitPrice, 3195);
+      expect(cubit.state.totalPrice, 3195);
     });
 
     test('quantity increment and decrement updates total price properly', () {
@@ -109,11 +188,11 @@ void main() {
 
         // Verify supply plans
         expect(find.text('1 Month'), findsOneWidget);
+        expect(find.text('2 Months'), findsOneWidget);
         expect(find.text('3 Months'), findsOneWidget);
-        expect(find.text('6 Months'), findsOneWidget);
 
-        // Verify initial Add button
-        expect(find.textContaining('Add to cart'), findsOneWidget);
+        // Verify initial Add button (defaults to index 1: 2 Months at 2339)
+        expect(find.textContaining('Add to cart · ₹2339'), findsOneWidget);
 
         // Switch to 1 Month plan (price = 1299)
         await tester.ensureVisible(find.text('1 Month'));
@@ -311,7 +390,7 @@ void main() {
           findsOneWidget,
         );
         expect(find.textContaining('Add to cart'), findsOneWidget);
-        expect(find.text('₹2499'), findsWidgets);
+        expect(find.text('₹1798'), findsWidgets);
       },
     );
 
@@ -329,6 +408,131 @@ void main() {
         expect(find.text('Product unavailable'), findsOneWidget);
         expect(find.text('This product is no longer available.'), findsOneWidget);
         expect(find.text('Browse products'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Product with only 1 admin-uploaded plan renders 3 plans and switches properly',
+      (tester) async {
+        tester.view.physicalSize = const Size(420, 920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final singlePlanProduct = ProductItem(
+          id: 'single-plan-product',
+          name: 'Derma Spray',
+          subtitle: 'Pure Minoxidil Formula',
+          category: 'Treatment',
+          rootCause: 'Hair',
+          rating: 4.9,
+          reviewsCount: 120,
+          inStock: true,
+          images: const [ProductItem.fallbackProductImageUrl],
+          supplyPlans: const [
+            ProductSupplyPlan(
+              title: '1 Month',
+              subtitle: '60ml Solution',
+              price: 1000,
+              mrp: 1400,
+            ),
+          ],
+          benefits: const [],
+          ingredients: const [],
+          usageSteps: const [],
+          clinicalMetrics: const [],
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(home: ProductDetailsView(initialProduct: singlePlanProduct)),
+        );
+
+        // All 3 plans should be visible on screen
+        expect(find.text('1 Month'), findsOneWidget);
+        expect(find.text('2 Months'), findsOneWidget);
+        expect(find.text('3 Months'), findsOneWidget);
+
+        // Price calculations: 1000 * 2 * 0.90 = 1800 for 2 Months
+        expect(find.text('₹1800'), findsWidgets);
+        // 1000 * 3 * 0.82 = 2460 for 3 Months
+        expect(find.text('₹2460'), findsWidgets);
+
+        // Default selection is 2 Months (index 1) -> 1800
+        expect(find.textContaining('Add to cart · ₹1800'), findsOneWidget);
+
+        // Tap 3 Months plan
+        await tester.ensureVisible(find.text('3 Months'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('3 Months'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Add to cart · ₹2460'), findsOneWidget);
+
+        // Tap 1 Month plan
+        await tester.ensureVisible(find.text('1 Month'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('1 Month'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Add to cart · ₹1000'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Skeletonizer applies soft light shimmer theme during loading state',
+      (tester) async {
+        final cubit = ProductDetailsCubit(
+          initialState: ProductDetailsState.initial(isLoading: true),
+        );
+        await tester.pumpWidget(
+          MaterialApp(home: ProductDetailsView(cubit: cubit)),
+        );
+
+        final skeletonizer = tester.widget<Skeletonizer>(
+          find.byWidgetPredicate((w) => w is Skeletonizer),
+        );
+        expect(skeletonizer.enabled, true);
+        expect(skeletonizer.containersColor, Colors.white);
+        expect(skeletonizer.effect, isA<ShimmerEffect>());
+        final shimmer = skeletonizer.effect as ShimmerEffect;
+        expect(shimmer.colors, contains(const Color(0xFFF1F5F9)));
+        expect(shimmer.colors, contains(const Color(0xFFFFFFFF)));
+      },
+    );
+
+    testWidgets(
+      'Interactive tabs header has balanced left and right scroll padding and item gaps',
+      (tester) async {
+        tester.view.physicalSize = const Size(420, 920);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(const MaterialApp(home: ProductDetailsView()));
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+        await tester.pumpAndSettle();
+
+        final tabScrollViewFinder = find.byWidgetPredicate(
+          (w) =>
+              w is SingleChildScrollView &&
+              w.scrollDirection == Axis.horizontal &&
+              w.padding == const EdgeInsets.symmetric(horizontal: 16),
+        );
+        expect(tabScrollViewFinder, findsOneWidget);
+
+        final scrollView = tester.widget<SingleChildScrollView>(
+          tabScrollViewFinder,
+        );
+        expect(scrollView.padding, const EdgeInsets.symmetric(horizontal: 16));
+        expect(scrollView.physics, isA<BouncingScrollPhysics>());
+
+        // Switch tabs
+        await tester.ensureVisible(find.text('Ingredients'));
+        await tester.tap(find.text('Ingredients'));
+        await tester.pumpAndSettle();
+        expect(find.text('Ingredients'), findsOneWidget);
       },
     );
   });

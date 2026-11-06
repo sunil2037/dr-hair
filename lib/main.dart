@@ -16,6 +16,7 @@ import 'core/session/session_coordinator.dart';
 import 'core/storage/app_local_cache.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
+import 'features/app_config/presentation/viewmodels/app_config_cubit.dart';
 import 'features/auth/presentation/viewmodels/auth_cubit.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/appointments/presentation/clinic_appointment_cubit.dart';
@@ -262,6 +263,7 @@ class _MyAppState extends State<MyApp> {
         ),
         BlocProvider<CareCubit>(create: (_) => CareCubit()),
         BlocProvider<NotificationsCubit>.value(value: _notificationsCubit),
+        BlocProvider<AppConfigCubit>(create: (_) => AppConfigCubit()),
         BlocProvider<HairTestCubit>(
           create: (_) => HairTestCubit()..loadSavedState(),
         ),

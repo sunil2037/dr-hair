@@ -19,7 +19,7 @@ class _ReviewsViewState extends State<ReviewsView> {
   int _selectedFilterIndex = 0;
   final List<String> _filters = ['All', 'Hair Fall', 'Regrowth', 'Dandruff'];
   late final ReviewRemoteDataSource _dataSource;
-  List<ReviewModel> _reviews = ReviewModel.defaultReviews;
+  List<ReviewModel> _reviews = const [];
   bool _isLoading = false;
 
   @override

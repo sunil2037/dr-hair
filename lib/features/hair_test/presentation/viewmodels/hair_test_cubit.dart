@@ -93,10 +93,20 @@ class HairTestCubit extends Cubit<HairTestState> {
           .whereType<Map>()
           .where((a) => a['status'] != 'draft')
           .toList();
-      if (submitted.isNotEmpty || reports.isNotEmpty) {
+      final rawCarePlans = record['care_plans'] as List? ?? [];
+      final carePlans = rawCarePlans
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+      final Map<String, dynamic>? activeCarePlan =
+          carePlans.isNotEmpty ? carePlans.first : null;
+
+      if (submitted.isNotEmpty || reports.isNotEmpty || carePlans.isNotEmpty) {
         final latest = submitted.isNotEmpty ? submitted.first : null;
         final refNo = latest?['reference_no']?.toString();
         final stage = latest?['hair_loss_stage']?.toString();
+        final serverStatus = latest?['status']?.toString() ??
+            (carePlans.isNotEmpty || reports.isNotEmpty ? 'reviewed' : 'submitted');
         if (!isClosed) {
           emit(
             state.copyWith(
@@ -108,6 +118,8 @@ class HairTestCubit extends Cubit<HairTestState> {
               age: latest?['age']?.toString() ?? state.age,
               dandruff: latest?['dandruff']?.toString() ?? state.dandruff,
               clinicalReports: reports,
+              assessmentStatus: serverStatus,
+              doctorCarePlan: activeCarePlan,
             ),
           );
         }
@@ -475,6 +487,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         emit(
           state.copyWith(
             referenceNo: referenceNo,
+            assessmentStatus: 'submitted',
             isSubmitting: false,
             isSubmitted: true,
             isCompleted: true,
@@ -510,6 +523,7 @@ class HairTestCubit extends Cubit<HairTestState> {
         state.copyWith(
           isSubmitted: true,
           isCompleted: true,
+          assessmentStatus: 'submitted',
           isRetesting: false,
           clearErrorMessage: true,
           name: name,

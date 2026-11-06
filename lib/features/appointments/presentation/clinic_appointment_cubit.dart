@@ -165,6 +165,72 @@ class ClinicAppointmentCubit extends Cubit<List<ClinicAppointment>> {
     return null;
   }
 
+  Future<String?> reschedule({
+    required String id,
+    required String patientId,
+    required DateTime newStartsAt,
+    String? accessToken,
+  }) async {
+    if (patientId.isEmpty || patientId == 'GUEST') {
+      return 'Sign in to reschedule your appointment.';
+    }
+    if (newStartsAt.isBefore(DateTime.now().add(const Duration(hours: 1)))) {
+      return 'Choose a time at least one hour from now.';
+    }
+    if (newStartsAt.isAfter(DateTime.now().add(const Duration(days: 90)))) {
+      return 'Choose a time within the next 90 days.';
+    }
+    if (state.any(
+      (item) =>
+          item.patientId == patientId &&
+          item.id != id &&
+          item.status != 'Cancelled' &&
+          item.startsAt.difference(newStartsAt).inMinutes.abs() < 30,
+    )) {
+      return 'You already have an appointment request close to this time.';
+    }
+
+    // Direct optimistic update so screen updates immediately
+    emit(
+      state
+          .map(
+            (item) => item.id == id
+                ? item.copyWith(startsAt: newStartsAt, status: 'Requested')
+                : item,
+          )
+          .toList(),
+    );
+    await _persist();
+
+    final activeToken = accessToken ?? await SecureSessionStore().readToken();
+    if (activeToken != null && activeToken.isNotEmpty) {
+      try {
+        final res = await api.update(
+          token: activeToken,
+          appointmentId: id,
+          data: {
+            'action': 'reschedule',
+            'starts_at': newStartsAt.toUtc().toIso8601String(),
+          },
+        );
+        final updatedApt = ClinicAppointment.fromJson(res);
+        if (updatedApt != null) {
+          emit(
+            state.map((item) => item.id == id ? updatedApt : item).toList(),
+          );
+          await _persist();
+        }
+        await loadFromApi(activeToken);
+        return null;
+      } catch (error) {
+        await loadFromApi(activeToken);
+        return _errorMessage(error, 'Appointment could not be rescheduled.');
+      }
+    }
+
+    return null;
+  }
+
   Future<String?> cancel(String id, String patientId, {String? accessToken}) async {
     final activeToken = accessToken ?? await SecureSessionStore().readToken();
     if (activeToken != null && activeToken.isNotEmpty) {

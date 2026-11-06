@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -64,7 +65,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
     if (confirmed == true && mounted) {
       setState(() => _isCancelling = true);
       HapticFeedback.mediumImpact();
-      final success = await context.read<CareCubit>().cancelOrder(order.orderId);
+      final success = await context.read<CareCubit>().cancelOrder(
+        order.orderId,
+      );
       if (!mounted) return;
       setState(() => _isCancelling = false);
       if (success) {
@@ -78,12 +81,19 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
             behavior: SnackBarBehavior.floating,
             content: Row(
               children: [
-                const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 20),
+                const Icon(
+                  LucideIcons.checkCircle2,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Order #$orderCode cancelled. Full refund will be credited in 3–5 days.',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -96,7 +106,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
           const SnackBar(
             backgroundColor: AppColors.danger,
             behavior: SnackBarBehavior.floating,
-            content: Text('Failed to cancel order. Please contact clinic support.'),
+            content: Text(
+              'Failed to cancel order. Please contact clinic support.',
+            ),
           ),
         );
       }
@@ -107,8 +119,12 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
   Widget build(BuildContext context) {
     return BlocBuilder<CareCubit, CareState>(
       builder: (context, state) {
-        if (!_initialIndexSet && widget.initialOrderId != null && state.orders.isNotEmpty) {
-          final targetIdx = state.orders.indexWhere((o) => o.orderId == widget.initialOrderId);
+        if (!_initialIndexSet &&
+            widget.initialOrderId != null &&
+            state.orders.isNotEmpty) {
+          final targetIdx = state.orders.indexWhere(
+            (o) => o.orderId == widget.initialOrderId,
+          );
           if (targetIdx != -1) {
             _selectedOrderIndex = targetIdx;
             _initialIndexSet = true;
@@ -120,7 +136,8 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
         final order = state.orders.isNotEmpty ? state.orders[safeIndex] : null;
         final isPreviewOrder =
             order?.status.startsWith('Preview only') ?? false;
-        final isCancellable = order != null &&
+        final isCancellable =
+            order != null &&
             !isPreviewOrder &&
             (order.status == 'New' || order.status == 'Preparing');
 
@@ -192,7 +209,8 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
               else ...[
                 // Order Status Banner Card
                 careCard(
-                  backgroundColor: _getStatusColor(order.status).withValues(alpha: 0.08),
+                  backgroundColor: _getStatusColor(order.status)
+                      .withValues(alpha: 0.08),
                   border: Border.all(
                     color: _getStatusColor(order.status).withValues(alpha: 0.3),
                   ),
@@ -208,7 +226,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                               Text(
                                 'Order #${order.orderId}',
                                 style: const TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primaryDark,
                                 ),
@@ -216,7 +234,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                               Text(
                                 'Placed on ${order.orderDate}',
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   color: AppColors.secondaryDark,
                                 ),
                               ),
@@ -234,19 +252,21 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                             child: Text(
                               order.status,
                               style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Icon(
-                            isPreviewOrder ? LucideIcons.package : LucideIcons.truck,
+                            isPreviewOrder
+                                ? LucideIcons.package
+                                : LucideIcons.truck,
                             size: 16,
                             color: isPreviewOrder
                                 ? AppColors.primary
@@ -270,165 +290,170 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                 ),
 
                 if (!isPreviewOrder) ...[
-                careSectionHeader(title: 'DISPATCH TIMELINE'),
+                  careSectionHeader(title: 'DISPATCH TIMELINE'),
 
-                // Delivery Stepper with TweenAnimationBuilder
-                careCard(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween<double>(
-                      begin: 0.0,
-                      end: order.currentStep.toDouble(),
-                    ),
-                    duration: const Duration(milliseconds: 1400),
-                    curve: Curves.easeInOutCubic,
-                    builder: (context, animValue, _) {
-                      final timelineSteps = [
-                        (
-                          title: 'Order Confirmed & Payment Verified',
-                          subtitle: 'Oct 20, 2026 · 10:14 AM',
-                        ),
-                        (
-                          title: 'Clinical Formulation Compounded',
-                          subtitle: 'Pharmacist calibrated 5% topical booster',
-                        ),
-                        (
-                          title: 'Dispatched from Central Pharmacy',
-                          subtitle: '${order.courierName} Hub · In transit',
-                        ),
-                        (
-                          title: 'Out for Delivery',
-                          subtitle:
-                              'Courier partner is on the way to your address',
-                        ),
-                        (title: 'Delivered', subtitle: 'Expected by 2:00 PM'),
-                      ];
+                  // Delivery Stepper with TweenAnimationBuilder
+                  careCard(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0.0,
+                        end: order.currentStep.toDouble(),
+                      ),
+                      duration: const Duration(milliseconds: 1400),
+                      curve: Curves.easeInOutCubic,
+                      builder: (context, animValue, _) {
+                        final timelineSteps = [
+                          (
+                            title: 'Order Confirmed & Payment Verified',
+                            subtitle: 'Oct 20, 2026 · 10:14 AM',
+                          ),
+                          (
+                            title: 'Clinical Formulation Compounded',
+                            subtitle:
+                                'Pharmacist calibrated 5% topical booster',
+                          ),
+                          (
+                            title: 'Dispatched from Central Pharmacy',
+                            subtitle: '${order.courierName} Hub · In transit',
+                          ),
+                          (
+                            title: 'Out for Delivery',
+                            subtitle:
+                                'Courier partner is on the way to your address',
+                          ),
+                          (title: 'Delivered', subtitle: 'Expected by 2:00 PM'),
+                        ];
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Animated Progress Summary Row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    LucideIcons.truck,
-                                    size: 20,
-                                    color: Color(0xFF059669),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Step ${(animValue.clamp(0, math.max(0, order.currentStep)) + 1).toInt()} of 5 · ${order.status}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primaryDark,
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Animated Progress Summary Row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      LucideIcons.truck,
+                                      size: 20,
+                                      color: Color(0xFF059669),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Animated Timeline Steps
-                          for (int i = 0; i < timelineSteps.length; i++) ...[
-                            _buildTimelineStep(
-                              title: timelineSteps[i].title,
-                              subtitle: timelineSteps[i].subtitle,
-                              isCompleted:
-                                  animValue >= i + 1 ||
-                                  (i < order.currentStep && animValue >= i),
-                              isCurrent:
-                                  i == order.currentStep && animValue >= i,
-                              isReached: animValue >= i,
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Step ${(animValue.clamp(0, math.max(0, order.currentStep)) + 1).toInt()} of 5 · ${order.status}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primaryDark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            if (i < timelineSteps.length - 1)
-                              _buildTimelineDivider(
-                                progress: animValue,
-                                stepIndex: i,
+
+                            const SizedBox(height: 16),
+
+                            // Animated Timeline Steps
+                            for (int i = 0; i < timelineSteps.length; i++) ...[
+                              _buildTimelineStep(
+                                title: timelineSteps[i].title,
+                                subtitle: timelineSteps[i].subtitle,
+                                isCompleted:
+                                    animValue >= i + 1 ||
+                                    (i < order.currentStep && animValue >= i),
+                                isCurrent:
+                                    i == order.currentStep && animValue >= i,
+                                isReached: animValue >= i,
                               ),
+                              if (i < timelineSteps.length - 1)
+                                _buildTimelineDivider(
+                                  progress: animValue,
+                                  stepIndex: i,
+                                ),
+                            ],
                           ],
-                        ],
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
 
-                careSectionHeader(title: 'SHIPPING & ITEMS'),
+                  careSectionHeader(title: 'SHIPPING & ITEMS'),
 
-                // Courier & AWB Card
-                careCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                order.courierName,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              Text(
-                                'AWB: ${order.trackingNumber}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.secondaryDark,
-                                ),
-                              ),
-                            ],
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              LucideIcons.copy,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            tooltip: 'Copy Tracking ID',
-                            onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(text: order.trackingNumber),
-                              );
-                              HapticFeedback.lightImpact();
-                              AppToast.show(context,
-                                const SnackBar(
-                                  content: Text(
-                                    'Tracking number copied to clipboard!',
+                  // Courier & AWB Card
+                  careCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  order.courierName,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              );
-                            },
+                                Text(
+                                  'AWB: ${order.trackingNumber}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.secondaryDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: GestureDetector(
+                                child: const Icon(
+                                  LucideIcons.copy,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+
+                                onTap: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: order.trackingNumber),
+                                  );
+                                  HapticFeedback.lightImpact();
+                                  AppToast.show(
+                                    context,
+                                    const SnackBar(
+                                      content: Text(
+                                        'Tracking number copied to clipboard!',
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        const Text(
+                          'Delivery Address',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                           ),
-                        ],
-                      ),
-                      const Divider(height: 20),
-                      const Text(
-                        'Delivery Address',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        order.deliveryAddress,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondaryDark,
-                          height: 1.35,
+                        const SizedBox(height: 2),
+                        Text(
+                          order.deliveryAddress,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.secondaryDark,
+                            height: 1.35,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
                 ] else
                   careCard(
                     backgroundColor: AppColors.primary5,
@@ -533,7 +558,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                             )
                           : const Icon(LucideIcons.ban, size: 18),
                       label: Text(
-                        _isCancelling ? 'Cancelling...' : 'Cancel Order & Release Items',
+                        _isCancelling
+                            ? 'Cancelling...'
+                            : 'Cancel Order & Release Items',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -549,49 +576,50 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                    ),
-                    onPressed: () async {
-                      HapticFeedback.lightImpact();
-                      final uri = Uri.parse(
-                        'https://wa.me/918058056789?text=Hi%20DrHair,%20I%20have%20an%20inquiry%20regarding%20my%20Order%20%23${order.orderId}',
-                      );
-                      try {
-                        await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        final uri = Uri.parse(
+                          'https://wa.me/918058056789?text=Hi%20DrHair,%20I%20have%20an%20inquiry%20regarding%20my%20Order%20%23${order.orderId}',
                         );
-                      } catch (e) {
-                        debugPrint('Could not launch WhatsApp: $e');
-                      }
-                    },
-                    icon: Image.asset(
-                      'assets/icons/whatsapp.png',
-                      height: 18,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        LucideIcons.messageCircle,
-                        size: 18,
-                        color: Color(0xFF25D366),
+                        try {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } catch (e) {
+                          debugPrint('Could not launch WhatsApp: $e');
+                        }
+                      },
+                      icon: Image.asset(
+                        'assets/icons/whatsapp.png',
+                        height: 18,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              LucideIcons.messageCircle,
+                              size: 18,
+                              color: Color(0xFF25D366),
+                            ),
                       ),
-                    ),
-                    label: const Text(
-                      'Contact Support regarding this order',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      label: const Text(
+                        'Contact Support regarding this order',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
             ],
-          ],
-        ),
-      );
+          ),
+        );
       },
     );
   }
@@ -904,10 +932,12 @@ class _CancelOrderBottomSheetState extends State<_CancelOrderBottomSheet> {
                       reason,
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color:
-                            isSelected ? Colors.white : AppColors.primaryDark,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.primaryDark,
                       ),
                     ),
                   ),
@@ -954,11 +984,7 @@ class _CancelOrderBottomSheetState extends State<_CancelOrderBottomSheet> {
       children: [
         const Padding(
           padding: EdgeInsets.only(top: 4, right: 8),
-          child: Icon(
-            LucideIcons.check,
-            size: 13,
-            color: Color(0xFFD97706),
-          ),
+          child: Icon(LucideIcons.check, size: 13, color: Color(0xFFD97706)),
         ),
         Expanded(
           child: Text(

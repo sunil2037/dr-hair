@@ -87,30 +87,5 @@ class DeliveryAddress {
     );
   }
 
-  static List<DeliveryAddress> defaultAddresses() => [
-        const DeliveryAddress(
-          id: 'addr_home',
-          name: 'Yashveer Soni',
-          phone: '+91 98765 43210',
-          houseNumber: 'Flat 402, Royal Residency',
-          street: 'Shipra Path, Mansarovar',
-          city: 'Jaipur',
-          state: 'Rajasthan',
-          pinCode: '302020',
-          tag: 'Home',
-          isDefault: true,
-        ),
-        const DeliveryAddress(
-          id: 'addr_work',
-          name: 'Yashveer Soni',
-          phone: '+91 98765 43210',
-          houseNumber: 'Plot 12, Tower B, Level 3',
-          street: 'World Trade Park, Malviya Nagar',
-          city: 'Jaipur',
-          state: 'Rajasthan',
-          pinCode: '302017',
-          tag: 'Work',
-          isDefault: false,
-        ),
-      ];
+  static List<DeliveryAddress> defaultAddresses() => const [];
 }

@@ -99,8 +99,17 @@ class FirebasePushService {
         return null;
       }
 
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        final apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        }
+      }
+
       // ignore: deprecated_member_use
-      return await _messaging.getToken(vapidKey: webVapidKey);
+      final token = await _messaging.getToken(vapidKey: webVapidKey);
+      debugPrint('FirebasePushService: FCM token obtained: $token');
+      return token;
     } catch (e) {
       debugPrint('FirebasePushService requestPermission error: $e');
       return null;
@@ -113,22 +122,26 @@ class FirebasePushService {
 
     try {
       final token = await requestPermissionAndGetToken();
-      if (token == null || token.trim().isEmpty) return;
-
-      final authToken = accessToken ?? await SecureSessionStore().readToken();
-      if (authToken == null || authToken.trim().isEmpty) {
-        debugPrint('FirebasePushService: skip sync, patient not logged in yet.');
+      if (token == null || token.trim().isEmpty) {
+        debugPrint('FirebasePushService: could not obtain device token.');
         return;
       }
 
-      final options = Options(headers: {
-        'Authorization': 'Bearer ${authToken.trim()}',
-      });
+      final authToken = accessToken ?? await SecureSessionStore().readToken();
+      final headers = <String, String>{};
+      if (authToken != null && authToken.trim().isNotEmpty) {
+        headers['Authorization'] = 'Bearer ${authToken.trim()}';
+      }
 
-      await _dio.post(
+      final options = Options(headers: headers);
+
+      final response = await _dio.post(
         ApiEndpoints.notificationDeviceTokens,
         data: {'token': token.trim(), 'platform': _currentPlatformName},
         options: options,
+      );
+      debugPrint(
+        'FirebasePushService: Device token synced with backend status: ${response.statusCode}',
       );
 
       // Listen for background token rotations

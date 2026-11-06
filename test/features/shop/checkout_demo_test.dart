@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:dr_hair/features/shop/data/models/delivery_address_model.dart';
 import 'package:dr_hair/features/shop/presentation/views/checkout_view.dart';
 import 'package:dr_hair/features/shop/presentation/viewmodels/cart_cubit.dart';
 
 void main() {
   group('CheckoutView Demo Behavior & Policy Links Tests', () {
-    Widget createTestApp() {
+    Widget createTestApp({List<DeliveryAddress>? initialAddresses}) {
       return BlocProvider<CartCubit>(
         create: (_) => CartCubit(),
-        child: const MaterialApp(
-          home: CheckoutView(),
+        child: MaterialApp(
+          home: CheckoutView(initialAddresses: initialAddresses),
         ),
       );
     }
@@ -56,7 +57,33 @@ void main() {
     });
 
     testWidgets('tapping Change opens delivery address sheet, allows selecting and updating address', (tester) async {
-      await tester.pumpWidget(createTestApp());
+      const testAddresses = [
+        DeliveryAddress(
+          id: 'addr_1',
+          name: 'Yashveer Soni',
+          phone: '+91 98765 43210',
+          houseNumber: 'Flat 402',
+          street: 'Royal Residency',
+          city: 'Jaipur',
+          state: 'Rajasthan',
+          pinCode: '302001',
+          tag: 'Home',
+          isDefault: true,
+        ),
+        DeliveryAddress(
+          id: 'addr_2',
+          name: 'Yashveer Soni',
+          phone: '+91 98765 43210',
+          houseNumber: 'Tower B, Suite 10',
+          street: 'World Trade Park',
+          city: 'Jaipur',
+          state: 'Rajasthan',
+          pinCode: '302020',
+          tag: 'Work',
+          isDefault: false,
+        ),
+      ];
+      await tester.pumpWidget(createTestApp(initialAddresses: testAddresses));
       await tester.pumpAndSettle();
 
       // Tap Change to open delivery address bottom sheet
@@ -67,9 +94,9 @@ void main() {
       expect(find.text('Select Delivery Address'), findsOneWidget);
       expect(find.text('SAVED ADDRESSES'), findsOneWidget);
       expect(find.text('Add New Delivery Address'), findsOneWidget);
-      expect(find.text('HOME'), findsOneWidget);
+      expect(find.text('HOME'), findsWidgets);
       expect(find.text('WORK'), findsOneWidget);
-      expect(find.textContaining('Flat 402, Royal Residency'), findsOneWidget);
+      expect(find.textContaining('Flat 402, Royal Residency'), findsWidgets);
 
       // Tap "Deliver to this Address"
       await tester.tap(find.text('Deliver to this Address'));

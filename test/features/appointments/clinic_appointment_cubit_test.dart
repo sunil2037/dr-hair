@@ -47,4 +47,47 @@ void main() {
       await restored.close();
     },
   );
+
+  test('reschedules appointment slot with optimistic update and persistence', () async {
+    final cache = AppLocalCache.inMemory();
+    final cubit = ClinicAppointmentCubit(cache: cache);
+    final initialTime = DateTime.now().add(const Duration(days: 3));
+
+    await cubit.saveRequest(
+      patientId: 'PAT-1',
+      startsAt: initialTime,
+      reason: 'Scalp scan',
+    );
+
+    final appointmentId = cubit.forPatient('PAT-1').first.id;
+    final newSlot = DateTime.now().add(const Duration(days: 5));
+
+    final result = await cubit.reschedule(
+      id: appointmentId,
+      patientId: 'PAT-1',
+      newStartsAt: newSlot,
+    );
+
+    expect(result, isNull);
+    final updated = cubit.forPatient('PAT-1').first;
+    expect(updated.startsAt, newSlot);
+    expect(updated.status, 'Requested');
+
+    // Verify persistence
+    final restored = ClinicAppointmentCubit(cache: cache)..load();
+    expect(restored.forPatient('PAT-1').first.startsAt, newSlot);
+    expect(restored.forPatient('PAT-1').first.status, 'Requested');
+
+    // Verify rejection if slot is in the past or < 1 hr
+    final invalidPast = DateTime.now().subtract(const Duration(hours: 2));
+    final errorPast = await cubit.reschedule(
+      id: appointmentId,
+      patientId: 'PAT-1',
+      newStartsAt: invalidPast,
+    );
+    expect(errorPast, isNotNull);
+
+    await cubit.close();
+    await restored.close();
+  });
 }

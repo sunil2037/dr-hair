@@ -649,7 +649,7 @@ class _OrdersListViewState extends State<OrdersListView>
                         Text(
                           displayOrderId,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
                             color: AppColors.primaryDark,
                             letterSpacing: -0.2,
@@ -688,7 +688,7 @@ class _OrdersListViewState extends State<OrdersListView>
                         Text(
                           order.status,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: statusColor,
                           ),
