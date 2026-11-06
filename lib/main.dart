@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:dr_hair/core/routes/app_destination.dart';
+import 'package:dr_hair/core/routes/route_names.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -135,6 +137,7 @@ class _MyAppState extends State<MyApp> {
     required RemoteMessage message,
   }) {
     final location = FirebasePushService.resolveMessageLocation(message);
+    final imageUrl = FirebasePushService.resolveMessageImageUrl(message);
 
     MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(
@@ -198,6 +201,19 @@ class _MyAppState extends State<MyApp> {
                 ],
               ),
             ),
+            if (imageUrl != null && imageUrl.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+            ],
           ],
         ),
         action: location != null && location.isNotEmpty
@@ -212,9 +228,20 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _navigateFromMessage(RemoteMessage message) {
-    final location = FirebasePushService.resolveMessageLocation(message);
-    if (location != null && location.isNotEmpty) {
-      AppRouter.router.push(location);
+    try {
+      final location = FirebasePushService.resolveMessageLocation(message);
+      final safeLocation = AppDestination.resolveSafeLocation(
+        location,
+        fallback: RouteNames.notifications,
+      );
+      AppRouter.router.push(safeLocation);
+    } catch (e) {
+      debugPrint('⚠️ [FCM] Route navigation error: $e');
+      try {
+        AppRouter.router.go(RouteNames.notifications);
+      } catch (_) {
+        AppRouter.router.go(RouteNames.mainShell);
+      }
     }
   }
 

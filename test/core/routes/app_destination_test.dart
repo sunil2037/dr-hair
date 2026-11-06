@@ -42,4 +42,59 @@ void main() {
       '/clinic-appointment',
     );
   });
+
+  test('screen aliases resolve correctly to canonical routes', () {
+    expect(
+      AppDestination.fromJson({'screen': 'consultation'}).location,
+      '/clinic-appointment',
+    );
+    expect(
+      AppDestination.fromJson({'screen': 'appointments'}).location,
+      '/clinic-appointment',
+    );
+    expect(
+      AppDestination.fromJson({'screen': 'reels'}).location,
+      '/videos',
+    );
+    expect(
+      AppDestination.fromJson({'screen': 'care_plan'}).location,
+      '/profile',
+    );
+    expect(
+      AppDestination.fromJson({'screen': 'assessment'}).location,
+      '/hair-test',
+    );
+  });
+
+  test('safe route resolver handles invalid and non-existent locations', () {
+    expect(AppDestination.isValidRoute('/clinic-appointment'), isTrue);
+    expect(AppDestination.isValidRoute('/products/follicle-booster'), isTrue);
+    expect(AppDestination.isValidRoute('/invalid-route-123'), isFalse);
+    expect(AppDestination.isValidRoute(''), isFalse);
+    expect(AppDestination.isValidRoute(null), isFalse);
+
+    // Resolves valid routes as-is
+    expect(
+      AppDestination.resolveSafeLocation('/clinic-appointment'),
+      '/clinic-appointment',
+    );
+    expect(
+      AppDestination.resolveSafeLocation('/products/serum-101'),
+      '/products/serum-101',
+    );
+
+    // Resolves unknown or malformed routes to safe fallback
+    expect(
+      AppDestination.resolveSafeLocation('/unknown/screen/does_not_exist'),
+      '/notifications',
+    );
+    expect(
+      AppDestination.resolveSafeLocation(null),
+      '/notifications',
+    );
+    expect(
+      AppDestination.resolveSafeLocation('', fallback: '/'),
+      '/',
+    );
+  });
 }

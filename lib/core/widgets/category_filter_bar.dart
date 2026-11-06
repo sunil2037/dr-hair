@@ -113,35 +113,28 @@ class _FilterChipItemState extends State<_FilterChipItem> {
           child: AnimatedContainer(
             duration: duration,
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+            margin: const EdgeInsets.symmetric(vertical: 4),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: widget.isSelected
                   ? widget.selectedColor
                   : widget.unselectedColor,
               borderRadius: BorderRadius.circular(24),
+
               border: Border.all(
                 color: widget.isSelected
                     ? widget.selectedColor
                     : AppColors.border,
                 width: 1.2,
               ),
-              boxShadow: widget.isSelected
-                  ? [
-                      BoxShadow(
-                        color: widget.selectedColor.withValues(alpha: 0.22),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
             ),
             child: AnimatedDefaultTextStyle(
               duration: duration,
               curve: Curves.easeOutCubic,
               style: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: widget.isSelected
                     ? FontWeight.w700
                     : FontWeight.w600,

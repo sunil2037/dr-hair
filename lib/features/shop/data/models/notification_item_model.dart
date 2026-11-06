@@ -10,6 +10,7 @@ class NotificationItemModel {
   final String type;
   final AppDestination destination;
   final Map<String, dynamic> data;
+  final String? imageUrl;
   final bool isRead;
   final DateTime createdAt;
 
@@ -20,6 +21,7 @@ class NotificationItemModel {
     required this.type,
     required this.destination,
     this.data = const {},
+    this.imageUrl,
     this.isRead = false,
     required this.createdAt,
   });
@@ -43,6 +45,9 @@ class NotificationItemModel {
       data: json['data'] is Map<String, dynamic>
           ? Map<String, dynamic>.from(json['data'] as Map)
           : const {},
+      imageUrl: json['imageUrl']?.toString() ??
+          json['image_url']?.toString() ??
+          json['image']?.toString(),
       isRead: json['isRead'] == true || json['is_read'] == true,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
@@ -50,7 +55,7 @@ class NotificationItemModel {
     );
   }
 
-  NotificationItemModel copyWith({bool? isRead}) {
+  NotificationItemModel copyWith({bool? isRead, String? imageUrl}) {
     return NotificationItemModel(
       id: id,
       title: title,
@@ -58,6 +63,7 @@ class NotificationItemModel {
       type: type,
       destination: destination,
       data: data,
+      imageUrl: imageUrl ?? this.imageUrl,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt,
     );

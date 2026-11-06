@@ -7,6 +7,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routes/app_destination.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../data/models/notification_item_model.dart';
 import '../viewmodels/notifications_cubit.dart';
 import '../viewmodels/notifications_state.dart';
@@ -204,10 +205,18 @@ class _NotificationsContent extends StatelessWidget {
             HapticFeedback.selectionClick();
             context.read<NotificationsCubit>().markAsRead(notification.id);
 
-            // Dynamic deep link routing
+            // Dynamic deep link routing with safe destination resolution
             final targetLocation = notification.destination.location;
             if (targetLocation != null && targetLocation.isNotEmpty) {
-              context.push(targetLocation);
+              final safeLocation = AppDestination.resolveSafeLocation(
+                targetLocation,
+                fallback: RouteNames.notifications,
+              );
+              if (safeLocation != RouteNames.notifications) {
+                try {
+                  context.push(safeLocation);
+                } catch (_) {}
+              }
             }
           },
           child: Padding(
@@ -265,6 +274,19 @@ class _NotificationsContent extends StatelessWidget {
                           fontSize: 12.5,
                         ),
                       ),
+                      if (notification.imageUrl != null && notification.imageUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            notification.imageUrl!,
+                            height: 120,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Text(
                         notification.formattedTime,

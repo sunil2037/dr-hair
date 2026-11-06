@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
+import 'package:dr_hair/core/routes/route_names.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -199,6 +200,28 @@ class FirebasePushService {
   static String? resolveMessageLocation(RemoteMessage message) {
     if (message.data.isEmpty) return null;
     final dest = AppDestination.fromNotificationData(message.data);
-    return dest.location ?? dest.fallbackLocation;
+    final target = dest.location ?? dest.fallbackLocation;
+    return AppDestination.resolveSafeLocation(
+      target,
+      fallback: RouteNames.notifications,
+    );
+  }
+
+  /// Extracts image URL from remote message if provided in notification or data payload.
+  static String? resolveMessageImageUrl(RemoteMessage message) {
+    final notificationImage =
+        message.notification?.android?.imageUrl ??
+        message.notification?.apple?.imageUrl;
+    if (notificationImage != null && notificationImage.trim().isNotEmpty) {
+      return notificationImage.trim();
+    }
+    final dataUrl =
+        message.data['image_url'] ??
+        message.data['imageUrl'] ??
+        message.data['image'];
+    if (dataUrl is String && dataUrl.trim().isNotEmpty) {
+      return dataUrl.trim();
+    }
+    return null;
   }
 }
