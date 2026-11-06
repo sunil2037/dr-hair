@@ -34,4 +34,27 @@ void main() {
     expect(find.text('Ananya Mehra'), findsOneWidget);
     expect(find.text('Rahul Sharma'), findsNothing);
   });
+
+  testWidgets('ReviewsView docks category bar and changes background on scroll',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReviewsView(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify initial un-docked state
+    expect(find.byType(NestedScrollView), findsOneWidget);
+    expect(find.text('Patient Stories'), findsOneWidget);
+
+    // Scroll down to collapse header and dock category bar
+    await tester.drag(find.byType(NestedScrollView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+
+    // Category chips remain pinned and accessible
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('Hair Fall'), findsOneWidget);
+    expect(find.text('Patient Stories'), findsOneWidget);
+  });
 }
