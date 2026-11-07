@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -41,9 +42,9 @@ class _ReviewsViewState extends State<ReviewsView> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    // When the user has scrolled past the compact flexible space,
-    // the category filter bar reaches and docks cleanly with the app bar.
-    final bool past = _scrollController.offset >= 55.0;
+    // When the user has scrolled past the flexible header space,
+    // the category filter bar docks cleanly under the app bar.
+    final bool past = _scrollController.offset >= 60.0;
     if (past != _isScrolledPastHeader) {
       setState(() => _isScrolledPastHeader = past);
     }
@@ -65,10 +66,10 @@ class _ReviewsViewState extends State<ReviewsView> {
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).padding.top;
-    const double toolbarH = kToolbarHeight;
-    const double categoryBarH = 46.0;
-    final double collapsedHeight = topPadding + toolbarH + categoryBarH;
-    final double expandedHeight = topPadding + 184.0;
+    const double toolbarH = 60.0;
+    const double categoryBarH = 48.0;
+    final double collapsedHeight = topPadding;
+    final double expandedHeight = toolbarH + 120.0;
 
     final List<ReviewModel> filteredReviews = _selectedFilterIndex == 0
         ? _reviews
@@ -107,25 +108,14 @@ class _ReviewsViewState extends State<ReviewsView> {
                   floating: false,
                   centerTitle: false,
                   automaticallyImplyLeading: false,
-                  elevation: isDocked ? 0.5 : 0.0,
-                  shadowColor: Colors.black.withValues(alpha: 0.08),
+                  elevation: 0.0,
                   backgroundColor: isDocked
                       ? Colors.white
                       : AppColors.background,
                   surfaceTintColor: Colors.transparent,
                   expandedHeight: expandedHeight,
-                  toolbarHeight: toolbarH,
-                  title: isDocked
-                      ? const Text(
-                          'Patient Stories',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryDark,
-                            letterSpacing: -0.3,
-                          ),
-                        )
-                      : null,
+                  toolbarHeight: 0,
+                  title: null,
                   flexibleSpace: LayoutBuilder(
                     builder:
                         (BuildContext context, BoxConstraints constraints) {
@@ -136,55 +126,47 @@ class _ReviewsViewState extends State<ReviewsView> {
                                         (expandedHeight - collapsedHeight))
                                     .clamp(0.0, 1.0)
                               : 0.0;
-                          final bool showExpanded = t > 0.15 && !isDocked;
 
                           return FlexibleSpaceBar(
-                            collapseMode: CollapseMode.parallax,
+                            collapseMode: CollapseMode.pin,
                             background: SafeArea(
                               bottom: false,
                               child: Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   16,
-                                  4,
+                                  0,
                                   16,
-                                  categoryBarH,
+                                  categoryBarH + 4,
                                 ),
                                 child: Opacity(
                                   opacity: t,
-                                  child: showExpanded
-                                      ? ClipRect(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            children: [
-                                              const Text(
-                                                'Patient Stories',
-                                                style: TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.primaryDark,
-                                                  letterSpacing: -0.3,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              const Text(
-                                                'Real experiences from verified patients following customized routines',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color:
-                                                      AppColors.secondaryDark,
-                                                  fontWeight: FontWeight.w400,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 6),
-                                              _buildRatingCard(),
-                                            ],
+                                  child: ClipRect(
+                                    child: SingleChildScrollView(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      reverse: true,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            'Patient Stories',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.primaryDark,
+                                              letterSpacing: -0.3,
+                                            ),
                                           ),
-                                        )
-                                      : const SizedBox.shrink(),
+
+                                          const SizedBox(height: 10),
+                                          _buildRatingCard(),
+                                          const SizedBox(height: 10),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -225,6 +207,7 @@ class _ReviewsViewState extends State<ReviewsView> {
                             ? AppColors.neutral100
                             : Colors.white,
                         onSelected: (index) {
+                          HapticFeedback.selectionClick();
                           setState(() => _selectedFilterIndex = index);
                           _loadReviews();
                         },
@@ -338,7 +321,7 @@ class _ReviewsViewState extends State<ReviewsView> {
                 Text(
                   'Patient satisfaction rating',
                   style: TextStyle(
-                    fontSize: 13.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
@@ -347,7 +330,7 @@ class _ReviewsViewState extends State<ReviewsView> {
                 Text(
                   'Verified outcomes across 12,000+ active care plans',
                   style: TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 10,
                     color: AppColors.secondaryDark,
                     fontWeight: FontWeight.w500,
                   ),

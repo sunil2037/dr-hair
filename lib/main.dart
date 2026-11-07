@@ -8,9 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import 'core/constants/app_colors.dart';
 import 'core/constants/app_strings.dart';
 import 'core/notifications/firebase_push_service.dart';
 import 'core/routes/app_router.dart';
@@ -121,110 +119,13 @@ class _MyAppState extends State<MyApp> {
         // 2. Tactile haptic feedback
         HapticFeedback.mediumImpact();
 
-        // 3. Show floating in-app notification banner
-        _showInAppNotificationBanner(
+        // 3. Trigger system push notification in Android notification drawer
+        FirebasePushService.showForegroundSystemNotification(
           title: title,
           body: body,
-          message: message,
         );
       }
     });
-  }
-
-  void _showInAppNotificationBanner({
-    required String title,
-    required String body,
-    required RemoteMessage message,
-  }) {
-    final location = FirebasePushService.resolveMessageLocation(message);
-    final imageUrl = FirebasePushService.resolveMessageImageUrl(message);
-
-    MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF0F172A),
-        elevation: 8,
-        margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF334155), width: 1.0),
-        ),
-        duration: const Duration(seconds: 4),
-        content: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Center(
-                child: Icon(
-                  LucideIcons.bellRing,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (title.isNotEmpty)
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
-                    ),
-                  if (body.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      body,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 11.5,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (imageUrl != null && imageUrl.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  imageUrl,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              ),
-            ],
-          ],
-        ),
-        action: location != null && location.isNotEmpty
-            ? SnackBarAction(
-                label: 'VIEW',
-                textColor: const Color(0xFF38BDF8),
-                onPressed: () => _navigateFromMessage(message),
-              )
-            : null,
-      ),
-    );
   }
 
   void _navigateFromMessage(RemoteMessage message) {

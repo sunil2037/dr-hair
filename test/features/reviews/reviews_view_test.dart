@@ -13,10 +13,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Patient Stories'), findsOneWidget);
-    expect(
-      find.text('Real experiences from verified patients following customized routines'),
-      findsOneWidget,
-    );
 
     // Category chips
     expect(find.text('All'), findsOneWidget);

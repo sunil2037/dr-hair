@@ -152,7 +152,8 @@ void main() {
 
       // Tap screen to proceed to login screen
       await tester.tap(find.byType(SplashView));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // 2. Now on SigninView with bottom card
       expect(find.byType(SigninView), findsOneWidget);
@@ -198,7 +199,8 @@ void main() {
 
         // 1. Initial screen is SplashView -> Proceed to SigninView
         await tester.tap(find.byType(SplashView));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // 2. SigninView: switch to Sign Up
         await tester.tap(find.text('Sign Up').first);

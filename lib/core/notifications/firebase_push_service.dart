@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
@@ -5,6 +6,7 @@ import 'package:dr_hair/core/routes/route_names.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../firebase_options.dart';
@@ -79,6 +81,25 @@ class FirebasePushService {
   // ignore: deprecated_member_use
   static Stream<String> get tokenRefreshes => _messaging.onTokenRefresh;
 
+  static const MethodChannel _nativeChannel =
+      MethodChannel('com.drhair.app/notifications');
+
+  /// Displays a heads-up alert in Android system notification drawer when app is in foreground.
+  static Future<void> showForegroundSystemNotification({
+    required String title,
+    required String body,
+  }) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _nativeChannel.invokeMethod('showNotification', {
+        'title': title,
+        'body': body,
+      });
+    } catch (e) {
+      debugPrint('Could not display native foreground notification: $e');
+    }
+  }
+
   /// Requests notification permission and retrieves device token.
   static Future<String?> requestPermissionAndGetToken({
     String? webVapidKey,
@@ -90,6 +111,7 @@ class FirebasePushService {
         alert: true,
         badge: true,
         sound: true,
+        provisional: false,
       );
       debugPrint(
         '🔔 [FCM] Notification authorization status: ${settings.authorizationStatus}',
@@ -123,6 +145,8 @@ class FirebasePushService {
     }
   }
 
+  static StreamSubscription<String>? _tokenRefreshSubscription;
+
   /// Synchronizes device token with the backend API.
   static Future<void> syncDeviceTokenWithBackend({String? accessToken}) async {
     if (isTesting) return;
@@ -151,18 +175,24 @@ class FirebasePushService {
         '🔔 [FCM] Device token synced with backend status: ${response.statusCode}',
       );
 
-      // Listen for background token rotations
+      // Listen for background token rotations (cancelling any prior subscription)
+      await _tokenRefreshSubscription?.cancel();
       // ignore: deprecated_member_use
-      _messaging.onTokenRefresh.listen((newToken) async {
+      _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((newToken) async {
         if (newToken.trim().isNotEmpty) {
           try {
+            final dynamicAuth = await SecureSessionStore().readToken();
+            final refreshHeaders = <String, String>{};
+            if (dynamicAuth != null && dynamicAuth.trim().isNotEmpty) {
+              refreshHeaders['Authorization'] = 'Bearer ${dynamicAuth.trim()}';
+            }
             await _dio.post(
               ApiEndpoints.notificationDeviceTokens,
               data: {
                 'token': newToken.trim(),
                 'platform': _currentPlatformName,
               },
-              options: options,
+              options: Options(headers: refreshHeaders),
             );
           } catch (_) {}
         }
@@ -172,11 +202,14 @@ class FirebasePushService {
     }
   }
 
-  /// Unregisters device token on user logout.
+  /// Unregisters device token on user logout and cleans device token from FCM.
   static Future<void> unregisterDeviceToken({String? accessToken}) async {
     if (isTesting) return;
 
     try {
+      await _tokenRefreshSubscription?.cancel();
+      _tokenRefreshSubscription = null;
+
       // ignore: deprecated_member_use
       final token = await _messaging.getToken();
       if (token != null && token.trim().isNotEmpty) {
@@ -191,6 +224,10 @@ class FirebasePushService {
           options: options,
         );
       }
+      try {
+        // ignore: deprecated_member_use
+        await _messaging.deleteToken();
+      } catch (_) {}
     } catch (e) {
       debugPrint('FirebasePushService unregisterDeviceToken error: $e');
     }

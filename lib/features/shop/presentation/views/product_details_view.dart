@@ -195,9 +195,20 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
           containersColor: Colors.white,
           child: Scaffold(
             backgroundColor: Colors.white,
-            body: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
+            body: RefreshIndicator(
+              color: AppColors.primary,
+              backgroundColor: Colors.white,
+              displacement: 60,
+              edgeOffset: 0,
+              onRefresh: () async {
+                HapticFeedback.lightImpact();
+                await cubit.refreshProduct();
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                slivers: [
                 // Clean Pinned App Bar
                 SliverAppBar(
                   pinned: true,
@@ -983,6 +994,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent>
                 ),
               ],
             ),
+          ),
 
             // Purchase action stays compact until the selected product is in the cart.
             bottomNavigationBar: SafeArea(

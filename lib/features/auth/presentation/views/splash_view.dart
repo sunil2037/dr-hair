@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -18,47 +16,70 @@ class SplashView extends StatefulWidget {
   State<SplashView> createState() => _SplashViewState();
 }
 
-class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
-  late final AnimationController _entranceController;
-  late final AnimationController _motionController;
-  bool _motionConfigured = false;
+class _SplashViewState extends State<SplashView>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _textFadeAnimation;
+
   bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-    // Keep the brand moment brief, then continue as soon as the entrance lands.
-    _entranceController =
-        AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 850),
-        )..addStatusListener((status) {
-          if (status == AnimationStatus.completed) _onSplashComplete();
-        });
-    _entranceController.forward();
-    // Continuous soothing motion loop (vitality ripples, levitation, sparkles)
-    _motionController = AnimationController(
+    // Serene entrance animation (1200ms) with gentle ease
+    _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 1200),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _onSplashComplete();
+        }
+      });
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
     );
+
+    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.75, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.05, 0.85, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _textFadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.35, 1.0, curve: Curves.easeOut),
+    );
+
+    _controller.forward();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_motionConfigured) return;
-    _motionConfigured = true;
     if (MediaQuery.disableAnimationsOf(context)) {
-      _entranceController.value = 1.0;
-    } else {
-      _motionController.repeat();
+      _controller.value = 1.0;
     }
   }
 
   @override
   void dispose() {
-    _entranceController.dispose();
-    _motionController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -101,8 +122,6 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (!_hasNavigated) {
@@ -139,75 +158,112 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
                   ),
                 ),
 
-                // 2. Soft Ambient Lighting Orbs
-                Positioned(
-                  top: -60,
-                  right: -60,
-                  child: _AmbientGlow(
-                    size: 260,
-                    color: AppColors.secondary.withValues(alpha: 0.08),
-                  ),
-                ),
-                Positioned(
-                  bottom: -80,
-                  left: -80,
-                  child: _AmbientGlow(
-                    size: 300,
-                    color: AppColors.primary.withValues(alpha: 0.06),
-                  ),
-                ),
-
-                // 3. Pure, Minimal Centered Emblem and Branding
+                // 2. Pure, Minimal Centered Emblem and Branding
                 SafeArea(
                   child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Animated Emblem with Concentric Vitality Waves & Sparkles
-                          AnimatedBuilder(
-                            animation: Listenable.merge([
-                              _entranceController,
-                              _motionController,
-                            ]),
-                            builder: (context, child) {
-                              final entranceCurved = Curves.easeOutBack
-                                  .transform(_entranceController.value);
-                              final motionVal = reduceMotion
-                                  ? 0.0
-                                  : _motionController.value;
-                              final floatOffset = reduceMotion
-                                  ? 0.0
-                                  : math.sin(motionVal * 2 * math.pi) * 4.0;
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Circular emblem container
+                              Container(
+                                width: 120,
+                                height: 120,
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: AppColors.primary100,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.08),
+                                      blurRadius: 28,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/icon.png',
+                                    fit: BoxFit.contain,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Center(
+                                      child: Text(
+                                        'DH',
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
 
-                              return Opacity(
-                                opacity: _entranceController.value.clamp(
-                                  0.0,
-                                  1.0,
+                              // Brand Title & Clinical Subtitle with smooth fade
+                              FadeTransition(
+                                opacity: _textFadeAnimation,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      'Dr. Hair',
+                                      style: TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primaryDark,
+                                        letterSpacing: -0.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary5,
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: AppColors.primary100,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Advanced Hair & Scalp Clinic',
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primary,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                child: Transform.translate(
-                                  offset: Offset(
-                                    0,
-                                    (24 * (1 - entranceCurved)) + floatOffset,
-                                  ),
-                                  child: Transform.scale(
-                                    scale: entranceCurved,
-                                    child: child,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: _HeroEmblem(
-                              motionController: _motionController,
-                              reduceMotion: reduceMotion,
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
+
+                // 3. Error Retry Card (if session restore fails)
                 if (authState.status == AuthStatus.failure)
                   Positioned.fill(
                     child: ColoredBox(
@@ -217,7 +273,8 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
                           child: Padding(
                             padding: const EdgeInsets.all(24),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
+                              constraints:
+                                  const BoxConstraints(maxWidth: 420),
                               child: Container(
                                 padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
@@ -226,9 +283,8 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
                                   border: Border.all(color: AppColors.border),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.08,
-                                      ),
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.08),
                                       blurRadius: 28,
                                       offset: const Offset(0, 12),
                                     ),
@@ -236,7 +292,8 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
                                 ),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     const Icon(
                                       LucideIcons.wifi,
@@ -254,7 +311,8 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      authState.errorMessage ?? 'Check your connection and try again.',
+                                      authState.errorMessage ??
+                                          'Check your connection and try again.',
                                       style: const TextStyle(
                                         color: AppColors.secondaryDark,
                                         height: 1.45,
@@ -291,205 +349,6 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Concentric vitality ripples and glassmorphic emblem centerpiece
-class _HeroEmblem extends StatelessWidget {
-  final AnimationController motionController;
-  final bool reduceMotion;
-
-  const _HeroEmblem({
-    required this.motionController,
-    required this.reduceMotion,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 240,
-      height: 240,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Vitality Wave 1
-          if (!reduceMotion)
-            AnimatedBuilder(
-              animation: motionController,
-              builder: (context, _) {
-                final t = motionController.value;
-                final scale = 0.88 + 0.40 * t;
-                final opacity = (1.0 - t).clamp(0.0, 1.0) * 0.22;
-                return Transform.scale(
-                  scale: scale,
-                  child: Container(
-                    width: 170,
-                    height: 170,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.secondary.withValues(alpha: opacity),
-                        width: 1.8,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-          // Vitality Wave 2 (Phase offset by 0.5)
-          if (!reduceMotion)
-            AnimatedBuilder(
-              animation: motionController,
-              builder: (context, _) {
-                final t = (motionController.value + 0.5) % 1.0;
-                final scale = 0.88 + 0.40 * t;
-                final opacity = (1.0 - t).clamp(0.0, 1.0) * 0.18;
-                return Transform.scale(
-                  scale: scale,
-                  child: Container(
-                    width: 170,
-                    height: 170,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: opacity),
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-          // Glassmorphic Card Container
-          Container(
-            width: 168,
-            height: 168,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.94),
-              border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  blurRadius: 36,
-                  spreadRadius: 4,
-                  offset: const Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: AppColors.secondary.withValues(alpha: 0.05),
-                  blurRadius: 18,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Image.asset(
-                  'assets/images/icon.png',
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Text(
-                      'Dr.Hair',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Twinkling Sparkle 1 (Top-Right)
-          Positioned(
-            top: 24,
-            right: 28,
-            child: _TwinkleSparkle(
-              motionController: motionController,
-              size: 15,
-              color: AppColors.secondary,
-              phaseOffset: 0.0,
-            ),
-          ),
-
-          // Twinkling Sparkle 2 (Bottom-Left)
-          Positioned(
-            bottom: 26,
-            left: 32,
-            child: _TwinkleSparkle(
-              motionController: motionController,
-              size: 11,
-              color: AppColors.primary,
-              phaseOffset: 0.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// An animated micro-twinkle sparkle that scales and rotates smoothly
-class _TwinkleSparkle extends StatelessWidget {
-  final AnimationController motionController;
-  final double size;
-  final Color color;
-  final double phaseOffset;
-
-  const _TwinkleSparkle({
-    required this.motionController,
-    required this.size,
-    required this.color,
-    this.phaseOffset = 0.0,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: motionController,
-      builder: (context, _) {
-        final t = (motionController.value + phaseOffset) % 1.0;
-        final scale = 0.8 + 0.3 * math.sin(t * 2 * math.pi);
-        final opacity = 0.5 + 0.5 * math.sin(t * 2 * math.pi).abs();
-        final rotation = t * 2 * math.pi;
-
-        return Transform.rotate(
-          angle: rotation,
-          child: Transform.scale(
-            scale: scale,
-            child: Icon(
-              LucideIcons.sparkles,
-              size: size,
-              color: color.withValues(alpha: opacity),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Soft ambient atmospheric background orb
-class _AmbientGlow extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _AmbientGlow({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       ),
     );
   }

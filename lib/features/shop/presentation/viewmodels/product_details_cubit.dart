@@ -6,6 +6,7 @@ import 'product_details_state.dart';
 
 class ProductDetailsCubit extends Cubit<ProductDetailsState> {
   final ProductRepository _repository;
+  final String? _initialProductId;
 
   ProductDetailsCubit({
     ProductItem? initialProduct,
@@ -13,6 +14,7 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
     ProductRepository? repository,
     ProductDetailsState? initialState,
   })  : _repository = repository ?? ProductRepositoryImpl(),
+        _initialProductId = productId ?? initialProduct?.id,
         super(
           initialState ??
               ProductDetailsState.initial(
@@ -22,6 +24,25 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
         ) {
     if (initialProduct == null && productId != null && productId.isNotEmpty) {
       loadProduct(productId);
+    }
+  }
+
+  /// Pull-to-refresh / slide-to-refresh handler for product details.
+  Future<void> refreshProduct() async {
+    final targetId = state.product.id.isNotEmpty ? state.product.id : _initialProductId;
+    if (targetId == null || targetId.isEmpty) return;
+    try {
+      final product = await _repository.getProductById(targetId);
+      if (product != null) {
+        ProductItem.cacheProducts([product]);
+        emit(state.copyWith(
+          product: product,
+          isLoading: false,
+          isNotFound: false,
+        ));
+      }
+    } catch (_) {
+      // Gracefully preserve existing loaded state on network hiccups
     }
   }
 
